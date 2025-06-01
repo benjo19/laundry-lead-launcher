@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Brain, Plus, Loader2, Building2, Phone, Mail } from 'lucide-react';
+import { Search, MapPin, Brain, Plus, Loader2, Building2, Phone, Mail, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Lead } from '@/types';
 
@@ -71,18 +71,36 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
       const selectedIndustry = industries.find(ind => ind.value === industry);
       const query = searchQuery || selectedIndustry?.query || 'business';
       
-      const response = await fetch(
-        `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + ' in ' + location)}&key=${apiKey}`
-      );
+      // Using a CORS proxy to avoid CORS issues with Google Maps API
+      const proxyUrl = 'https://api.allorigins.win/raw?url=';
+      const targetUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + ' in ' + location)}&key=${apiKey}`;
+      
+      console.log('Searching for:', query + ' in ' + location);
+      
+      const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
       
       if (!response.ok) {
-        throw new Error('Greška pri dohvaćanju podataka');
+        throw new Error('Greška pri dohvaćanju podataka iz Google Maps API');
       }
       
       const data = await response.json();
+      console.log('API Response:', data);
+      
+      if (data.status === 'REQUEST_DENIED') {
+        throw new Error('API ključ nije valjan ili nema dozvole za Places API');
+      }
       
       if (data.status !== 'OK') {
-        throw new Error(data.error_message || 'Greška pri pretraživanju');
+        throw new Error(data.error_message || `API greška: ${data.status}`);
+      }
+      
+      if (!data.results || data.results.length === 0) {
+        toast({
+          title: "Nema rezultata",
+          description: "Nisu pronađeni leadovi za zadane parametre.",
+        });
+        setDiscoveredLeads([]);
+        return;
       }
       
       setDiscoveredLeads(data.results.slice(0, 10)); // Limit to 10 results
@@ -95,9 +113,10 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
       console.error('Search error:', error);
       toast({
         title: "Greška",
-        description: "Dogodila se greška pri pretraživanju leadova.",
+        description: error instanceof Error ? error.message : "Dogodila se greška pri pretraživanju leadova.",
         variant: "destructive",
       });
+      setDiscoveredLeads([]);
     } finally {
       setIsSearching(false);
     }
@@ -152,6 +171,18 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start">
+              <AlertCircle className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">Potreban Google Maps API ključ</p>
+                <p>Za korištenje ove funkcionalnosti potrebno je kreirati Google Maps API ključ s omogućenim Places API. 
+                Više informacija na: <a href="https://developers.google.com/maps/documentation/places/web-service/get-api-key" 
+                target="_blank" rel="noopener noreferrer" className="underline">Google Places API dokumentaciji</a></p>
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-2">Google Maps API ključ</label>
