@@ -3,21 +3,72 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, Mail, Calendar, TrendingUp, Target, MessageSquare } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { Lead, Email, Reminder, ContentPost } from '@/types';
 
 const Dashboard = () => {
+  const [leads] = useLocalStorage<Lead[]>('leads', []);
+  const [emails] = useLocalStorage<Email[]>('emails', []);
+  const [reminders] = useLocalStorage<Reminder[]>('reminders', []);
+  const [posts] = useLocalStorage<ContentPost[]>('contentPosts', []);
+
+  // Calculate real statistics
+  const totalLeads = leads.length;
+  const sentEmails = emails.filter(e => e.status === 'Sent').length;
+  const activeReminders = reminders.filter(r => r.status === 'Aktivan').length;
+  const publishedPosts = posts.filter(p => p.status === 'Published').length;
+
+  // Calculate changes (mock data for demo)
+  const leadChange = totalLeads > 0 ? `+${Math.round(totalLeads * 0.12)}` : '+0';
+  const emailChange = sentEmails > 0 ? `+${Math.round(sentEmails * 0.08)}` : '+0';
+  const reminderChange = activeReminders > 0 ? `+${Math.min(activeReminders, 3)}` : '+0';
+
   const stats = [
-    { title: 'Ukupno Leadova', value: '1,247', change: '+12%', icon: Users, color: 'text-blue-600' },
-    { title: 'Poslani Emailovi', value: '3,452', change: '+8%', icon: Mail, color: 'text-green-600' },
-    { title: 'Aktivni Podsjetnici', value: '23', change: '+3', icon: Calendar, color: 'text-orange-600' },
-    { title: 'Conversion Rate', value: '4.2%', change: '+0.3%', icon: TrendingUp, color: 'text-purple-600' },
+    { title: 'Ukupno Leadova', value: totalLeads.toString(), change: leadChange, icon: Users, color: 'text-blue-600' },
+    { title: 'Poslani Emailovi', value: sentEmails.toString(), change: emailChange, icon: Mail, color: 'text-green-600' },
+    { title: 'Aktivni Podsjetnici', value: activeReminders.toString(), change: reminderChange, icon: Calendar, color: 'text-orange-600' },
+    { title: 'Objavljeni Postovi', value: publishedPosts.toString(), change: `+${publishedPosts}`, icon: TrendingUp, color: 'text-purple-600' },
   ];
 
+  // Recent activity from real data
   const recentActivity = [
-    { action: 'Novi lead dodan', company: 'Praonica Split', time: '5 min' },
-    { action: 'Email poslan', company: 'Čistoća Zagreb', time: '15 min' },
-    { action: 'Podsjetnik kreiran', company: 'Bijelo rublje d.o.o.', time: '1h' },
-    { action: 'LinkedIn post objavljen', company: 'AutoContent', time: '2h' },
-  ];
+    ...leads.slice(0, 2).map(lead => ({
+      action: 'Novi lead dodan',
+      company: lead.company,
+      time: getTimeAgo(lead.dateAdded)
+    })),
+    ...emails.slice(0, 2).map(email => ({
+      action: email.status === 'Sent' ? 'Email poslan' : 'Email draft kreiran',
+      company: email.to.split('@')[0],
+      time: getTimeAgo(email.dateSent)
+    })),
+    ...reminders.slice(0, 1).map(reminder => ({
+      action: 'Podsjetnik kreiran',
+      company: reminder.company,
+      time: getTimeAgo(reminder.date)
+    })),
+    ...posts.slice(0, 1).map(post => ({
+      action: `${post.platform} post ${post.status === 'Published' ? 'objavljen' : 'zakazan'}`,
+      company: 'AutoContent',
+      time: getTimeAgo(post.date)
+    }))
+  ].slice(0, 4);
+
+  function getTimeAgo(dateString: string): string {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffTime = Math.abs(now.getTime() - date.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return 'Danas';
+    if (diffDays === 1) return '1 dan';
+    if (diffDays < 7) return `${diffDays} dana`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} tjedana`;
+    return `${Math.floor(diffDays / 30)} mjeseca`;
+  }
+
+  // Calculate conversion rate
+  const conversionRate = totalLeads > 0 ? ((sentEmails / totalLeads) * 100).toFixed(1) : '0.0';
 
   return (
     <div className="p-6 space-y-6">
@@ -64,15 +115,21 @@ const Dashboard = () => {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {recentActivity.map((activity, index) => (
-                <div key={index} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                  <div>
-                    <p className="font-medium text-slate-900">{activity.action}</p>
-                    <p className="text-sm text-slate-600">{activity.company}</p>
+              {recentActivity.length > 0 ? (
+                recentActivity.map((activity, index) => (
+                  <div key={index} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                    <div>
+                      <p className="font-medium text-slate-900">{activity.action}</p>
+                      <p className="text-sm text-slate-600">{activity.company}</p>
+                    </div>
+                    <span className="text-xs text-slate-500">{activity.time}</span>
                   </div>
-                  <span className="text-xs text-slate-500">{activity.time}</span>
+                ))
+              ) : (
+                <div className="text-center py-4 text-slate-500">
+                  Nema nedavnih aktivnosti. Počnite dodavanjem leadova!
                 </div>
-              ))}
+              )}
             </div>
           </CardContent>
         </Card>
@@ -81,26 +138,30 @@ const Dashboard = () => {
           <CardHeader>
             <CardTitle className="flex items-center">
               <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
-              Mjesečni Rezultati
+              Ključni Pokazatelji
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Leadovi generirani</span>
-                <span className="font-bold text-slate-900">347</span>
+                <span className="text-slate-600">Conversion rate</span>
+                <span className="font-bold text-green-600">{conversionRate}%</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Email open rate</span>
-                <span className="font-bold text-green-600">28.4%</span>
+                <span className="text-slate-600">Aktivni leadovi</span>
+                <span className="font-bold text-blue-600">{leads.filter(l => l.status !== 'Odbačen').length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Click-through rate</span>
-                <span className="font-bold text-blue-600">6.2%</span>
+                <span className="text-slate-600">Email drafts</span>
+                <span className="font-bold text-yellow-600">{emails.filter(e => e.status === 'Draft').length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Novi klijenti</span>
-                <span className="font-bold text-purple-600">14</span>
+                <span className="text-slate-600">Zakazani postovi</span>
+                <span className="font-bold text-purple-600">{posts.filter(p => p.status === 'Scheduled').length}</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-slate-600">Završeni podsjetnici</span>
+                <span className="font-bold text-green-600">{reminders.filter(r => r.status === 'Završen').length}</span>
               </div>
             </div>
           </CardContent>
