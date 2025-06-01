@@ -198,11 +198,9 @@ const LeadHunter = () => {
                   
                   <div className="flex space-x-2">
                     <Select onValueChange={(value: Lead['status']) => updateLeadStatus(lead.id, value)}>
-                      <SelectTrigger asChild>
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4 mr-1" />
-                          Status
-                        </Button>
+                      <SelectTrigger className="w-32">
+                        <Edit className="h-4 w-4 mr-1" />
+                        <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Nova">Nova</SelectItem>
