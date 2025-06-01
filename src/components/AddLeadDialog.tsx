@@ -99,7 +99,7 @@ const AddLeadDialog = ({ onAddLead }: AddLeadDialogProps) => {
             <label className="block text-sm font-medium mb-1">Potencijal</label>
             <Select value={formData.potential} onValueChange={(value: Lead['potential']) => setFormData({...formData, potential: value})}>
               <SelectTrigger>
-                <SelectValue />
+                <SelectValue placeholder="Odaberite potencijal" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="Visok">Visok</SelectItem>
