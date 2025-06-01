@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Search, Mail, Users, FileText, BarChart3, Calendar } from 'lucide-react';
+import { Search, Mail, Users, FileText, BarChart3, Calendar, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SidebarProps {
@@ -11,6 +11,7 @@ interface SidebarProps {
 const modules = [
   { id: 'dashboard', name: 'Dashboard', icon: BarChart3 },
   { id: 'lead-hunter', name: 'Lead Hunter', icon: Search },
+  { id: 'lead-discovery', name: 'Lead Discovery', icon: MapPin },
   { id: 'email-generator', name: 'Email Generator', icon: Mail },
   { id: 'crm-reminder', name: 'CRM Podsjetnik', icon: Calendar },
   { id: 'content-booster', name: 'Content Booster', icon: FileText },
