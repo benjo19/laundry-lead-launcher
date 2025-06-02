@@ -1,55 +1,43 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Brain, Loader2, AlertCircle } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { Search, MapPin, Sparkles } from 'lucide-react';
+import IndustrySelector, { industries } from './IndustrySelector';
+import ExportButton from '@/components/ExportButton';
 
-interface DiscoveredLead {
+export interface DiscoveredLead {
   name: string;
   address: string;
-  phone?: string;
-  website?: string;
-  email?: string;
-  emailScraped?: boolean;
+  phone: string;
+  website: string;
   rating?: number;
   types: string[];
   place_id: string;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
+  geometry?: any;
   business_status?: string;
   user_ratings_total?: number;
+  email?: string;
+  emailScraped?: boolean;
 }
+
+export { industries };
 
 interface SearchFormProps {
   searchQuery: string;
-  setSearchQuery: (value: string) => void;
+  setSearchQuery: (query: string) => void;
   location: string;
-  setLocation: (value: string) => void;
+  setLocation: (location: string) => void;
   industry: string;
-  setIndustry: (value: string) => void;
+  setIndustry: (industry: string) => void;
   apiKey: string;
-  setApiKey: (value: string) => void;
+  setApiKey: (apiKey: string) => void;
   isSearching: boolean;
   discoveredLeads: DiscoveredLead[];
   onSearchLeads: () => void;
   onAnalyzeWithAI: (leads: DiscoveredLead[]) => void;
 }
-
-const industries = [
-  { value: 'laundry', label: 'Praonica rublja', query: 'laundry dry cleaning' },
-  { value: 'restaurant', label: 'Restorani', query: 'restaurant food service' },
-  { value: 'hotel', label: 'Hoteli', query: 'hotel accommodation' },
-  { value: 'gym', label: 'Teretane', query: 'gym fitness center' },
-  { value: 'spa', label: 'Spa centri', query: 'spa wellness center' },
-  { value: 'hospital', label: 'Bolnice', query: 'hospital medical center' },
-  { value: 'school', label: 'Škole', query: 'school education' },
-];
 
 const SearchForm = ({
   searchQuery,
@@ -66,108 +54,90 @@ const SearchForm = ({
   onAnalyzeWithAI
 }: SearchFormProps) => {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Search className="h-5 w-5 mr-2 text-blue-600" />
-          Parametri pretraživanja
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <div className="flex items-start">
-            <AlertCircle className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
-            <div className="text-sm text-blue-800">
-              <p className="font-medium mb-1">Napredne funkcionalnosti</p>
-              <p>Sistem automatski dohvaća kontakt informacije i pokušava pronaći email adrese na web stranicama kompanija. 
-              Za Google Maps API potreban je ključ s omogućenim Places API.</p>
+    <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <span className="flex items-center">
+              <Search className="h-5 w-5 mr-2 text-blue-600" />
+              Pretraživanje Leadova
+            </span>
+            {discoveredLeads.length > 0 && (
+              <ExportButton 
+                data={discoveredLeads} 
+                filename="discovered-leads" 
+                type="leads"
+              />
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="apiKey">Google Maps API ključ</Label>
+              <Input
+                id="apiKey"
+                type="password"
+                placeholder="Unesite Google Maps API ključ"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Lokacija</Label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Input
+                  id="location"
+                  placeholder="Zagreb, Split, Rijeka..."
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
           </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Google Maps API ključ</label>
-            <Input
-              type="password"
-              placeholder="Unesite svoj Google Maps API ključ"
-              value={apiKey}
-              onChange={(e) => setApiKey(e.target.value)}
-            />
-            <p className="text-xs text-slate-500 mt-1">
-              Potreban je za pristup Google Maps Places API (uključuje i Details API)
-            </p>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Lokacija</label>
-            <Input
-              placeholder="Zagreb, Split, Rijeka..."
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-            />
-          </div>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Industrija</label>
-            <Select value={industry} onValueChange={setIndustry}>
-              <SelectTrigger>
-                <SelectValue placeholder="Odaberite industriju" />
-              </SelectTrigger>
-              <SelectContent>
-                {industries.map((ind) => (
-                  <SelectItem key={ind.value} value={ind.value}>
-                    {ind.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Dodatni pojmovi (opcionalno)</label>
-            <Input
-              placeholder="Dodatni ključni pojmovi..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className="flex space-x-2">
-          <Button 
-            onClick={onSearchLeads} 
-            disabled={isSearching}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            {isSearching ? (
-              <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Pretražujem i dohvaćam kontakte...
-              </>
-            ) : (
-              <>
-                <MapPin className="h-4 w-4 mr-2" />
-                Pretražuj Leadove
-              </>
-            )}
-          </Button>
           
-          {discoveredLeads.length > 0 && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Industrija</Label>
+              <IndustrySelector value={industry} onChange={setIndustry} />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="searchQuery">Prilagođena pretraga (opcionalno)</Label>
+              <Input
+                id="searchQuery"
+                placeholder="Dodajte specifične ključne riječi..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="flex space-x-4">
             <Button 
-              variant="outline"
-              onClick={() => onAnalyzeWithAI(discoveredLeads)}
+              onClick={onSearchLeads} 
+              disabled={isSearching}
+              className="flex-1"
             >
-              <Brain className="h-4 w-4 mr-2" />
-              AI Analiza
+              <Search className="h-4 w-4 mr-2" />
+              {isSearching ? 'Pretražujem...' : 'Pretražuj Leadove'}
             </Button>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+            {discoveredLeads.length > 0 && (
+              <Button 
+                onClick={() => onAnalyzeWithAI(discoveredLeads)}
+                variant="outline"
+                className="bg-purple-50 border-purple-200 hover:bg-purple-100"
+              >
+                <Sparkles className="h-4 w-4 mr-2" />
+                AI Analiza
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 
 export default SearchForm;
-export { industries };
-export type { DiscoveredLead };

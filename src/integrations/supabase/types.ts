@@ -9,6 +9,102 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      emails: {
+        Row: {
+          click_rate: string | null
+          content: string
+          created_at: string | null
+          id: string
+          open_rate: string | null
+          sent_at: string | null
+          status: string | null
+          subject: string
+          template: string | null
+          to_email: string
+          user_id: string
+        }
+        Insert: {
+          click_rate?: string | null
+          content: string
+          created_at?: string | null
+          id?: string
+          open_rate?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject: string
+          template?: string | null
+          to_email: string
+          user_id: string
+        }
+        Update: {
+          click_rate?: string | null
+          content?: string
+          created_at?: string | null
+          id?: string
+          open_rate?: string | null
+          sent_at?: string | null
+          status?: string | null
+          subject?: string
+          template?: string | null
+          to_email?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      leads: {
+        Row: {
+          company: string
+          created_at: string | null
+          email: string | null
+          employees: string | null
+          id: string
+          industry: string | null
+          location: string | null
+          notes: string | null
+          phone: string | null
+          potential: string | null
+          source: string | null
+          status: string | null
+          updated_at: string | null
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          company: string
+          created_at?: string | null
+          email?: string | null
+          employees?: string | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          notes?: string | null
+          phone?: string | null
+          potential?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          company?: string
+          created_at?: string | null
+          email?: string | null
+          employees?: string | null
+          id?: string
+          industry?: string | null
+          location?: string | null
+          notes?: string | null
+          phone?: string | null
+          potential?: string | null
+          source?: string | null
+          status?: string | null
+          updated_at?: string | null
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -33,6 +129,36 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      user_settings: {
+        Row: {
+          created_at: string | null
+          email_provider: string | null
+          email_settings: Json | null
+          id: string
+          social_platforms: Json | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email_provider?: string | null
+          email_settings?: Json | null
+          id?: string
+          social_platforms?: Json | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email_provider?: string | null
+          email_settings?: Json | null
+          id?: string
+          social_platforms?: Json | null
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }

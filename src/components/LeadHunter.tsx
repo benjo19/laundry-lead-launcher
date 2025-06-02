@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Search, Filter, MapPin, Users, Phone, Mail, Edit, Trash2 } from 'lucide
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead } from '@/types';
 import AddLeadDialog from './AddLeadDialog';
+import ExportButton from './ExportButton';
 import { useToast } from '@/hooks/use-toast';
 
 interface LeadHunterProps {
@@ -146,7 +148,10 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
           <h2 className="text-3xl font-bold text-slate-900">Lead Hunter</h2>
           <p className="text-slate-600">Pronađite i upravljajte potencijalnim klijentima</p>
         </div>
-        <AddLeadDialog onAddLead={addLead} />
+        <div className="flex space-x-2">
+          <ExportButton data={filteredLeads} filename="leads" type="leads" />
+          <AddLeadDialog onAddLead={addLead} />
+        </div>
       </div>
 
       <Card>

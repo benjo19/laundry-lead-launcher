@@ -8,6 +8,7 @@ import EmailGenerator from '@/components/EmailGenerator';
 import CRMReminder from '@/components/CRMReminder';
 import ContentBooster from '@/components/ContentBooster';
 import Analytics from '@/components/Analytics';
+import Settings from '@/components/Settings';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead } from '@/types';
 
@@ -60,6 +61,8 @@ const Index = () => {
         return <ContentBooster />;
       case 'analytics':
         return <Analytics />;
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard onNavigateToModule={handleNavigateToModule} />;
     }
