@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Save, Mail, Share2 } from 'lucide-react';
+import { Save, Mail, Share2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 
 interface EmailSettings {
   smtp_host: string;
@@ -169,6 +168,27 @@ const Settings = () => {
     }
   };
 
+  const getConnectionStatus = (platform: keyof SocialPlatforms) => {
+    const platformData = socialPlatforms[platform];
+    if (!platformData.enabled) {
+      return { status: 'disabled', icon: XCircle, color: 'text-gray-400', text: 'Onemogućeno' };
+    }
+    if (platformData.username && platformData.password) {
+      return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Povezano' };
+    }
+    return { status: 'incomplete', icon: AlertCircle, color: 'text-yellow-500', text: 'Nepotpuno' };
+  };
+
+  const getEmailConnectionStatus = () => {
+    const requiredFields = [emailSettings.smtp_host, emailSettings.smtp_username, emailSettings.smtp_password, emailSettings.from_email];
+    const hasAllFields = requiredFields.every(field => field && field.trim() !== '');
+    
+    if (hasAllFields) {
+      return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Konfigurisan' };
+    }
+    return { status: 'incomplete', icon: AlertCircle, color: 'text-yellow-500', text: 'Nepotpuno' };
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -182,17 +202,43 @@ const Settings = () => {
             <TabsTrigger value="email" className="flex items-center gap-2">
               <Mail className="h-4 w-4" />
               Email postavke
+              {(() => {
+                const status = getEmailConnectionStatus();
+                const StatusIcon = status.icon;
+                return <StatusIcon className={`h-4 w-4 ${status.color}`} />;
+              })()}
             </TabsTrigger>
             <TabsTrigger value="social" className="flex items-center gap-2">
               <Share2 className="h-4 w-4" />
               Društvene mreže
+              {(() => {
+                const hasConnectedPlatform = Object.keys(socialPlatforms).some(platform => {
+                  const status = getConnectionStatus(platform as keyof SocialPlatforms);
+                  return status.status === 'connected';
+                });
+                return hasConnectedPlatform ? 
+                  <CheckCircle className="h-4 w-4 text-green-500" /> : 
+                  <XCircle className="h-4 w-4 text-gray-400" />;
+              })()}
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="email">
             <Card>
               <CardHeader>
-                <CardTitle>SMTP konfiguracija</CardTitle>
+                <CardTitle className="flex items-center justify-between">
+                  SMTP konfiguracija
+                  {(() => {
+                    const status = getEmailConnectionStatus();
+                    const StatusIcon = status.icon;
+                    return (
+                      <div className="flex items-center gap-2">
+                        <StatusIcon className={`h-5 w-5 ${status.color}`} />
+                        <span className={`text-sm ${status.color}`}>{status.text}</span>
+                      </div>
+                    );
+                  })()}
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -260,143 +306,65 @@ const Settings = () => {
 
           <TabsContent value="social">
             <div className="space-y-6">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Facebook
-                    <Switch
-                      checked={socialPlatforms.facebook.enabled}
-                      onCheckedChange={(checked) => 
-                        setSocialPlatforms({
-                          ...socialPlatforms,
-                          facebook: { ...socialPlatforms.facebook, enabled: checked }
-                        })
-                      }
-                    />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="fb_username">Korisničko ime</Label>
-                    <Input
-                      id="fb_username"
-                      value={socialPlatforms.facebook.username}
-                      onChange={(e) => setSocialPlatforms({
-                        ...socialPlatforms,
-                        facebook: { ...socialPlatforms.facebook, username: e.target.value }
-                      })}
-                      placeholder="Vaše Facebook korisničko ime"
-                      disabled={!socialPlatforms.facebook.enabled}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="fb_password">Lozinka</Label>
-                    <Input
-                      id="fb_password"
-                      type="password"
-                      value={socialPlatforms.facebook.password}
-                      onChange={(e) => setSocialPlatforms({
-                        ...socialPlatforms,
-                        facebook: { ...socialPlatforms.facebook, password: e.target.value }
-                      })}
-                      placeholder="Vaša Facebook lozinka"
-                      disabled={!socialPlatforms.facebook.enabled}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    LinkedIn
-                    <Switch
-                      checked={socialPlatforms.linkedin.enabled}
-                      onCheckedChange={(checked) => 
-                        setSocialPlatforms({
-                          ...socialPlatforms,
-                          linkedin: { ...socialPlatforms.linkedin, enabled: checked }
-                        })
-                      }
-                    />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="li_username">Korisničko ime</Label>
-                    <Input
-                      id="li_username"
-                      value={socialPlatforms.linkedin.username}
-                      onChange={(e) => setSocialPlatforms({
-                        ...socialPlatforms,
-                        linkedin: { ...socialPlatforms.linkedin, username: e.target.value }
-                      })}
-                      placeholder="Vaše LinkedIn korisničko ime"
-                      disabled={!socialPlatforms.linkedin.enabled}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="li_password">Lozinka</Label>
-                    <Input
-                      id="li_password"
-                      type="password"
-                      value={socialPlatforms.linkedin.password}
-                      onChange={(e) => setSocialPlatforms({
-                        ...socialPlatforms,
-                        linkedin: { ...socialPlatforms.linkedin, password: e.target.value }
-                      })}
-                      placeholder="Vaša LinkedIn lozinka"
-                      disabled={!socialPlatforms.linkedin.enabled}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between">
-                    Instagram
-                    <Switch
-                      checked={socialPlatforms.instagram.enabled}
-                      onCheckedChange={(checked) => 
-                        setSocialPlatforms({
-                          ...socialPlatforms,
-                          instagram: { ...socialPlatforms.instagram, enabled: checked }
-                        })
-                      }
-                    />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div>
-                    <Label htmlFor="ig_username">Korisničko ime</Label>
-                    <Input
-                      id="ig_username"
-                      value={socialPlatforms.instagram.username}
-                      onChange={(e) => setSocialPlatforms({
-                        ...socialPlatforms,
-                        instagram: { ...socialPlatforms.instagram, username: e.target.value }
-                      })}
-                      placeholder="Vaše Instagram korisničko ime"
-                      disabled={!socialPlatforms.instagram.enabled}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="ig_password">Lozinka</Label>
-                    <Input
-                      id="ig_password"
-                      type="password"
-                      value={socialPlatforms.instagram.password}
-                      onChange={(e) => setSocialPlatforms({
-                        ...socialPlatforms,
-                        instagram: { ...socialPlatforms.instagram, password: e.target.value }
-                      })}
-                      placeholder="Vaša Instagram lozinka"
-                      disabled={!socialPlatforms.instagram.enabled}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
+              {(['facebook', 'linkedin', 'instagram'] as const).map((platform) => {
+                const status = getConnectionStatus(platform);
+                const StatusIcon = status.icon;
+                const platformName = platform === 'facebook' ? 'Facebook' : platform === 'linkedin' ? 'LinkedIn' : 'Instagram';
+                
+                return (
+                  <Card key={platform}>
+                    <CardHeader>
+                      <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {platformName}
+                          <div className="flex items-center gap-2">
+                            <StatusIcon className={`h-5 w-5 ${status.color}`} />
+                            <span className={`text-sm ${status.color}`}>{status.text}</span>
+                          </div>
+                        </div>
+                        <Switch
+                          checked={socialPlatforms[platform].enabled}
+                          onCheckedChange={(checked) => 
+                            setSocialPlatforms({
+                              ...socialPlatforms,
+                              [platform]: { ...socialPlatforms[platform], enabled: checked }
+                            })
+                          }
+                        />
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <div>
+                        <Label htmlFor={`${platform}_username`}>Korisničko ime</Label>
+                        <Input
+                          id={`${platform}_username`}
+                          value={socialPlatforms[platform].username}
+                          onChange={(e) => setSocialPlatforms({
+                            ...socialPlatforms,
+                            [platform]: { ...socialPlatforms[platform], username: e.target.value }
+                          })}
+                          placeholder={`Vaše ${platformName} korisničko ime`}
+                          disabled={!socialPlatforms[platform].enabled}
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor={`${platform}_password`}>Lozinka</Label>
+                        <Input
+                          id={`${platform}_password`}
+                          type="password"
+                          value={socialPlatforms[platform].password}
+                          onChange={(e) => setSocialPlatforms({
+                            ...socialPlatforms,
+                            [platform]: { ...socialPlatforms[platform], password: e.target.value }
+                          })}
+                          placeholder={`Vaša ${platformName} lozinka`}
+                          disabled={!socialPlatforms[platform].enabled}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
         </Tabs>
