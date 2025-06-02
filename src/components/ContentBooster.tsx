@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,17 +5,26 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Share2, Sparkles, Calendar, Facebook, Linkedin, Instagram, Trash2, Clock } from 'lucide-react';
+import { FileText, Share2, Sparkles, Calendar, Facebook, Linkedin, Instagram, Trash2, Clock, Bot } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ContentPost } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { AIContentService } from '@/services/aiContentService';
+import { AIProvider } from '@/services/aiEmailService';
 
 const ContentBooster = () => {
   const [content, setContent] = useState('');
   const [platform, setPlatform] = useState('');
   const [contentType, setContentType] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [companyName, setCompanyName] = useState('');
+  const [topic, setTopic] = useState('');
+  const [additionalContext, setAdditionalContext] = useState('');
   const [scheduledTime, setScheduledTime] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [apiKey, setApiKey] = useState('');
+  const [aiProvider, setAiProvider] = useState<AIProvider>('openai');
 
   const [posts, setPosts] = useLocalStorage<ContentPost[]>('contentPosts', [
     {
@@ -48,163 +56,82 @@ const ContentBooster = () => {
   ];
 
   const contentTypes = [
-    { value: 'tip', label: 'Savjet za industriju' },
+    { value: 'tip', label: 'Korisni savjet' },
     { value: 'case-study', label: 'Studija slučaja' },
     { value: 'news', label: 'Novosti' },
     { value: 'promotional', label: 'Promocijski sadržaj' },
+    { value: 'educational', label: 'Edukacijski sadržaj' },
+    { value: 'behind-scenes', label: 'Iza kulisa' },
   ];
 
-  const contentTemplates = {
-    tip: {
-      LinkedIn: `💡 Savjet za praone: [SAVJET]
+  const industries = [
+    { value: 'praone', label: 'Profesionalne praone rublja' },
+    { value: 'ugostiteljstvo', label: 'Ugostiteljstvo i turizam' },
+    { value: 'zdravstvo', label: 'Zdravstvo i medicina' },
+    { value: 'obrazovanje', label: 'Obrazovanje' },
+    { value: 'tehnologija', label: 'Tehnologija i IT' },
+    { value: 'retail', label: 'Maloprodaja' },
+    { value: 'proizvodnja', label: 'Proizvodnja' },
+    { value: 'usluge', label: 'Poslovne usluge' },
+    { value: 'nekretnine', label: 'Nekretnine' },
+    { value: 'fitness', label: 'Fitness i wellness' },
+    { value: 'općenito', label: 'Općenito poslovanje' },
+  ];
 
-Znate li da [STATISTIKA]? 
+  const aiProviders = [
+    { value: 'openai', label: 'OpenAI GPT', placeholder: 'sk-...', docs: 'https://platform.openai.com/api-keys' },
+    { value: 'gemini', label: 'Google Gemini', placeholder: 'AIza...', docs: 'https://aistudio.google.com/app/apikey' },
+  ];
 
-Ovo vam može pomoći:
-✅ [KORIST 1]
-✅ [KORIST 2] 
-✅ [KORIST 3]
-
-Marketing Agent automatizira ovakve procese i pomaže vam fokusirati se na ono što je važno.
-
-#LaundryTips #BusinessEfficiency #MarketingAgent`,
-
-      Facebook: `🎯 Korisni savjet za vlasnike praonica!
-
-[SAVJET]
-
-💪 Rezultati koje možete očekivati:
-• [REZULTAT 1]
-• [REZULTAT 2]
-• [REZULTAT 3]
-
-Želite saznati više? Marketing Agent je tu da vam pomogne! 🚀`,
-
-      Instagram: `✨ PRO TIP za praone ✨
-
-[KRATKI_SAVJET]
-
-💡 [OBJAŠNJENJE]
-
-Sviđa vam se ovakav sadržaj? Pratite nas za više savjeta! 
-
-#praonica #businesstips #marketingagent #entrepreneur`
-    },
-    'case-study': {
-      LinkedIn: `📊 STUDIJA SLUČAJA: [NAZIV_TVRTKE]
-
-IZAZOV: [OPIS_PROBLEMA]
-
-RJEŠENJE: Marketing Agent platforma
-• [IMPLEMENTACIJA 1]
-• [IMPLEMENTACIJA 2]
-• [IMPLEMENTACIJA 3]
-
-REZULTATI nakon 3 mjeseca:
-📈 [REZULTAT 1]
-📈 [REZULTAT 2] 
-📈 [REZULTAT 3]
-
-#CaseStudy #LaundryIndustry #DigitalTransformation`,
-
-      Facebook: `🏆 USPJEH NAŠIH KLIJENATA
-
-[NAZIV_TVRTKE] je u samo 3 mjeseca:
-✅ [REZULTAT 1]
-✅ [REZULTAT 2]
-✅ [REZULTAT 3]
-
-Kako? Marketing Agent im je pomogao automatizirati marketing procese!
-
-Čitate li ovakve priče? Budite sljedeći! 💪`,
-
-      Instagram: `🔥 SUCCESS STORY 🔥
-
-[KRATKI_OPIS_USPJEHA]
-
-Rezultat: [GLAVNI_REZULTAT]
-
-Vaša priča može biti sljedeća! 💫
-
-#success #casestudy #praonica #digitalmarketing`
-    }
-  };
-
-  const generateContent = () => {
-    if (!platform || !contentType) {
+  const generateContent = async () => {
+    if (!platform || !contentType || !industry) {
       toast({
         title: "Nedostaju podaci",
-        description: "Molimo odaberite platformu i tip sadržaja.",
+        description: "Molimo odaberite platformu, tip sadržaja i industriju.",
         variant: "destructive"
       });
       return;
     }
 
-    const templates = contentTemplates[contentType as keyof typeof contentTemplates];
-    const template = templates?.[platform as keyof typeof templates];
-
-    if (template) {
-      setContent(template);
+    if (!apiKey) {
       toast({
-        title: "Sadržaj generiran",
-        description: "AI predložak je generiran. Možete ga prilagoditi prema potrebi.",
+        title: "API ključ potreban",
+        description: `Molimo unesite ${aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'} API ključ za AI generiranje sadržaja.`,
+        variant: "destructive"
       });
-    } else {
-      // Fallback generiranje
-      const fallbackContent = generateFallbackContent(platform, contentType);
-      setContent(fallbackContent);
-      toast({
-        title: "Sadržaj generiran",
-        description: "Generiran je osnovni sadržaj koji možete prilagoditi.",
-      });
+      return;
     }
-  };
 
-  const generateFallbackContent = (platform: string, type: string) => {
-    const contents = {
-      tip: `💡 Korisni savjet za vlasnike praonica!
+    setIsGenerating(true);
+    
+    try {
+      const aiService = new AIContentService(apiKey, aiProvider);
+      
+      const result = await aiService.generateContent({
+        platform,
+        contentType,
+        industry,
+        companyName: companyName || undefined,
+        topic: topic || undefined,
+        additionalContext: additionalContext || undefined,
+      });
 
-Optimizirajte svoje marketing procese s Marketing Agent platformom.
-
-Prednosti:
-✅ Automatsko pronalaženje klijenata
-✅ Personalizirani email marketing
-✅ Efikasno upravljanje komunikacijom
-
-#MarketingAgent #LaundryBusiness #DigitalMarketing`,
-
-      'case-study': `📊 Naši klijenti postižu nevjerojatne rezultate!
-
-Jedna praonica je u 3 mjeseca:
-📈 Povećala broj klijenata za 45%
-📈 Smanjila troškove marketinga za 60%
-📈 Automatizirala 80% komunikacije
-
-Marketing Agent čini razliku! 🚀
-
-#CaseStudy #Success #LaundryIndustry`,
-
-      news: `📰 Novosti iz industrije praonica
-
-Najnoviji trendovi pokazuju da digitalizacija postaje ključna za rast u praoničarskoj industriji.
-
-Marketing Agent predvodi ovu transformaciju! 
-
-#Industry #News #DigitalTransformation`,
-
-      promotional: `🎯 Spremni za revoluciju u marketingu?
-
-Marketing Agent platforma omogućava:
-• Automatsko generiranje leadova
-• Pametan email marketing  
-• Praćenje rezultata u realnom vremenu
-
-Zakazajte demo danas! 💼
-
-#MarketingAgent #B2B #LaundryBusiness`
-    };
-
-    return contents[type as keyof typeof contents] || contents.promotional;
+      setContent(result.content);
+      
+      toast({
+        title: "AI Sadržaj generiran",
+        description: `Personalizirani sadržaj je uspješno generiran za ${industry} industriju pomoću ${aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'}.`,
+      });
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast({
+        title: "Greška pri generiranju",
+        description: error instanceof Error ? error.message : "Dogodila se greška pri AI generiranju sadržaja.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const publishNow = () => {
@@ -268,6 +195,10 @@ Zakazajte demo danas! 💼
     setContent('');
     setPlatform('');
     setContentType('');
+    setIndustry('');
+    setCompanyName('');
+    setTopic('');
+    setAdditionalContext('');
     setScheduledDate('');
     setScheduledTime('');
   };
@@ -291,12 +222,14 @@ Zakazajte demo danas! 💼
     return platformData?.color || 'text-gray-600';
   };
 
+  const currentProvider = aiProviders.find(p => p.value === aiProvider);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-slate-900">Content Booster</h2>
-          <p className="text-slate-600">Generirajte i planirajte sadržaj za društvene mreže</p>
+          <p className="text-slate-600">Generirajte i planirajte sadržaj za društvene mreže pomoću AI-a</p>
         </div>
         <div className="flex space-x-2">
           <span className="text-sm text-slate-600">
@@ -315,6 +248,62 @@ Zakazajte demo danas! 💼
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                <Bot className="h-4 w-4 inline mr-1" />
+                AI Provider
+              </label>
+              <Select value={aiProvider} onValueChange={(value: AIProvider) => setAiProvider(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberite AI servis" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiProviders.map((provider) => (
+                    <SelectItem key={provider.value} value={provider.value}>
+                      {provider.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                {currentProvider?.label} API Ključ
+              </label>
+              <Input
+                type="password"
+                placeholder={currentProvider?.placeholder}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="mb-2"
+              />
+              <p className="text-xs text-slate-500">
+                Potreban za AI generiranje sadržaja. 
+                <a href={currentProvider?.docs} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                  Nabavite API ključ ovdje
+                </a>
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Industrija *
+              </label>
+              <Select value={industry} onValueChange={setIndustry}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberite industriju" />
+                </SelectTrigger>
+                <SelectContent>
+                  {industries.map((ind) => (
+                    <SelectItem key={ind.value} value={ind.value}>
+                      {ind.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Platforma *
@@ -341,7 +330,7 @@ Zakazajte demo danas! 💼
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Tip sadržaja
+                Tip sadržaja *
               </label>
               <Select value={contentType} onValueChange={setContentType}>
                 <SelectTrigger>
@@ -357,16 +346,54 @@ Zakazajte demo danas! 💼
               </Select>
             </div>
 
-            <Button onClick={generateContent} className="w-full bg-purple-600 hover:bg-purple-700">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Naziv tvrtke (opcionalno)
+              </label>
+              <Input
+                placeholder="Vaša tvrtka d.o.o."
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Tema (opcionalno)
+              </label>
+              <Input
+                placeholder="Specifična tema ili proizvod"
+                value={topic}
+                onChange={(e) => setTopic(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Dodatne informacije (opcionalno)
+              </label>
+              <Textarea
+                placeholder="Dodatni kontekst, ciljana publika, posebne napomene..."
+                value={additionalContext}
+                onChange={(e) => setAdditionalContext(e.target.value)}
+                className="min-h-20"
+              />
+            </div>
+
+            <Button 
+              onClick={generateContent} 
+              disabled={isGenerating}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+            >
               <Sparkles className="h-4 w-4 mr-2" />
-              Generiraj AI Sadržaj
+              {isGenerating ? `Generiranje ${currentProvider?.label} sadržaja...` : `Generiraj AI Sadržaj (${currentProvider?.label})`}
             </Button>
 
             <Textarea
-              placeholder="Generirani sadržaj će se pojaviti ovdje ili unesite vlastiti..."
+              placeholder="Generirani AI sadržaj će se pojaviti ovdje ili unesite vlastiti..."
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="min-h-48"
+              className="min-h-32"
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
