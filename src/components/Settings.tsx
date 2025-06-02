@@ -11,6 +11,33 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Mail, Facebook, Linkedin, Instagram, Save, Key } from 'lucide-react';
 
+interface EmailSettings {
+  smtp_host: string;
+  smtp_port: string;
+  smtp_username: string;
+  smtp_password: string;
+  from_email: string;
+  from_name: string;
+}
+
+interface SocialPlatforms {
+  facebook: {
+    enabled: boolean;
+    access_token: string;
+    page_id: string;
+  };
+  linkedin: {
+    enabled: boolean;
+    access_token: string;
+    company_id: string;
+  };
+  instagram: {
+    enabled: boolean;
+    access_token: string;
+    account_id: string;
+  };
+}
+
 const Settings = () => {
   const { user } = useAuth();
   const { toast } = useToast();
@@ -24,7 +51,7 @@ const Settings = () => {
       smtp_password: '',
       from_email: '',
       from_name: ''
-    },
+    } as EmailSettings,
     social_platforms: {
       facebook: {
         enabled: false,
@@ -41,7 +68,7 @@ const Settings = () => {
         access_token: '',
         account_id: ''
       }
-    }
+    } as SocialPlatforms
   });
 
   useEffect(() => {
@@ -63,10 +90,42 @@ const Settings = () => {
       }
 
       if (data) {
+        // Type-safe parsing of JSON data with fallbacks
+        const emailSettings = typeof data.email_settings === 'object' && data.email_settings !== null
+          ? data.email_settings as any
+          : {};
+        
+        const socialPlatforms = typeof data.social_platforms === 'object' && data.social_platforms !== null
+          ? data.social_platforms as any
+          : {};
+
         setSettings({
           email_provider: data.email_provider || '',
-          email_settings: data.email_settings || settings.email_settings,
-          social_platforms: data.social_platforms || settings.social_platforms
+          email_settings: {
+            smtp_host: emailSettings.smtp_host || '',
+            smtp_port: emailSettings.smtp_port || '',
+            smtp_username: emailSettings.smtp_username || '',
+            smtp_password: emailSettings.smtp_password || '',
+            from_email: emailSettings.from_email || '',
+            from_name: emailSettings.from_name || ''
+          },
+          social_platforms: {
+            facebook: {
+              enabled: socialPlatforms.facebook?.enabled || false,
+              access_token: socialPlatforms.facebook?.access_token || '',
+              page_id: socialPlatforms.facebook?.page_id || ''
+            },
+            linkedin: {
+              enabled: socialPlatforms.linkedin?.enabled || false,
+              access_token: socialPlatforms.linkedin?.access_token || '',
+              company_id: socialPlatforms.linkedin?.company_id || ''
+            },
+            instagram: {
+              enabled: socialPlatforms.instagram?.enabled || false,
+              access_token: socialPlatforms.instagram?.access_token || '',
+              account_id: socialPlatforms.instagram?.account_id || ''
+            }
+          }
         });
       }
     } catch (error) {
