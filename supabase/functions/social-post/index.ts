@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -20,6 +19,8 @@ serve(async (req) => {
   }
 
   try {
+    console.log('Social post request received');
+    
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -27,7 +28,8 @@ serve(async (req) => {
 
     const { content, platform, user_id, image_url }: SocialPostRequest = await req.json();
 
-    console.log(`Posting to ${platform} for user:`, user_id);
+    console.log(`Processing post for platform: ${platform}, user: ${user_id}`);
+    console.log(`Content length: ${content.length}, Has image: ${!!image_url}`);
 
     // Dobijanje korisničkih postavki za društvene mreže
     const { data: userSettings, error: settingsError } = await supabase
@@ -36,12 +38,21 @@ serve(async (req) => {
       .eq('user_id', user_id)
       .single();
 
+    console.log('User settings query result:', { userSettings, settingsError });
+
     if (settingsError || !userSettings?.social_platforms) {
+      console.error('Settings error:', settingsError);
       throw new Error('Social platform settings not configured');
     }
 
     const socialSettings = userSettings.social_platforms as any;
     const platformConfig = socialSettings[platform];
+
+    console.log(`Platform config for ${platform}:`, {
+      enabled: platformConfig?.enabled,
+      hasAccessToken: !!platformConfig?.access_token,
+      hasPageId: !!platformConfig?.page_id
+    });
 
     if (!platformConfig?.enabled) {
       throw new Error(`${platform} not configured or disabled`);
@@ -63,6 +74,8 @@ serve(async (req) => {
         throw new Error('Unsupported platform');
     }
 
+    console.log('Post result:', postResult);
+
     return new Response(
       JSON.stringify({ 
         success: true, 
@@ -79,7 +92,8 @@ serve(async (req) => {
     console.error(`Error posting to social media:`, error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to post to social media' 
+        error: error.message || 'Failed to post to social media',
+        details: error.toString()
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -90,6 +104,13 @@ serve(async (req) => {
 });
 
 async function postToFacebook(config: any, content: string, imageUrl?: string) {
+  console.log('Starting Facebook post with config:', {
+    hasAccessToken: !!config.access_token,
+    hasPageId: !!config.page_id,
+    accessTokenLength: config.access_token?.length,
+    pageId: config.page_id
+  });
+
   // Validate required Facebook config
   if (!config.access_token || !config.page_id) {
     throw new Error('Facebook configuration incomplete: missing access_token or page_id');
@@ -102,6 +123,9 @@ async function postToFacebook(config: any, content: string, imageUrl?: string) {
     access_token: config.access_token
   };
 
+  console.log('Facebook API URL:', url);
+  console.log('Post data (without token):', { message: content });
+
   // If there's an image, we need to post it as a photo instead
   if (imageUrl) {
     const photoUrl = `https://graph.facebook.com/v18.0/${config.page_id}/photos`;
@@ -111,34 +135,50 @@ async function postToFacebook(config: any, content: string, imageUrl?: string) {
       access_token: config.access_token
     };
 
+    console.log('Posting photo to:', photoUrl);
+
     const response = await fetch(photoUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(photoData)
     });
 
+    const responseText = await response.text();
+    console.log('Facebook photo API response:', { 
+      status: response.status, 
+      statusText: response.statusText,
+      body: responseText
+    });
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Facebook photo API error:', errorData);
-      throw new Error(`Facebook photo API error: ${response.statusText} - ${errorData}`);
+      console.error('Facebook photo API error:', responseText);
+      throw new Error(`Facebook photo API error: ${response.statusText} - ${responseText}`);
     }
 
-    return await response.json();
+    return JSON.parse(responseText);
   } else {
     // Regular text post
+    console.log('Making Facebook text post request');
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(postData)
     });
 
+    const responseText = await response.text();
+    console.log('Facebook text API response:', { 
+      status: response.status, 
+      statusText: response.statusText,
+      body: responseText
+    });
+
     if (!response.ok) {
-      const errorData = await response.text();
-      console.error('Facebook API error:', errorData);
-      throw new Error(`Facebook API error: ${response.statusText} - ${errorData}`);
+      console.error('Facebook API error:', responseText);
+      throw new Error(`Facebook API error: ${response.statusText} - ${responseText}`);
     }
 
-    return await response.json();
+    return JSON.parse(responseText);
   }
 }
 

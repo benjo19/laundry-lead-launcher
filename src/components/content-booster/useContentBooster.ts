@@ -4,6 +4,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
 import { AIContentService } from '@/services/aiContentService';
 import { AIProvider } from '@/services/aiEmailService';
+import { useSocialService } from '@/hooks/useSocialService';
 
 export const useContentBooster = () => {
   const [content, setContent] = useState('');
@@ -43,6 +44,7 @@ export const useContentBooster = () => {
   ]);
 
   const { toast } = useToast();
+  const { postToSocial } = useSocialService();
 
   const generateContent = async () => {
     if (!platform || !contentType || !industry) {
@@ -123,8 +125,11 @@ export const useContentBooster = () => {
     setGeneratedImageUrl('');
   };
 
-  const publishNow = () => {
+  const publishNow = async () => {
+    console.log('publishNow: Starting publish process', { content, platform });
+
     if (!content || !platform) {
+      console.log('publishNow: Missing content or platform');
       toast({
         title: "Nedostaju podaci",
         description: "Molimo unesite sadržaj i odaberite platformu.",
@@ -133,22 +138,31 @@ export const useContentBooster = () => {
       return;
     }
 
-    const newPost: ContentPost = {
-      id: Date.now(),
-      platform: platform as ContentPost['platform'],
-      content,
-      contentType: contentType as ContentPost['contentType'] || 'promotional',
-      date: new Date().toISOString().split('T')[0],
-      status: 'Published'
-    };
+    try {
+      console.log('publishNow: Attempting to post to social media');
+      
+      const socialPlatform = platform.toLowerCase() as 'facebook' | 'linkedin' | 'instagram';
+      await postToSocial(content, socialPlatform, generatedImageUrl || undefined);
 
-    setPosts([newPost, ...posts]);
-    resetForm();
+      console.log('publishNow: Social post successful, adding to local posts');
 
-    toast({
-      title: "Objava uspješno objavljena",
-      description: `Sadržaj je uspješno objavljen na ${platform}.`,
-    });
+      const newPost: ContentPost = {
+        id: Date.now(),
+        platform: platform as ContentPost['platform'],
+        content,
+        contentType: contentType as ContentPost['contentType'] || 'promotional',
+        date: new Date().toISOString().split('T')[0],
+        status: 'Published'
+      };
+
+      setPosts([newPost, ...posts]);
+      resetForm();
+
+      console.log('publishNow: Process completed successfully');
+    } catch (error) {
+      console.error('publishNow: Error during publish process:', error);
+      // Error is already handled in useSocialService
+    }
   };
 
   const schedulePost = () => {
