@@ -5,6 +5,7 @@ import { Lead } from '@/types';
 import SearchForm, { industries, DiscoveredLead } from './lead-discovery/SearchForm';
 import LeadList from './lead-discovery/LeadList';
 import EmptyState from './lead-discovery/EmptyState';
+import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
@@ -100,7 +101,7 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
       }
       
       // Fetch detailed information for each place
-      console.log('Fetching detailed information for places...');
+      console.log('Fetching detailed information and emails for places...');
       const detailedLeads = [];
       
       for (const place of data.results.slice(0, 10)) {
@@ -120,10 +121,20 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
             user_ratings_total: details.user_ratings_total || place.user_ratings_total
           };
           
+          // Try to scrape email from website if available
+          if (enhancedLead.website) {
+            console.log(`Attempting to scrape email from: ${enhancedLead.website}`);
+            const scrapedEmail = await scrapeEmailFromWebsite(enhancedLead.website);
+            if (scrapedEmail) {
+              enhancedLead.email = scrapedEmail;
+              enhancedLead.emailScraped = true;
+            }
+          }
+          
           detailedLeads.push(enhancedLead);
         } else {
           // Fallback to basic info if details fetch fails
-          detailedLeads.push({
+          const basicLead: DiscoveredLead = {
             name: place.name,
             address: place.formatted_address,
             phone: '',
@@ -134,15 +145,19 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
             geometry: place.geometry,
             business_status: place.business_status,
             user_ratings_total: place.user_ratings_total
-          });
+          };
+          
+          detailedLeads.push(basicLead);
         }
       }
       
       setDiscoveredLeads(detailedLeads);
       
+      const emailsFound = detailedLeads.filter(lead => lead.email).length;
+      
       toast({
         title: "Pretraživanje završeno",
-        description: `Pronađeno ${detailedLeads.length} detaljnih leadova s kontakt informacijama.`,
+        description: `Pronađeno ${detailedLeads.length} leadova s kontakt informacijama. ${emailsFound} email adresa automatski pronađeno.`,
       });
     } catch (error) {
       console.error('Search error:', error);
@@ -163,10 +178,10 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
       location: discoveredLead.address,
       employees: '10-50', // Default estimate
       phone: discoveredLead.phone || '',
-      email: '', // Will need to be filled manually
+      email: discoveredLead.email || '', // Now includes scraped emails
       status: 'Nova',
       potential: 'Srednji',
-      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}`
+      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen' : ''}`
     };
 
     onAddLead(newLead);

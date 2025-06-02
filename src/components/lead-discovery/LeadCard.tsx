@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Plus, Phone, Mail, Globe, Star, Users } from 'lucide-react';
+import { MapPin, Plus, Phone, Mail, Globe, Star, CheckCircle, AlertCircle } from 'lucide-react';
 import { DiscoveredLead } from './SearchForm';
 
 interface LeadCardProps {
@@ -83,7 +83,19 @@ const LeadCard = ({ lead, onAddLead }: LeadCardProps) => {
         </div>
         <div className="flex items-center">
           <Mail className="h-4 w-4 mr-1" />
-          <span className="text-slate-400">Email potreban</span>
+          {lead.email ? (
+            <div className="flex items-center">
+              <span className="text-green-700">{lead.email}</span>
+              {lead.emailScraped && (
+                <CheckCircle className="h-3 w-3 text-green-500 ml-1" title="Email automatski pronađen" />
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center">
+              <span className="text-slate-400">Email nije pronađen</span>
+              <AlertCircle className="h-3 w-3 text-orange-500 ml-1" title="Email potrebno pronaći ručno" />
+            </div>
+          )}
         </div>
       </div>
     </div>

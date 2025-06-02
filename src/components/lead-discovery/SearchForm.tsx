@@ -11,6 +11,8 @@ interface DiscoveredLead {
   address: string;
   phone?: string;
   website?: string;
+  email?: string;
+  emailScraped?: boolean;
   rating?: number;
   types: string[];
   place_id: string;
@@ -76,10 +78,9 @@ const SearchForm = ({
           <div className="flex items-start">
             <AlertCircle className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
             <div className="text-sm text-blue-800">
-              <p className="font-medium mb-1">Potreban Google Maps API ključ</p>
-              <p>Za korištenje ove funkcionalnosti potrebno je kreirati Google Maps API ključ s omogućenim Places API. 
-              Više informacija na: <a href="https://developers.google.com/maps/documentation/places/web-service/get-api-key" 
-              target="_blank" rel="noopener noreferrer" className="underline">Google Places API dokumentaciji</a></p>
+              <p className="font-medium mb-1">Napredne funkcionalnosti</p>
+              <p>Sistem automatski dohvaća kontakt informacije i pokušava pronaći email adrese na web stranicama kompanija. 
+              Za Google Maps API potreban je ključ s omogućenim Places API.</p>
             </div>
           </div>
         </div>
@@ -142,7 +143,7 @@ const SearchForm = ({
             {isSearching ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Pretražujem i dohvaćam detalje...
+                Pretražujem i dohvaćam kontakte...
               </>
             ) : (
               <>
