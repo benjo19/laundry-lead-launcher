@@ -8,6 +8,7 @@ import { Mail, Send, FileText, Sparkles, Trash2, Users } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { AIEmailService } from '@/services/aiEmailService';
 
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
@@ -59,6 +60,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   // Get leads from localStorage
   const [leads] = useLocalStorage<Lead[]>('leads', []);
   const [discoveredLeads] = useLocalStorage<any[]>('discoveredLeads', []);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [openaiApiKey, setOpenaiApiKey] = useState('');
 
   const { toast } = useToast();
 
@@ -69,93 +72,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     { value: 'reminder', label: 'Podsjetnik' },
   ];
 
-  // Personalized template content
-  const getPersonalizedTemplateContent = (templateType: string, companyName: string) => {
-    const company = companyName || '[NAZIV TVRTKE]';
-    
-    const templateContent = {
-      intro: `Poštovani,
-
-Nadamo se da ste dobro. Pišemo Vam jer vjerujemo da bi naša Marketing Agent platforma mogla značajno unaprijediti marketing pristup ${company} u industriji profesionalnih praonica rublja.
-
-Naš sustav omogućava:
-• Automatsko pronalaženje novih klijenata
-• Personalizirane email kampanje  
-• Praćenje komunikacije s klijentima
-• Automatsko generiranje sadržaja za društvene mreže
-
-Posebno za ${company}, vidimo priliku za:
-- Povećanje broja novih klijenata za 40-60%
-- Smanjenje vremena utrošenog na marketing za 70%
-- Automatizaciju rutinskih marketing zadataka
-
-Rado bismo Vam predstavili platformu u kratkom online sastanku. Imate li vremena sljedeći tjedan?
-
-S poštovanjem,
-Vaš Marketing Agent tim`,
-
-      'follow-up': `Poštovani,
-
-U nastavku našeg razgovora o Marketing Agent platformi za ${company}, šaljemo Vam dodatne informacije.
-
-Kao što smo spomenuli, naša platforma može pomoći ${company}:
-- Povećati broj novih klijenata za 40-60%
-- Smanjiti vrijeme utrošeno na marketing za 70%
-- Automatizirati rutinske marketing zadatke
-
-Priložili smo detaljnu analizu mogućih ušteda specifično za ${company}.
-
-Čekamo Vaš odgovor kako bismo mogli zakazati sljedeći korak.
-
-S poštovanjem,
-Marketing Agent tim`,
-
-      proposal: `Poštovani,
-
-S obzirom na specifične potrebe ${company} i naš razgovor, pripremili smo personalizirani poslovni prijedlog za implementaciju Marketing Agent sustava.
-
-PAKET USLUGA ZA ${company}:
-- Lead Hunter modul - 99€/mjesec
-- Email automatizacija - 79€/mjesec  
-- CRM podsjetnici - 59€/mjesec
-- Social media management - 89€/mjesec
-
-EKSKLUZIVNO ZA ${company}: PRVA 3 MJESECA 50% POPUST
-
-Uključeno:
-✓ Implementacija: BESPLATNO
-✓ Obuka osoblja: UKLJUČENO
-✓ 24/7 podrška: UKLJUČENO
-✓ Personalizacija za ${company}: UKLJUČENO
-
-Molimo Vas za povratnu informaciju do kraja tjedna.
-
-S poštovanjem,
-Marketing Agent tim`,
-
-      reminder: `Poštovani,
-
-Ovo je podsjetnik o našem dogovorenom sastanku/pozivu za ${company} koji je zakazan za [DATUM] u [VRIJEME].
-
-Dnevni red specifično za ${company}:
-- Prezentacija Marketing Agent platforme
-- Analiza trenutnih marketing procesa ${company}
-- Demonstracija ključnih funkcionalnosti
-- Personalizirani prijedlog za ${company}
-- Q&A sesija
-
-Link za sastanak: [LINK]
-
-Molimo potvrdite svoju prisutnost.
-
-S poštovanjem,
-Marketing Agent tim`
-    };
-
-    return templateContent[templateType as keyof typeof templateContent] || '';
-  };
-
-  const generateEmail = () => {
+  const generateEmail = async () => {
     if (!template) {
       toast({
         title: "Greška",
@@ -165,23 +82,68 @@ Marketing Agent tim`
       return;
     }
 
-    const content = getPersonalizedTemplateContent(template, selectedCompany);
-    setEmailContent(content);
+    if (!openaiApiKey) {
+      toast({
+        title: "API ključ potreban",
+        description: "Molimo unesite OpenAI API ključ za AI generiranje emailova.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!recipient) {
+      toast({
+        title: "Primatelj potreban",
+        description: "Molimo odaberite ili unesite email primatelja.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsGenerating(true);
     
-    // Auto-generate personalized subject based on template and company
-    const subjects = {
-      intro: `Predstavljamo Marketing Agent - Revolucionirajte marketing ${selectedCompany || 'Vaše tvrtke'}!`,
-      'follow-up': `Follow-up: Marketing Agent prijedlog za ${selectedCompany || 'Vašu tvrtku'}`,
-      proposal: `Ekskluzivni prijedlog: Marketing Agent za ${selectedCompany || 'Vašu tvrtku'}`,
-      reminder: `Podsjetnik: Zakazani sastanak - Marketing Agent (${selectedCompany || 'Vaša tvrtka'})`
-    };
-    
-    setSubject(subjects[template as keyof typeof subjects] || '');
-    
-    toast({
-      title: "Email generiran",
-      description: `Personalizirani AI sadržaj je uspješno generiran za ${selectedCompany || 'odabranu tvrtku'}.`,
-    });
+    try {
+      const aiService = new AIEmailService(openaiApiKey);
+      
+      // Find additional context about the company
+      const allEmails = getAllEmailAddresses();
+      const selectedContact = allEmails.find(contact => contact.email === recipient);
+      
+      // Try to determine industry based on company info
+      let industry = 'općenito';
+      const companyName = selectedCompany.toLowerCase();
+      if (companyName.includes('praon') || companyName.includes('čišć') || companyName.includes('pranj')) {
+        industry = 'profesionalne praone rublja';
+      }
+
+      const result = await aiService.generatePersonalizedEmail({
+        recipientCompany: selectedCompany || 'tvrtka',
+        recipientEmail: recipient,
+        emailType: template as 'intro' | 'follow-up' | 'proposal' | 'reminder',
+        industry,
+        additionalContext: selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : undefined,
+        companyInfo: {
+          location: selectedContact ? leads.find(l => l.email === recipient)?.location : undefined,
+        }
+      });
+
+      setSubject(result.subject);
+      setEmailContent(result.content);
+      
+      toast({
+        title: "AI Email generiran",
+        description: `Personalizirani AI sadržaj je uspješno generiran za ${selectedCompany || 'odabranu tvrtku'}.`,
+      });
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast({
+        title: "Greška pri generiranju",
+        description: error instanceof Error ? error.message : "Dogodila se greška pri AI generiranju emaila.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
   const sendEmail = () => {
@@ -285,7 +247,7 @@ Marketing Agent tim`
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-slate-900">Email Generator</h2>
-          <p className="text-slate-600">Stvorite personalizirane emailove za Vaše klijente</p>
+          <p className="text-slate-600">Stvorite personalizirane emailove za Vaše klijente pomoću AI-a</p>
         </div>
         <Button className="bg-blue-600 hover:bg-blue-700">
           <FileText className="h-4 w-4 mr-2" />
@@ -302,6 +264,25 @@ Marketing Agent tim`
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                OpenAI API Ključ (za AI generiranje)
+              </label>
+              <Input
+                type="password"
+                placeholder="sk-..."
+                value={openaiApiKey}
+                onChange={(e) => setOpenaiApiKey(e.target.value)}
+                className="mb-2"
+              />
+              <p className="text-xs text-slate-500">
+                Potreban za AI generiranje personaliziranih emailova. 
+                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                  Nabavite API ključ ovdje
+                </a>
+              </p>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Odaberite primatelja iz leadova
@@ -368,18 +349,22 @@ Marketing Agent tim`
 
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Naslov
+                Naslov (generirat će se automatski)
               </label>
               <Input
-                placeholder="Unesite naslov emaila"
+                placeholder="Naslov će biti generiran pomoću AI-a"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
               />
             </div>
 
-            <Button onClick={generateEmail} className="w-full bg-purple-600 hover:bg-purple-700">
+            <Button 
+              onClick={generateEmail} 
+              disabled={isGenerating}
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+            >
               <Sparkles className="h-4 w-4 mr-2" />
-              Generiraj Personalizirani AI Email
+              {isGenerating ? 'Generiranje AI sadržaja...' : 'Generiraj Personalizirani AI Email'}
             </Button>
           </CardContent>
         </Card>
