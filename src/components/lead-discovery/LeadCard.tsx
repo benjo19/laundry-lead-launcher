@@ -87,13 +87,17 @@ const LeadCard = ({ lead, onAddLead }: LeadCardProps) => {
             <div className="flex items-center">
               <span className="text-green-700">{lead.email}</span>
               {lead.emailScraped && (
-                <CheckCircle className="h-3 w-3 text-green-500 ml-1" title="Email automatski pronađen" />
+                <div className="ml-1" title="Email automatski pronađen">
+                  <CheckCircle className="h-3 w-3 text-green-500" />
+                </div>
               )}
             </div>
           ) : (
             <div className="flex items-center">
               <span className="text-slate-400">Email nije pronađen</span>
-              <AlertCircle className="h-3 w-3 text-orange-500 ml-1" title="Email potrebno pronaći ručno" />
+              <div className="ml-1" title="Email potrebno pronaći ručno">
+                <AlertCircle className="h-3 w-3 text-orange-500" />
+              </div>
             </div>
           )}
         </div>
