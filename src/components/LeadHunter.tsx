@@ -56,7 +56,24 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
 
   const { toast } = useToast();
 
+  const checkForDuplicate = (company: string, email: string): boolean => {
+    return leads.some(lead => 
+      lead.company.toLowerCase() === company.toLowerCase() || 
+      lead.email.toLowerCase() === email.toLowerCase()
+    );
+  };
+
   const addLead = (newLeadData: Omit<Lead, 'id' | 'dateAdded'>) => {
+    // Check for duplicates
+    if (checkForDuplicate(newLeadData.company, newLeadData.email)) {
+      toast({
+        title: "Duplikat pronađen",
+        description: `Lead s tim nazivom tvrtke ili email adresom već postoji.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     const newLead: Lead = {
       ...newLeadData,
       id: Date.now(),

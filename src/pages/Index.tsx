@@ -35,10 +35,14 @@ const Index = () => {
     setActiveModule('email-generator');
   };
 
+  const handleNavigateToModule = (module: string) => {
+    setActiveModule(module);
+  };
+
   const renderActiveModule = () => {
     switch (activeModule) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigateToModule={handleNavigateToModule} />;
       case 'lead-hunter':
         return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
       case 'lead-discovery':
@@ -57,7 +61,7 @@ const Index = () => {
       case 'analytics':
         return <Analytics />;
       default:
-        return <Dashboard />;
+        return <Dashboard onNavigateToModule={handleNavigateToModule} />;
     }
   };
 

@@ -6,7 +6,11 @@ import { Users, Mail, Calendar, TrendingUp, Target, MessageSquare } from 'lucide
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead, Email, Reminder, ContentPost } from '@/types';
 
-const Dashboard = () => {
+interface DashboardProps {
+  onNavigateToModule?: (module: string) => void;
+}
+
+const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
   const [leads] = useLocalStorage<Lead[]>('leads', []);
   const [emails] = useLocalStorage<Email[]>('emails', []);
   const [reminders] = useLocalStorage<Reminder[]>('reminders', []);
@@ -24,10 +28,38 @@ const Dashboard = () => {
   const reminderChange = activeReminders > 0 ? `+${Math.min(activeReminders, 3)}` : '+0';
 
   const stats = [
-    { title: 'Ukupno Leadova', value: totalLeads.toString(), change: leadChange, icon: Users, color: 'text-blue-600' },
-    { title: 'Poslani Emailovi', value: sentEmails.toString(), change: emailChange, icon: Mail, color: 'text-green-600' },
-    { title: 'Aktivni Podsjetnici', value: activeReminders.toString(), change: reminderChange, icon: Calendar, color: 'text-orange-600' },
-    { title: 'Objavljeni Postovi', value: publishedPosts.toString(), change: `+${publishedPosts}`, icon: TrendingUp, color: 'text-purple-600' },
+    { 
+      title: 'Ukupno Leadova', 
+      value: totalLeads.toString(), 
+      change: leadChange, 
+      icon: Users, 
+      color: 'text-blue-600',
+      module: 'lead-hunter'
+    },
+    { 
+      title: 'Poslani Emailovi', 
+      value: sentEmails.toString(), 
+      change: emailChange, 
+      icon: Mail, 
+      color: 'text-green-600',
+      module: 'email-generator'
+    },
+    { 
+      title: 'Aktivni Podsjetnici', 
+      value: activeReminders.toString(), 
+      change: reminderChange, 
+      icon: Calendar, 
+      color: 'text-orange-600',
+      module: 'crm-reminder'
+    },
+    { 
+      title: 'Objavljeni Postovi', 
+      value: publishedPosts.toString(), 
+      change: `+${publishedPosts}`, 
+      icon: TrendingUp, 
+      color: 'text-purple-600',
+      module: 'content-booster'
+    },
   ];
 
   // Recent activity from real data
@@ -67,8 +99,13 @@ const Dashboard = () => {
     return `${Math.floor(diffDays / 30)} mjeseca`;
   }
 
-  // Calculate conversion rate
   const conversionRate = totalLeads > 0 ? ((sentEmails / totalLeads) * 100).toFixed(1) : '0.0';
+
+  const handleStatClick = (module: string) => {
+    if (onNavigateToModule) {
+      onNavigateToModule(module);
+    }
+  };
 
   return (
     <div className="p-6 space-y-6">
@@ -87,7 +124,11 @@ const Dashboard = () => {
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
+            <Card 
+              key={index} 
+              className="hover:shadow-lg transition-shadow cursor-pointer"
+              onClick={() => handleStatClick(stat.module)}
+            >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-slate-600">
                   {stat.title}
