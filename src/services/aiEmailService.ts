@@ -1,4 +1,3 @@
-
 interface EmailGenerationParams {
   recipientCompany: string;
   recipientEmail: string;
@@ -18,11 +17,15 @@ interface GeneratedEmailContent {
   content: string;
 }
 
+export type AIProvider = 'openai' | 'gemini';
+
 export class AIEmailService {
   private apiKey: string;
+  private provider: AIProvider;
 
-  constructor(apiKey: string) {
+  constructor(apiKey: string, provider: AIProvider = 'openai') {
     this.apiKey = apiKey;
+    this.provider = provider;
   }
 
   async generatePersonalizedEmail(params: EmailGenerationParams): Promise<GeneratedEmailContent> {
@@ -30,46 +33,112 @@ export class AIEmailService {
     const userPrompt = this.buildUserPrompt(params);
 
     try {
-      const response = await fetch('https://api.openai.com/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: 'gpt-4o-mini',
-          messages: [
-            {
-              role: 'system',
-              content: systemPrompt
-            },
-            {
-              role: 'user',
-              content: userPrompt
-            }
-          ],
-          temperature: 0.7,
-          max_tokens: 1000,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || 'Failed to generate email');
+      if (this.provider === 'gemini') {
+        return await this.generateWithGemini(systemPrompt, userPrompt);
+      } else {
+        return await this.generateWithOpenAI(systemPrompt, userPrompt);
       }
-
-      const data = await response.json();
-      const generatedText = data.choices[0]?.message?.content;
-
-      if (!generatedText) {
-        throw new Error('No content generated');
-      }
-
-      return this.parseGeneratedEmail(generatedText);
     } catch (error) {
       console.error('AI Email generation error:', error);
       throw error;
     }
+  }
+
+  private async generateWithOpenAI(systemPrompt: string, userPrompt: string): Promise<GeneratedEmailContent> {
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: systemPrompt
+          },
+          {
+            role: 'user',
+            content: userPrompt
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to generate email with OpenAI');
+    }
+
+    const data = await response.json();
+    const generatedText = data.choices[0]?.message?.content;
+
+    if (!generatedText) {
+      throw new Error('No content generated from OpenAI');
+    }
+
+    return this.parseGeneratedEmail(generatedText);
+  }
+
+  private async generateWithGemini(systemPrompt: string, userPrompt: string): Promise<GeneratedEmailContent> {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${this.apiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [
+          {
+            parts: [
+              {
+                text: `${systemPrompt}\n\n${userPrompt}`
+              }
+            ]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 1,
+          topP: 1,
+          maxOutputTokens: 1000,
+        },
+        safetySettings: [
+          {
+            category: "HARM_CATEGORY_HARASSMENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_HATE_SPEECH",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          },
+          {
+            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
+            threshold: "BLOCK_MEDIUM_AND_ABOVE"
+          }
+        ]
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to generate email with Gemini');
+    }
+
+    const data = await response.json();
+    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+    if (!generatedText) {
+      throw new Error('No content generated from Gemini');
+    }
+
+    return this.parseGeneratedEmail(generatedText);
   }
 
   private buildSystemPrompt(): string {

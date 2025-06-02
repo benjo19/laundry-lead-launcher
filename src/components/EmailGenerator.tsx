@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Send, FileText, Sparkles, Trash2, Users } from 'lucide-react';
+import { Mail, Send, FileText, Sparkles, Trash2, Users, Bot } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { AIEmailService } from '@/services/aiEmailService';
+import { AIEmailService, AIProvider } from '@/services/aiEmailService';
 
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
@@ -61,7 +61,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [leads] = useLocalStorage<Lead[]>('leads', []);
   const [discoveredLeads] = useLocalStorage<any[]>('discoveredLeads', []);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [openaiApiKey, setOpenaiApiKey] = useState('');
+  const [apiKey, setApiKey] = useState('');
+  const [aiProvider, setAiProvider] = useState<AIProvider>('openai');
 
   const { toast } = useToast();
 
@@ -70,6 +71,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     { value: 'follow-up', label: 'Follow-up email' },
     { value: 'proposal', label: 'Poslovni prijedlog' },
     { value: 'reminder', label: 'Podsjetnik' },
+  ];
+
+  const aiProviders = [
+    { value: 'openai', label: 'OpenAI GPT', placeholder: 'sk-...', docs: 'https://platform.openai.com/api-keys' },
+    { value: 'gemini', label: 'Google Gemini', placeholder: 'AIza...', docs: 'https://aistudio.google.com/app/apikey' },
   ];
 
   const generateEmail = async () => {
@@ -82,10 +88,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
-    if (!openaiApiKey) {
+    if (!apiKey) {
       toast({
         title: "API ključ potreban",
-        description: "Molimo unesite OpenAI API ključ za AI generiranje emailova.",
+        description: `Molimo unesite ${aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'} API ključ za AI generiranje emailova.`,
         variant: "destructive"
       });
       return;
@@ -103,7 +109,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setIsGenerating(true);
     
     try {
-      const aiService = new AIEmailService(openaiApiKey);
+      const aiService = new AIEmailService(apiKey, aiProvider);
       
       // Find additional context about the company
       const allEmails = getAllEmailAddresses();
@@ -132,7 +138,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       
       toast({
         title: "AI Email generiran",
-        description: `Personalizirani AI sadržaj je uspješno generiran za ${selectedCompany || 'odabranu tvrtku'}.`,
+        description: `Personalizirani AI sadržaj je uspješno generiran za ${selectedCompany || 'odabranu tvrtku'} pomoću ${aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'}.`,
       });
     } catch (error) {
       console.error('AI generation error:', error);
@@ -242,6 +248,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
+  const currentProvider = aiProviders.find(p => p.value === aiProvider);
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -266,18 +274,37 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
           <CardContent className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                OpenAI API Ključ (za AI generiranje)
+                <Bot className="h-4 w-4 inline mr-1" />
+                AI Provider
+              </label>
+              <Select value={aiProvider} onValueChange={(value: AIProvider) => setAiProvider(value)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberite AI servis" />
+                </SelectTrigger>
+                <SelectContent>
+                  {aiProviders.map((provider) => (
+                    <SelectItem key={provider.value} value={provider.value}>
+                      {provider.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                {currentProvider?.label} API Ključ
               </label>
               <Input
                 type="password"
-                placeholder="sk-..."
-                value={openaiApiKey}
-                onChange={(e) => setOpenaiApiKey(e.target.value)}
+                placeholder={currentProvider?.placeholder}
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
                 className="mb-2"
               />
               <p className="text-xs text-slate-500">
                 Potreban za AI generiranje personaliziranih emailova. 
-                <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
+                <a href={currentProvider?.docs} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
                   Nabavite API ključ ovdje
                 </a>
               </p>
@@ -364,7 +391,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              {isGenerating ? 'Generiranje AI sadržaja...' : 'Generiraj Personalizirani AI Email'}
+              {isGenerating ? `Generiranje ${currentProvider?.label} sadržaja...` : `Generiraj Personalizirani AI Email (${currentProvider?.label})`}
             </Button>
           </CardContent>
         </Card>
