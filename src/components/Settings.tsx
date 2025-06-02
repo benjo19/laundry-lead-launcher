@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -133,8 +132,8 @@ const Settings = () => {
         const { error } = await supabase
           .from('user_settings')
           .update({
-            email_settings: emailSettings,
-            social_platforms: socialPlatforms,
+            email_settings: emailSettings as any,
+            social_platforms: socialPlatforms as any,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
@@ -144,11 +143,11 @@ const Settings = () => {
         // Insert new settings
         const { error } = await supabase
           .from('user_settings')
-          .insert({
+          .insert([{
             user_id: user.id,
-            email_settings: emailSettings,
-            social_platforms: socialPlatforms
-          });
+            email_settings: emailSettings as any,
+            social_platforms: socialPlatforms as any
+          }]);
 
         if (error) throw error;
       }
