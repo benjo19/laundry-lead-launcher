@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -179,13 +180,13 @@ const Settings = () => {
     
     if (platform === 'facebook') {
       const fbData = platformData as SocialPlatforms['facebook'];
-      if (fbData.app_id && fbData.app_secret && fbData.access_token && fbData.page_id) {
+      if (fbData.app_id?.trim() && fbData.app_secret?.trim() && fbData.access_token?.trim() && fbData.page_id?.trim()) {
         return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Povezano' };
       }
     } else {
       // For LinkedIn and Instagram
       const socialData = platformData as SocialPlatforms['linkedin'] | SocialPlatforms['instagram'];
-      if (socialData.username && socialData.password) {
+      if (socialData.username?.trim() && socialData.password?.trim()) {
         return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Povezano' };
       }
     }
@@ -194,8 +195,13 @@ const Settings = () => {
   };
 
   const getEmailConnectionStatus = () => {
-    const requiredFields = [emailSettings.smtp_host, emailSettings.smtp_username, emailSettings.smtp_password, emailSettings.from_email];
-    const hasAllFields = requiredFields.every(field => field && field.trim() !== '');
+    const requiredFields = [
+      emailSettings.smtp_host?.trim(),
+      emailSettings.smtp_username?.trim(),
+      emailSettings.smtp_password?.trim(),
+      emailSettings.from_email?.trim()
+    ];
+    const hasAllFields = requiredFields.every(field => field && field !== '');
     
     if (hasAllFields) {
       return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Konfigurisan' };
@@ -260,7 +266,7 @@ const Settings = () => {
                     <Label htmlFor="smtp_host">SMTP Host</Label>
                     <Input
                       id="smtp_host"
-                      value={emailSettings.smtp_host}
+                      value={emailSettings.smtp_host || ''}
                       onChange={(e) => setEmailSettings({...emailSettings, smtp_host: e.target.value})}
                       placeholder="smtp.gmail.com"
                     />
@@ -269,7 +275,7 @@ const Settings = () => {
                     <Label htmlFor="smtp_port">SMTP Port</Label>
                     <Input
                       id="smtp_port"
-                      value={emailSettings.smtp_port}
+                      value={emailSettings.smtp_port || '587'}
                       onChange={(e) => setEmailSettings({...emailSettings, smtp_port: e.target.value})}
                       placeholder="587"
                     />
@@ -279,7 +285,7 @@ const Settings = () => {
                   <Label htmlFor="smtp_username">Username</Label>
                   <Input
                     id="smtp_username"
-                    value={emailSettings.smtp_username}
+                    value={emailSettings.smtp_username || ''}
                     onChange={(e) => setEmailSettings({...emailSettings, smtp_username: e.target.value})}
                     placeholder="your-email@gmail.com"
                   />
@@ -289,7 +295,7 @@ const Settings = () => {
                   <Input
                     id="smtp_password"
                     type="password"
-                    value={emailSettings.smtp_password}
+                    value={emailSettings.smtp_password || ''}
                     onChange={(e) => setEmailSettings({...emailSettings, smtp_password: e.target.value})}
                     placeholder="your-app-password"
                   />
@@ -299,7 +305,7 @@ const Settings = () => {
                     <Label htmlFor="from_email">From Email</Label>
                     <Input
                       id="from_email"
-                      value={emailSettings.from_email}
+                      value={emailSettings.from_email || ''}
                       onChange={(e) => setEmailSettings({...emailSettings, from_email: e.target.value})}
                       placeholder="noreply@yourdomain.com"
                     />
@@ -308,7 +314,7 @@ const Settings = () => {
                     <Label htmlFor="from_name">From Name</Label>
                     <Input
                       id="from_name"
-                      value={emailSettings.from_name}
+                      value={emailSettings.from_name || ''}
                       onChange={(e) => setEmailSettings({...emailSettings, from_name: e.target.value})}
                       placeholder="Your Company"
                     />
@@ -376,7 +382,7 @@ const Settings = () => {
                       <Label htmlFor="fb_app_id">App ID</Label>
                       <Input
                         id="fb_app_id"
-                        value={socialPlatforms.facebook.app_id}
+                        value={socialPlatforms.facebook.app_id || ''}
                         onChange={(e) => setSocialPlatforms({
                           ...socialPlatforms,
                           facebook: { ...socialPlatforms.facebook, app_id: e.target.value }
@@ -389,7 +395,7 @@ const Settings = () => {
                       <Label htmlFor="fb_page_id">Page ID</Label>
                       <Input
                         id="fb_page_id"
-                        value={socialPlatforms.facebook.page_id}
+                        value={socialPlatforms.facebook.page_id || ''}
                         onChange={(e) => setSocialPlatforms({
                           ...socialPlatforms,
                           facebook: { ...socialPlatforms.facebook, page_id: e.target.value }
@@ -405,7 +411,7 @@ const Settings = () => {
                     <Input
                       id="fb_app_secret"
                       type="password"
-                      value={socialPlatforms.facebook.app_secret}
+                      value={socialPlatforms.facebook.app_secret || ''}
                       onChange={(e) => setSocialPlatforms({
                         ...socialPlatforms,
                         facebook: { ...socialPlatforms.facebook, app_secret: e.target.value }
@@ -420,7 +426,7 @@ const Settings = () => {
                     <Input
                       id="fb_access_token"
                       type="password"
-                      value={socialPlatforms.facebook.access_token}
+                      value={socialPlatforms.facebook.access_token || ''}
                       onChange={(e) => setSocialPlatforms({
                         ...socialPlatforms,
                         facebook: { ...socialPlatforms.facebook, access_token: e.target.value }
@@ -464,7 +470,7 @@ const Settings = () => {
                         <Label htmlFor={`${platform}_username`}>Korisničko ime</Label>
                         <Input
                           id={`${platform}_username`}
-                          value={(socialPlatforms[platform] as SocialPlatforms['linkedin']).username}
+                          value={(socialPlatforms[platform] as SocialPlatforms['linkedin']).username || ''}
                           onChange={(e) => setSocialPlatforms({
                             ...socialPlatforms,
                             [platform]: { ...socialPlatforms[platform], username: e.target.value }
@@ -478,7 +484,7 @@ const Settings = () => {
                         <Input
                           id={`${platform}_password`}
                           type="password"
-                          value={(socialPlatforms[platform] as SocialPlatforms['linkedin']).password}
+                          value={(socialPlatforms[platform] as SocialPlatforms['linkedin']).password || ''}
                           onChange={(e) => setSocialPlatforms({
                             ...socialPlatforms,
                             [platform]: { ...socialPlatforms[platform], password: e.target.value }
