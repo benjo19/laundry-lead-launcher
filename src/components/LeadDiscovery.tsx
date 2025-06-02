@@ -1,28 +1,10 @@
 
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, MapPin, Brain, Plus, Loader2, Building2, Phone, Mail, AlertCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Lead } from '@/types';
-
-interface DiscoveredLead {
-  name: string;
-  address: string;
-  phone?: string;
-  rating?: number;
-  types: string[];
-  place_id: string;
-  geometry: {
-    location: {
-      lat: number;
-      lng: number;
-    };
-  };
-}
+import SearchForm, { industries, DiscoveredLead } from './lead-discovery/SearchForm';
+import LeadList from './lead-discovery/LeadList';
+import EmptyState from './lead-discovery/EmptyState';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
@@ -36,16 +18,6 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
   const [discoveredLeads, setDiscoveredLeads] = useState<DiscoveredLead[]>([]);
   const [apiKey, setApiKey] = useState('');
   const { toast } = useToast();
-
-  const industries = [
-    { value: 'laundry', label: 'Praonica rublja', query: 'laundry dry cleaning' },
-    { value: 'restaurant', label: 'Restorani', query: 'restaurant food service' },
-    { value: 'hotel', label: 'Hoteli', query: 'hotel accommodation' },
-    { value: 'gym', label: 'Teretane', query: 'gym fitness center' },
-    { value: 'spa', label: 'Spa centri', query: 'spa wellness center' },
-    { value: 'hospital', label: 'Bolnice', query: 'hospital medical center' },
-    { value: 'school', label: 'Škole', query: 'school education' },
-  ];
 
   const searchLeads = async () => {
     if (!apiKey) {
@@ -163,182 +135,27 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Search className="h-5 w-5 mr-2 text-blue-600" />
-            Parametri pretraživanja
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <div className="flex items-start">
-              <AlertCircle className="h-5 w-5 text-blue-600 mr-2 mt-0.5" />
-              <div className="text-sm text-blue-800">
-                <p className="font-medium mb-1">Potreban Google Maps API ključ</p>
-                <p>Za korištenje ove funkcionalnosti potrebno je kreirati Google Maps API ključ s omogućenim Places API. 
-                Više informacija na: <a href="https://developers.google.com/maps/documentation/places/web-service/get-api-key" 
-                target="_blank" rel="noopener noreferrer" className="underline">Google Places API dokumentaciji</a></p>
-              </div>
-            </div>
-          </div>
+      <SearchForm
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        location={location}
+        setLocation={setLocation}
+        industry={industry}
+        setIndustry={setIndustry}
+        apiKey={apiKey}
+        setApiKey={setApiKey}
+        isSearching={isSearching}
+        discoveredLeads={discoveredLeads}
+        onSearchLeads={searchLeads}
+        onAnalyzeWithAI={analyzeWithAI}
+      />
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Google Maps API ključ</label>
-              <Input
-                type="password"
-                placeholder="Unesite svoj Google Maps API ključ"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-              <p className="text-xs text-slate-500 mt-1">
-                Potreban je za pristup Google Maps Places API
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Lokacija</label>
-              <Input
-                placeholder="Zagreb, Split, Rijeka..."
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
-            </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-2">Industrija</label>
-              <Select value={industry} onValueChange={setIndustry}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Odaberite industriju" />
-                </SelectTrigger>
-                <SelectContent>
-                  {industries.map((ind) => (
-                    <SelectItem key={ind.value} value={ind.value}>
-                      {ind.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-2">Dodatni pojmovi (opcionalno)</label>
-              <Input
-                placeholder="Dodatni ključni pojmovi..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
-          </div>
+      <LeadList 
+        discoveredLeads={discoveredLeads} 
+        onAddLead={addDiscoveredLead} 
+      />
 
-          <div className="flex space-x-2">
-            <Button 
-              onClick={searchLeads} 
-              disabled={isSearching}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isSearching ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Pretražujem...
-                </>
-              ) : (
-                <>
-                  <MapPin className="h-4 w-4 mr-2" />
-                  Pretražuj Leadove
-                </>
-              )}
-            </Button>
-            
-            {discoveredLeads.length > 0 && (
-              <Button 
-                variant="outline"
-                onClick={() => analyzeWithAI(discoveredLeads)}
-              >
-                <Brain className="h-4 w-4 mr-2" />
-                AI Analiza
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
-      {discoveredLeads.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Building2 className="h-5 w-5 mr-2 text-green-600" />
-              Pronađeni Leadovi ({discoveredLeads.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {discoveredLeads.map((lead) => (
-                <div key={lead.place_id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-slate-900">{lead.name}</h3>
-                      <div className="flex items-center text-slate-600 mt-1">
-                        <MapPin className="h-4 w-4 mr-1" />
-                        <span className="text-sm">{lead.address}</span>
-                      </div>
-                      {lead.rating && (
-                        <div className="flex items-center mt-1">
-                          <span className="text-yellow-500">★</span>
-                          <span className="text-sm text-slate-600 ml-1">{lead.rating.toFixed(1)}</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex flex-col items-end space-y-2">
-                      <div className="flex flex-wrap gap-1">
-                        {lead.types.slice(0, 2).map((type) => (
-                          <Badge key={type} variant="secondary" className="text-xs">
-                            {type.replace(/_/g, ' ')}
-                          </Badge>
-                        ))}
-                      </div>
-                      <Button 
-                        size="sm"
-                        onClick={() => addDiscoveredLead(lead)}
-                        className="bg-green-600 hover:bg-green-700"
-                      >
-                        <Plus className="h-4 w-4 mr-1" />
-                        Dodaj
-                      </Button>
-                    </div>
-                  </div>
-                  
-                  <div className="flex items-center space-x-4 text-sm text-slate-600">
-                    {lead.phone && (
-                      <div className="flex items-center">
-                        <Phone className="h-4 w-4 mr-1" />
-                        <span>{lead.phone}</span>
-                      </div>
-                    )}
-                    <div className="flex items-center">
-                      <Mail className="h-4 w-4 mr-1" />
-                      <span className="text-slate-400">Email potreban</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {discoveredLeads.length === 0 && !isSearching && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <MapPin className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">Započnite pretraživanje</h3>
-            <p className="text-slate-600">
-              Unesite lokaciju i odaberite industriju za pronalaženje novih leadova
-            </p>
-          </CardContent>
-        </Card>
-      )}
+      {discoveredLeads.length === 0 && !isSearching && <EmptyState />}
     </div>
   );
 };
