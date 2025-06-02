@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,18 +23,18 @@ interface EmailSettings {
 interface SocialPlatforms {
   facebook: {
     enabled: boolean;
-    access_token: string;
-    page_id: string;
+    username: string;
+    password: string;
   };
   linkedin: {
     enabled: boolean;
-    access_token: string;
-    company_id: string;
+    username: string;
+    password: string;
   };
   instagram: {
     enabled: boolean;
-    access_token: string;
-    account_id: string;
+    username: string;
+    password: string;
   };
 }
 
@@ -52,9 +53,9 @@ const Settings = () => {
   });
 
   const [socialPlatforms, setSocialPlatforms] = useState<SocialPlatforms>({
-    facebook: { enabled: false, access_token: '', page_id: '' },
-    linkedin: { enabled: false, access_token: '', company_id: '' },
-    instagram: { enabled: false, access_token: '', account_id: '' }
+    facebook: { enabled: false, username: '', password: '' },
+    linkedin: { enabled: false, username: '', password: '' },
+    instagram: { enabled: false, username: '', password: '' }
   });
 
   useEffect(() => {
@@ -98,9 +99,9 @@ const Settings = () => {
           const typedSocialSettings = socialData as Record<string, any>;
           if (typedSocialSettings.facebook || typedSocialSettings.linkedin || typedSocialSettings.instagram) {
             setSocialPlatforms({
-              facebook: typedSocialSettings.facebook || { enabled: false, access_token: '', page_id: '' },
-              linkedin: typedSocialSettings.linkedin || { enabled: false, access_token: '', company_id: '' },
-              instagram: typedSocialSettings.instagram || { enabled: false, access_token: '', account_id: '' }
+              facebook: typedSocialSettings.facebook || { enabled: false, username: '', password: '' },
+              linkedin: typedSocialSettings.linkedin || { enabled: false, username: '', password: '' },
+              instagram: typedSocialSettings.instagram || { enabled: false, username: '', password: '' }
             });
           }
         }
@@ -276,28 +277,29 @@ const Settings = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="fb_token">Access Token</Label>
+                    <Label htmlFor="fb_username">Korisničko ime</Label>
                     <Input
-                      id="fb_token"
-                      value={socialPlatforms.facebook.access_token}
+                      id="fb_username"
+                      value={socialPlatforms.facebook.username}
                       onChange={(e) => setSocialPlatforms({
                         ...socialPlatforms,
-                        facebook: { ...socialPlatforms.facebook, access_token: e.target.value }
+                        facebook: { ...socialPlatforms.facebook, username: e.target.value }
                       })}
-                      placeholder="Your Facebook access token"
+                      placeholder="Vaše Facebook korisničko ime"
                       disabled={!socialPlatforms.facebook.enabled}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="fb_page">Page ID</Label>
+                    <Label htmlFor="fb_password">Lozinka</Label>
                     <Input
-                      id="fb_page"
-                      value={socialPlatforms.facebook.page_id}
+                      id="fb_password"
+                      type="password"
+                      value={socialPlatforms.facebook.password}
                       onChange={(e) => setSocialPlatforms({
                         ...socialPlatforms,
-                        facebook: { ...socialPlatforms.facebook, page_id: e.target.value }
+                        facebook: { ...socialPlatforms.facebook, password: e.target.value }
                       })}
-                      placeholder="Your Facebook page ID"
+                      placeholder="Vaša Facebook lozinka"
                       disabled={!socialPlatforms.facebook.enabled}
                     />
                   </div>
@@ -321,28 +323,29 @@ const Settings = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="li_token">Access Token</Label>
+                    <Label htmlFor="li_username">Korisničko ime</Label>
                     <Input
-                      id="li_token"
-                      value={socialPlatforms.linkedin.access_token}
+                      id="li_username"
+                      value={socialPlatforms.linkedin.username}
                       onChange={(e) => setSocialPlatforms({
                         ...socialPlatforms,
-                        linkedin: { ...socialPlatforms.linkedin, access_token: e.target.value }
+                        linkedin: { ...socialPlatforms.linkedin, username: e.target.value }
                       })}
-                      placeholder="Your LinkedIn access token"
+                      placeholder="Vaše LinkedIn korisničko ime"
                       disabled={!socialPlatforms.linkedin.enabled}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="li_company">Company ID</Label>
+                    <Label htmlFor="li_password">Lozinka</Label>
                     <Input
-                      id="li_company"
-                      value={socialPlatforms.linkedin.company_id}
+                      id="li_password"
+                      type="password"
+                      value={socialPlatforms.linkedin.password}
                       onChange={(e) => setSocialPlatforms({
                         ...socialPlatforms,
-                        linkedin: { ...socialPlatforms.linkedin, company_id: e.target.value }
+                        linkedin: { ...socialPlatforms.linkedin, password: e.target.value }
                       })}
-                      placeholder="Your LinkedIn company ID"
+                      placeholder="Vaša LinkedIn lozinka"
                       disabled={!socialPlatforms.linkedin.enabled}
                     />
                   </div>
@@ -366,28 +369,29 @@ const Settings = () => {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label htmlFor="ig_token">Access Token</Label>
+                    <Label htmlFor="ig_username">Korisničko ime</Label>
                     <Input
-                      id="ig_token"
-                      value={socialPlatforms.instagram.access_token}
+                      id="ig_username"
+                      value={socialPlatforms.instagram.username}
                       onChange={(e) => setSocialPlatforms({
                         ...socialPlatforms,
-                        instagram: { ...socialPlatforms.instagram, access_token: e.target.value }
+                        instagram: { ...socialPlatforms.instagram, username: e.target.value }
                       })}
-                      placeholder="Your Instagram access token"
+                      placeholder="Vaše Instagram korisničko ime"
                       disabled={!socialPlatforms.instagram.enabled}
                     />
                   </div>
                   <div>
-                    <Label htmlFor="ig_account">Account ID</Label>
+                    <Label htmlFor="ig_password">Lozinka</Label>
                     <Input
-                      id="ig_account"
-                      value={socialPlatforms.instagram.account_id}
+                      id="ig_password"
+                      type="password"
+                      value={socialPlatforms.instagram.password}
                       onChange={(e) => setSocialPlatforms({
                         ...socialPlatforms,
-                        instagram: { ...socialPlatforms.instagram, account_id: e.target.value }
+                        instagram: { ...socialPlatforms.instagram, password: e.target.value }
                       })}
-                      placeholder="Your Instagram account ID"
+                      placeholder="Vaša Instagram lozinka"
                       disabled={!socialPlatforms.instagram.enabled}
                     />
                   </div>
