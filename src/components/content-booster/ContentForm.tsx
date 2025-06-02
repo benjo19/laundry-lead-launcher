@@ -5,9 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Share2, Calendar, Bot } from 'lucide-react';
+import { Sparkles, Share2, Calendar, Bot, Image } from 'lucide-react';
 import { AIProvider } from '@/services/aiEmailService';
-import { platforms, contentTypes, industries, aiProviders } from './constants';
+import { platforms, contentTypes, industries, aiProviders, contentFormats } from './constants';
 
 interface ContentFormProps {
   content: string;
@@ -33,6 +33,9 @@ interface ContentFormProps {
   setApiKey: (apiKey: string) => void;
   aiProvider: AIProvider;
   setAiProvider: (aiProvider: AIProvider) => void;
+  contentFormat: string;
+  setContentFormat: (format: string) => void;
+  generatedImageUrl: string;
   onGenerateContent: () => void;
   onPublishNow: () => void;
   onSchedulePost: () => void;
@@ -62,6 +65,9 @@ const ContentForm: React.FC<ContentFormProps> = ({
   setApiKey,
   aiProvider,
   setAiProvider,
+  contentFormat,
+  setContentFormat,
+  generatedImageUrl,
   onGenerateContent,
   onPublishNow,
   onSchedulePost,
@@ -113,6 +119,30 @@ const ContentForm: React.FC<ContentFormProps> = ({
               Nabavite API ključ ovdje
             </a>
           </p>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            <Image className="h-4 w-4 inline mr-1" />
+            Format sadržaja
+          </label>
+          <Select value={contentFormat} onValueChange={setContentFormat}>
+            <SelectTrigger>
+              <SelectValue placeholder="Odaberite format" />
+            </SelectTrigger>
+            <SelectContent>
+              {contentFormats.map((format) => (
+                <SelectItem key={format.value} value={format.value}>
+                  {format.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {contentFormat === 'text-with-image' && aiProvider !== 'openai' && (
+            <p className="text-xs text-amber-600 mt-1">
+              Generiranje slika je dostupno samo s OpenAI providerom
+            </p>
+          )}
         </div>
 
         <div>
@@ -217,6 +247,19 @@ const ContentForm: React.FC<ContentFormProps> = ({
           <Sparkles className="h-4 w-4 mr-2" />
           {isGenerating ? `Generiranje ${currentProvider?.label} sadržaja...` : `Generiraj AI Sadržaj (${currentProvider?.label})`}
         </Button>
+
+        {generatedImageUrl && (
+          <div className="border rounded-lg p-4">
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Generirana slika:
+            </label>
+            <img 
+              src={generatedImageUrl} 
+              alt="AI generirana slika" 
+              className="w-full max-w-sm rounded-lg border"
+            />
+          </div>
+        )}
 
         <Textarea
           placeholder="Generirani AI sadržaj će se pojaviti ovdje ili unesite vlastiti..."

@@ -29,6 +29,9 @@ const ContentBooster = () => {
     setApiKey,
     aiProvider,
     setAiProvider,
+    contentFormat,
+    setContentFormat,
+    generatedImageUrl,
     posts,
     generateContent,
     publishNow,
@@ -76,6 +79,9 @@ const ContentBooster = () => {
           setApiKey={setApiKey}
           aiProvider={aiProvider}
           setAiProvider={setAiProvider}
+          contentFormat={contentFormat}
+          setContentFormat={setContentFormat}
+          generatedImageUrl={generatedImageUrl}
           onGenerateContent={generateContent}
           onPublishNow={publishNow}
           onSchedulePost={schedulePost}

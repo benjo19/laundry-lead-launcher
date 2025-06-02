@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { ContentPost } from '@/types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -19,6 +18,8 @@ export const useContentBooster = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [aiProvider, setAiProvider] = useState<AIProvider>('openai');
+  const [contentFormat, setContentFormat] = useState('text');
+  const [generatedImageUrl, setGeneratedImageUrl] = useState('');
 
   const [posts, setPosts] = useLocalStorage<ContentPost[]>('contentPosts', [
     {
@@ -62,7 +63,17 @@ export const useContentBooster = () => {
       return;
     }
 
+    if (contentFormat === 'text-with-image' && aiProvider !== 'openai') {
+      toast({
+        title: "Generiranje slika nije podržano",
+        description: "Generiranje slika je dostupno samo s OpenAI providerom.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsGenerating(true);
+    setGeneratedImageUrl('');
     
     try {
       const aiService = new AIContentService(apiKey, aiProvider);
@@ -74,9 +85,14 @@ export const useContentBooster = () => {
         companyName: companyName || undefined,
         topic: topic || undefined,
         additionalContext: additionalContext || undefined,
+        format: contentFormat,
       });
 
       setContent(result.content);
+      
+      if (result.imageUrl) {
+        setGeneratedImageUrl(result.imageUrl);
+      }
       
       toast({
         title: "AI Sadržaj generiran",
@@ -92,6 +108,19 @@ export const useContentBooster = () => {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const resetForm = () => {
+    setContent('');
+    setPlatform('');
+    setContentType('');
+    setIndustry('');
+    setCompanyName('');
+    setTopic('');
+    setAdditionalContext('');
+    setScheduledDate('');
+    setScheduledTime('');
+    setGeneratedImageUrl('');
   };
 
   const publishNow = () => {
@@ -151,18 +180,6 @@ export const useContentBooster = () => {
     });
   };
 
-  const resetForm = () => {
-    setContent('');
-    setPlatform('');
-    setContentType('');
-    setIndustry('');
-    setCompanyName('');
-    setTopic('');
-    setAdditionalContext('');
-    setScheduledDate('');
-    setScheduledTime('');
-  };
-
   const deletePost = (postId: number) => {
     setPosts(posts.filter(post => post.id !== postId));
     toast({
@@ -195,6 +212,9 @@ export const useContentBooster = () => {
     setApiKey,
     aiProvider,
     setAiProvider,
+    contentFormat,
+    setContentFormat,
+    generatedImageUrl,
     posts,
     generateContent,
     publishNow,

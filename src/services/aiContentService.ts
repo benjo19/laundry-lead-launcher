@@ -8,10 +8,13 @@ interface ContentGenerationParams {
   companyName?: string;
   topic?: string;
   additionalContext?: string;
+  format?: string;
 }
 
 interface GeneratedContent {
   content: string;
+  imagePrompt?: string;
+  imageUrl?: string;
 }
 
 export class AIContentService {
@@ -24,19 +27,62 @@ export class AIContentService {
   }
 
   async generateContent(params: ContentGenerationParams): Promise<GeneratedContent> {
-    const systemPrompt = this.buildSystemPrompt();
+    const systemPrompt = this.buildSystemPrompt(params.format === 'text-with-image');
     const userPrompt = this.buildUserPrompt(params);
 
     try {
+      let result: GeneratedContent;
+      
       if (this.provider === 'gemini') {
-        return await this.generateWithGemini(systemPrompt, userPrompt);
+        result = await this.generateWithGemini(systemPrompt, userPrompt);
       } else {
-        return await this.generateWithOpenAI(systemPrompt, userPrompt);
+        result = await this.generateWithOpenAI(systemPrompt, userPrompt);
       }
+
+      // Generate image if requested
+      if (params.format === 'text-with-image' && result.imagePrompt) {
+        try {
+          result.imageUrl = await this.generateImage(result.imagePrompt);
+        } catch (error) {
+          console.error('Image generation failed:', error);
+          // Continue without image if generation fails
+        }
+      }
+
+      return result;
     } catch (error) {
       console.error('AI Content generation error:', error);
       throw error;
     }
+  }
+
+  private async generateImage(prompt: string): Promise<string> {
+    if (this.provider !== 'openai') {
+      throw new Error('Image generation is only supported with OpenAI');
+    }
+
+    const response = await fetch('https://api.openai.com/v1/images/generations', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.apiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'dall-e-3',
+        prompt: prompt,
+        n: 1,
+        size: '1024x1024',
+        quality: 'standard',
+      }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error?.message || 'Failed to generate image');
+    }
+
+    const data = await response.json();
+    return data.data[0]?.url || '';
   }
 
   private async generateWithOpenAI(systemPrompt: string, userPrompt: string): Promise<GeneratedContent> {
@@ -75,7 +121,7 @@ export class AIContentService {
       throw new Error('No content generated from OpenAI');
     }
 
-    return { content: generatedText };
+    return this.parseGeneratedContent(generatedText);
   }
 
   private async generateWithGemini(systemPrompt: string, userPrompt: string): Promise<GeneratedContent> {
@@ -133,26 +179,52 @@ export class AIContentService {
       throw new Error('No content generated from Gemini');
     }
 
-    return { content: generatedText };
+    return this.parseGeneratedContent(generatedText);
   }
 
-  private buildSystemPrompt(): string {
-    return `Ti si ekspert za marketing sadržaj i društvene mreže. Tvoj zadatak je kreiranje angažirajućeg sadržaja na hrvatskom jeziku za različite industrije i platforme.
+  private parseGeneratedContent(text: string): GeneratedContent {
+    // Check if text contains image prompt marker
+    const imagePromptMatch = text.match(/\[IMAGE_PROMPT:(.*?)\]/);
+    
+    if (imagePromptMatch) {
+      const imagePrompt = imagePromptMatch[1].trim();
+      const content = text.replace(/\[IMAGE_PROMPT:.*?\]/, '').trim();
+      return { content, imagePrompt };
+    }
+
+    return { content: text };
+  }
+
+  private buildSystemPrompt(includeImage: boolean = false): string {
+    let prompt = `Ti si ekspert za marketing sadržaj i društvene mreže. Tvoj zadatak je kreiranje angažirajućeg sadržaja na hrvatskom jeziku za različite industrije i platforme.
 
 VAŽNE SMJERNICE:
 - Uvijek piši na hrvatskom jeziku
-- Prilagodi ton i stil prema platformi (LinkedIn profesionalno, Facebook opuštenо, Instagram vizualno)
+- Prilagodi ton i stil prema platformi (LinkedIn profesionalno, Facebook opuštenо, Instagram vizualno, TikTok trendi i zabavno)
 - Koristi relevantne hashtag-ove i emoji-je
-- Sadržaj treba biti kratak i direktan (maksimalno 200 riječi za LinkedIn, 150 za Facebook, 100 za Instagram)
+- Sadržaj treba biti kratak i direktan (maksimalno 200 riječi za LinkedIn, 150 za Facebook, 100 za Instagram/TikTok)
 - Fokusiraj se na vrijednost za čitatelje
-- Koristi konkretne primjere i savjete kada god možeš
+- Koristi konkretne primjere i savjete kada god možeš`;
+
+    if (includeImage) {
+      prompt += `
+
+GENERIRANJE SLIKA:
+- Ako generirate sadržaj s slikom, na kraju dodajte [IMAGE_PROMPT: kratak opis slike na engleskom]
+- Opis slike treba biti relevantan za sadržaj i industriju
+- Koristite jednostavne, jasne opise (npr. "professional laundry worker in modern facility")`;
+    }
+
+    prompt += `
 
 STRUKTURA ODGOVORA:
 Generiraj SAMO sadržaj objave, bez dodatnih objašnjenja.`;
+
+    return prompt;
   }
 
   private buildUserPrompt(params: ContentGenerationParams): string {
-    const { platform, contentType, industry, companyName, topic, additionalContext } = params;
+    const { platform, contentType, industry, companyName, topic, additionalContext, format } = params;
 
     let prompt = `Generiraj ${this.getContentTypeDescription(contentType)} za ${platform} socijalnu mrežu.
 
@@ -168,6 +240,10 @@ INDUSTRIJA: ${industry}`;
 
     if (additionalContext) {
       prompt += `\nDODATNE INFORMACIJE: ${additionalContext}`;
+    }
+
+    if (format === 'text-with-image') {
+      prompt += `\nFORMAT: Generiraj tekst s prijedlogom za sliku`;
     }
 
     prompt += `\n\nKreiraj sadržaj koji je relevantan za ${industry} industriju i prilagođen ${platform} platformi.`;

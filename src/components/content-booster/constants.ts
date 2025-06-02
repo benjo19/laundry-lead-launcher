@@ -5,6 +5,7 @@ export const platforms = [
   { value: 'LinkedIn', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-600' },
   { value: 'Facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-800' },
   { value: 'Instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-600' },
+  { value: 'TikTok', label: 'TikTok', icon: Instagram, color: 'text-black' },
 ];
 
 export const contentTypes = [
@@ -33,4 +34,9 @@ export const industries = [
 export const aiProviders = [
   { value: 'openai', label: 'OpenAI GPT', placeholder: 'sk-...', docs: 'https://platform.openai.com/api-keys' },
   { value: 'gemini', label: 'Google Gemini', placeholder: 'AIza...', docs: 'https://aistudio.google.com/app/apikey' },
+];
+
+export const contentFormats = [
+  { value: 'text', label: 'Samo tekst' },
+  { value: 'text-with-image', label: 'Tekst + AI slika' },
 ];
