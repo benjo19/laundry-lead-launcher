@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Save, Mail, Share2, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Save, Mail, Share2, CheckCircle, XCircle, AlertCircle, ExternalLink } from 'lucide-react';
 
 interface EmailSettings {
   smtp_host: string;
@@ -22,8 +22,10 @@ interface EmailSettings {
 interface SocialPlatforms {
   facebook: {
     enabled: boolean;
-    username: string;
-    password: string;
+    app_id: string;
+    app_secret: string;
+    access_token: string;
+    page_id: string;
   };
   linkedin: {
     enabled: boolean;
@@ -52,7 +54,7 @@ const Settings = () => {
   });
 
   const [socialPlatforms, setSocialPlatforms] = useState<SocialPlatforms>({
-    facebook: { enabled: false, username: '', password: '' },
+    facebook: { enabled: false, app_id: '', app_secret: '', access_token: '', page_id: '' },
     linkedin: { enabled: false, username: '', password: '' },
     instagram: { enabled: false, username: '', password: '' }
   });
@@ -98,7 +100,7 @@ const Settings = () => {
           const typedSocialSettings = socialData as Record<string, any>;
           if (typedSocialSettings.facebook || typedSocialSettings.linkedin || typedSocialSettings.instagram) {
             setSocialPlatforms({
-              facebook: typedSocialSettings.facebook || { enabled: false, username: '', password: '' },
+              facebook: typedSocialSettings.facebook || { enabled: false, app_id: '', app_secret: '', access_token: '', page_id: '' },
               linkedin: typedSocialSettings.linkedin || { enabled: false, username: '', password: '' },
               instagram: typedSocialSettings.instagram || { enabled: false, username: '', password: '' }
             });
@@ -173,9 +175,18 @@ const Settings = () => {
     if (!platformData.enabled) {
       return { status: 'disabled', icon: XCircle, color: 'text-gray-400', text: 'Onemogućeno' };
     }
-    if (platformData.username && platformData.password) {
-      return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Povezano' };
+    
+    if (platform === 'facebook') {
+      const fbData = platformData as SocialPlatforms['facebook'];
+      if (fbData.app_id && fbData.app_secret && fbData.access_token && fbData.page_id) {
+        return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Povezano' };
+      }
+    } else {
+      if (platformData.username && platformData.password) {
+        return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Povezano' };
+      }
     }
+    
     return { status: 'incomplete', icon: AlertCircle, color: 'text-yellow-500', text: 'Nepotpuno' };
   };
 
@@ -306,10 +317,122 @@ const Settings = () => {
 
           <TabsContent value="social">
             <div className="space-y-6">
-              {(['facebook', 'linkedin', 'instagram'] as const).map((platform) => {
+              {/* Facebook Configuration */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      Facebook
+                      <div className="flex items-center gap-2">
+                        {(() => {
+                          const status = getConnectionStatus('facebook');
+                          const StatusIcon = status.icon;
+                          return (
+                            <>
+                              <StatusIcon className={`h-5 w-5 ${status.color}`} />
+                              <span className={`text-sm ${status.color}`}>{status.text}</span>
+                            </>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                    <Switch
+                      checked={socialPlatforms.facebook.enabled}
+                      onCheckedChange={(checked) => 
+                        setSocialPlatforms({
+                          ...socialPlatforms,
+                          facebook: { ...socialPlatforms.facebook, enabled: checked }
+                        })
+                      }
+                    />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                    <h4 className="font-medium text-blue-900 mb-2">Kako postaviti Facebook integraciju:</h4>
+                    <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                      <li>Idite na <a href="https://developers.facebook.com/apps" target="_blank" rel="noopener noreferrer" className="underline hover:text-blue-600">Facebook Developer Portal</a></li>
+                      <li>Stvorite novu aplikaciju ili koristite postojeću</li>
+                      <li>Dodajte "Pages" permission u Graph API Explorer</li>
+                      <li>Generirajte Page Access Token za vašu stranicu</li>
+                      <li>Unesite podatke u polja ispod</li>
+                    </ol>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="mt-2"
+                      onClick={() => window.open('https://developers.facebook.com/tools/explorer/', '_blank')}
+                    >
+                      <ExternalLink className="h-4 w-4 mr-1" />
+                      Graph API Explorer
+                    </Button>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="fb_app_id">App ID</Label>
+                      <Input
+                        id="fb_app_id"
+                        value={socialPlatforms.facebook.app_id}
+                        onChange={(e) => setSocialPlatforms({
+                          ...socialPlatforms,
+                          facebook: { ...socialPlatforms.facebook, app_id: e.target.value }
+                        })}
+                        placeholder="1234567890123456"
+                        disabled={!socialPlatforms.facebook.enabled}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="fb_page_id">Page ID</Label>
+                      <Input
+                        id="fb_page_id"
+                        value={socialPlatforms.facebook.page_id}
+                        onChange={(e) => setSocialPlatforms({
+                          ...socialPlatforms,
+                          facebook: { ...socialPlatforms.facebook, page_id: e.target.value }
+                        })}
+                        placeholder="1234567890123456"
+                        disabled={!socialPlatforms.facebook.enabled}
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="fb_app_secret">App Secret</Label>
+                    <Input
+                      id="fb_app_secret"
+                      type="password"
+                      value={socialPlatforms.facebook.app_secret}
+                      onChange={(e) => setSocialPlatforms({
+                        ...socialPlatforms,
+                        facebook: { ...socialPlatforms.facebook, app_secret: e.target.value }
+                      })}
+                      placeholder="app_secret_key"
+                      disabled={!socialPlatforms.facebook.enabled}
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="fb_access_token">Page Access Token</Label>
+                    <Input
+                      id="fb_access_token"
+                      type="password"
+                      value={socialPlatforms.facebook.access_token}
+                      onChange={(e) => setSocialPlatforms({
+                        ...socialPlatforms,
+                        facebook: { ...socialPlatforms.facebook, access_token: e.target.value }
+                      })}
+                      placeholder="Page access token"
+                      disabled={!socialPlatforms.facebook.enabled}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {(['linkedin', 'instagram'] as const).map((platform) => {
                 const status = getConnectionStatus(platform);
                 const StatusIcon = status.icon;
-                const platformName = platform === 'facebook' ? 'Facebook' : platform === 'linkedin' ? 'LinkedIn' : 'Instagram';
+                const platformName = platform === 'linkedin' ? 'LinkedIn' : 'Instagram';
                 
                 return (
                   <Card key={platform}>

@@ -43,7 +43,7 @@ serve(async (req) => {
     const socialSettings = userSettings.social_platforms as any;
     const platformConfig = socialSettings[platform];
 
-    if (!platformConfig?.enabled || !platformConfig?.access_token) {
+    if (!platformConfig?.enabled) {
       throw new Error(`${platform} not configured or disabled`);
     }
 
@@ -90,6 +90,11 @@ serve(async (req) => {
 });
 
 async function postToFacebook(config: any, content: string, imageUrl?: string) {
+  // Validate required Facebook config
+  if (!config.access_token || !config.page_id) {
+    throw new Error('Facebook configuration incomplete: missing access_token or page_id');
+  }
+
   const url = `https://graph.facebook.com/v18.0/${config.page_id}/feed`;
   
   const postData: any = {
@@ -97,21 +102,44 @@ async function postToFacebook(config: any, content: string, imageUrl?: string) {
     access_token: config.access_token
   };
 
+  // If there's an image, we need to post it as a photo instead
   if (imageUrl) {
-    postData.link = imageUrl;
+    const photoUrl = `https://graph.facebook.com/v18.0/${config.page_id}/photos`;
+    const photoData = {
+      message: content,
+      url: imageUrl,
+      access_token: config.access_token
+    };
+
+    const response = await fetch(photoUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(photoData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Facebook photo API error:', errorData);
+      throw new Error(`Facebook photo API error: ${response.statusText} - ${errorData}`);
+    }
+
+    return await response.json();
+  } else {
+    // Regular text post
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(postData)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error('Facebook API error:', errorData);
+      throw new Error(`Facebook API error: ${response.statusText} - ${errorData}`);
+    }
+
+    return await response.json();
   }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(postData)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Facebook API error: ${response.statusText}`);
-  }
-
-  return await response.json();
 }
 
 async function postToLinkedIn(config: any, content: string, imageUrl?: string) {
@@ -149,7 +177,9 @@ async function postToLinkedIn(config: any, content: string, imageUrl?: string) {
   });
 
   if (!response.ok) {
-    throw new Error(`LinkedIn API error: ${response.statusText}`);
+    const errorData = await response.text();
+    console.error('LinkedIn API error:', errorData);
+    throw new Error(`LinkedIn API error: ${response.statusText} - ${errorData}`);
   }
 
   return await response.json();
@@ -175,7 +205,9 @@ async function postToInstagram(config: any, content: string, imageUrl?: string) 
   });
 
   if (!mediaResponse.ok) {
-    throw new Error(`Instagram media upload error: ${mediaResponse.statusText}`);
+    const errorData = await mediaResponse.text();
+    console.error('Instagram media upload error:', errorData);
+    throw new Error(`Instagram media upload error: ${mediaResponse.statusText} - ${errorData}`);
   }
 
   const mediaResult = await mediaResponse.json();
@@ -193,7 +225,9 @@ async function postToInstagram(config: any, content: string, imageUrl?: string) 
   });
 
   if (!publishResponse.ok) {
-    throw new Error(`Instagram publish error: ${publishResponse.statusText}`);
+    const errorData = await publishResponse.text();
+    console.error('Instagram publish error:', errorData);
+    throw new Error(`Instagram publish error: ${publishResponse.statusText} - ${errorData}`);
   }
 
   return await publishResponse.json();
