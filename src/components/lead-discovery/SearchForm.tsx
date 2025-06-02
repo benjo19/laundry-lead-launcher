@@ -10,6 +10,7 @@ interface DiscoveredLead {
   name: string;
   address: string;
   phone?: string;
+  website?: string;
   rating?: number;
   types: string[];
   place_id: string;
@@ -19,6 +20,8 @@ interface DiscoveredLead {
       lng: number;
     };
   };
+  business_status?: string;
+  user_ratings_total?: number;
 }
 
 interface SearchFormProps {
@@ -91,7 +94,7 @@ const SearchForm = ({
               onChange={(e) => setApiKey(e.target.value)}
             />
             <p className="text-xs text-slate-500 mt-1">
-              Potreban je za pristup Google Maps Places API
+              Potreban je za pristup Google Maps Places API (uključuje i Details API)
             </p>
           </div>
           <div>
@@ -139,7 +142,7 @@ const SearchForm = ({
             {isSearching ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Pretražujem...
+                Pretražujem i dohvaćam detalje...
               </>
             ) : (
               <>

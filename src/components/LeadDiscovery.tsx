@@ -19,6 +19,30 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
   const [apiKey, setApiKey] = useState('');
   const { toast } = useToast();
 
+  const getPlaceDetails = async (placeId: string) => {
+    try {
+      const proxyUrl = 'https://api.allorigins.win/raw?url=';
+      const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours&key=${apiKey}`;
+      
+      const response = await fetch(proxyUrl + encodeURIComponent(detailsUrl));
+      
+      if (!response.ok) {
+        throw new Error('Greška pri dohvaćanju detalja');
+      }
+      
+      const data = await response.json();
+      
+      if (data.status === 'OK') {
+        return data.result;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Error fetching place details:', error);
+      return null;
+    }
+  };
+
   const searchLeads = async () => {
     if (!apiKey) {
       toast({
@@ -75,11 +99,50 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
         return;
       }
       
-      setDiscoveredLeads(data.results.slice(0, 10)); // Limit to 10 results
+      // Fetch detailed information for each place
+      console.log('Fetching detailed information for places...');
+      const detailedLeads = [];
+      
+      for (const place of data.results.slice(0, 10)) {
+        const details = await getPlaceDetails(place.place_id);
+        
+        if (details) {
+          const enhancedLead: DiscoveredLead = {
+            name: details.name || place.name,
+            address: details.formatted_address || place.formatted_address,
+            phone: details.formatted_phone_number || '',
+            website: details.website || '',
+            rating: details.rating || place.rating,
+            types: details.types || place.types,
+            place_id: place.place_id,
+            geometry: place.geometry,
+            business_status: details.business_status || place.business_status,
+            user_ratings_total: details.user_ratings_total || place.user_ratings_total
+          };
+          
+          detailedLeads.push(enhancedLead);
+        } else {
+          // Fallback to basic info if details fetch fails
+          detailedLeads.push({
+            name: place.name,
+            address: place.formatted_address,
+            phone: '',
+            website: '',
+            rating: place.rating,
+            types: place.types,
+            place_id: place.place_id,
+            geometry: place.geometry,
+            business_status: place.business_status,
+            user_ratings_total: place.user_ratings_total
+          });
+        }
+      }
+      
+      setDiscoveredLeads(detailedLeads);
       
       toast({
         title: "Pretraživanje završeno",
-        description: `Pronađeno ${data.results.length} potencijalnih leadova.`,
+        description: `Pronađeno ${detailedLeads.length} detaljnih leadova s kontakt informacijama.`,
       });
     } catch (error) {
       console.error('Search error:', error);
@@ -103,7 +166,7 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
       email: '', // Will need to be filled manually
       status: 'Nova',
       potential: 'Srednji',
-      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}`
+      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}`
     };
 
     onAddLead(newLead);

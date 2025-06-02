@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Plus, Phone, Mail } from 'lucide-react';
+import { MapPin, Plus, Phone, Mail, Globe, Star, Users } from 'lucide-react';
 import { DiscoveredLead } from './SearchForm';
 
 interface LeadCardProps {
@@ -20,12 +20,27 @@ const LeadCard = ({ lead, onAddLead }: LeadCardProps) => {
             <MapPin className="h-4 w-4 mr-1" />
             <span className="text-sm">{lead.address}</span>
           </div>
-          {lead.rating && (
-            <div className="flex items-center mt-1">
-              <span className="text-yellow-500">★</span>
-              <span className="text-sm text-slate-600 ml-1">{lead.rating.toFixed(1)}</span>
-            </div>
-          )}
+          <div className="flex items-center mt-2 space-x-4">
+            {lead.rating && (
+              <div className="flex items-center">
+                <Star className="h-4 w-4 text-yellow-500 fill-current" />
+                <span className="text-sm text-slate-600 ml-1">{lead.rating.toFixed(1)}</span>
+                {lead.user_ratings_total && (
+                  <span className="text-xs text-slate-500 ml-1">({lead.user_ratings_total})</span>
+                )}
+              </div>
+            )}
+            {lead.business_status && (
+              <div className="flex items-center">
+                <div className={`w-2 h-2 rounded-full mr-1 ${
+                  lead.business_status === 'OPERATIONAL' ? 'bg-green-500' : 'bg-red-500'
+                }`} />
+                <span className="text-xs text-slate-600">
+                  {lead.business_status === 'OPERATIONAL' ? 'Aktivan' : 'Zatvoren'}
+                </span>
+              </div>
+            )}
+          </div>
         </div>
         <div className="flex flex-col items-end space-y-2">
           <div className="flex flex-wrap gap-1">
@@ -46,13 +61,26 @@ const LeadCard = ({ lead, onAddLead }: LeadCardProps) => {
         </div>
       </div>
       
-      <div className="flex items-center space-x-4 text-sm text-slate-600">
-        {lead.phone && (
-          <div className="flex items-center">
-            <Phone className="h-4 w-4 mr-1" />
-            <span>{lead.phone}</span>
-          </div>
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-slate-600">
+        <div className="flex items-center">
+          <Phone className="h-4 w-4 mr-1" />
+          <span>{lead.phone || 'Broj nije dostupan'}</span>
+        </div>
+        <div className="flex items-center">
+          <Globe className="h-4 w-4 mr-1" />
+          {lead.website ? (
+            <a 
+              href={lead.website} 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline truncate"
+            >
+              {lead.website.replace(/^https?:\/\//, '')}
+            </a>
+          ) : (
+            <span className="text-slate-400">Website nije dostupan</span>
+          )}
+        </div>
         <div className="flex items-center">
           <Mail className="h-4 w-4 mr-1" />
           <span className="text-slate-400">Email potreban</span>
