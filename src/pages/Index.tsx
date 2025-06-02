@@ -10,11 +10,17 @@ import ContentBooster from '@/components/ContentBooster';
 import Analytics from '@/components/Analytics';
 import Settings from '@/components/Settings';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Lead } from '@/types';
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [leads, setLeads] = useLocalStorage<Lead[]>('leads', []);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
   
   // State for passing email data to EmailGenerator
   const [emailGeneratorData, setEmailGeneratorData] = useState<{
@@ -34,10 +40,17 @@ const Index = () => {
   const handleNavigateToEmailGenerator = (email: string, company: string) => {
     setEmailGeneratorData({ email, company });
     setActiveModule('email-generator');
+    if (isMobile) setSidebarOpen(false);
   };
 
   const handleNavigateToModule = (module: string) => {
     setActiveModule(module);
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const handleModuleChange = (module: string) => {
+    setActiveModule(module);
+    if (isMobile) setSidebarOpen(false);
   };
 
   const renderActiveModule = () => {
@@ -67,6 +80,31 @@ const Index = () => {
         return <Dashboard onNavigateToModule={handleNavigateToModule} />;
     }
   };
+
+  if (isMobile) {
+    return (
+      <div className="flex min-h-screen bg-gray-50">
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <div className="flex-1 flex flex-col">
+            <header className="bg-white border-b border-gray-200 p-4 flex items-center justify-between lg:hidden">
+              <h1 className="text-xl font-semibold text-gray-900">Marketing Agent</h1>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="icon">
+                  <Menu className="h-6 w-6" />
+                </Button>
+              </SheetTrigger>
+            </header>
+            <main className="flex-1 overflow-auto p-4">
+              {renderActiveModule()}
+            </main>
+          </div>
+          <SheetContent side="left" className="w-64 p-0">
+            <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
+          </SheetContent>
+        </Sheet>
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen bg-gray-50">

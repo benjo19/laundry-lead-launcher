@@ -17,15 +17,15 @@ const LeadList = ({ discoveredLeads, onAddLead, onNavigateToEmailGenerator }: Le
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <Search className="h-5 w-5 mr-2 text-blue-600" />
-          Pronađeni Leadovi ({discoveredLeads.length})
+    <Card className="w-full">
+      <CardHeader className="pb-3 sm:pb-6">
+        <CardTitle className="flex items-center text-lg sm:text-xl">
+          <Search className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600 shrink-0" />
+          <span className="truncate">Pronađeni Leadovi ({discoveredLeads.length})</span>
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="px-3 sm:px-6">
+        <div className="space-y-3 sm:space-y-4">
           {discoveredLeads.map((lead) => (
             <LeadCard 
               key={lead.place_id} 
