@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -182,7 +183,9 @@ const Settings = () => {
         return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Povezano' };
       }
     } else {
-      if (platformData.username && platformData.password) {
+      // For LinkedIn and Instagram
+      const socialData = platformData as SocialPlatforms['linkedin'] | SocialPlatforms['instagram'];
+      if (socialData.username && socialData.password) {
         return { status: 'connected', icon: CheckCircle, color: 'text-green-500', text: 'Povezano' };
       }
     }
@@ -461,7 +464,7 @@ const Settings = () => {
                         <Label htmlFor={`${platform}_username`}>Korisničko ime</Label>
                         <Input
                           id={`${platform}_username`}
-                          value={socialPlatforms[platform].username}
+                          value={(socialPlatforms[platform] as SocialPlatforms['linkedin']).username}
                           onChange={(e) => setSocialPlatforms({
                             ...socialPlatforms,
                             [platform]: { ...socialPlatforms[platform], username: e.target.value }
@@ -475,7 +478,7 @@ const Settings = () => {
                         <Input
                           id={`${platform}_password`}
                           type="password"
-                          value={socialPlatforms[platform].password}
+                          value={(socialPlatforms[platform] as SocialPlatforms['linkedin']).password}
                           onChange={(e) => setSocialPlatforms({
                             ...socialPlatforms,
                             [platform]: { ...socialPlatforms[platform], password: e.target.value }
