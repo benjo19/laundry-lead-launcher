@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,11 @@ import { Lead } from '@/types';
 import AddLeadDialog from './AddLeadDialog';
 import { useToast } from '@/hooks/use-toast';
 
-const LeadHunter = () => {
+interface LeadHunterProps {
+  onNavigateToEmailGenerator?: (email: string, company: string) => void;
+}
+
+const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [potentialFilter, setPotentialFilter] = useState<string>('all');
@@ -113,6 +116,12 @@ const LeadHunter = () => {
     }
   };
 
+  const handleEmailClick = (email: string, company: string) => {
+    if (onNavigateToEmailGenerator) {
+      onNavigateToEmailGenerator(email, company);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -192,7 +201,13 @@ const LeadHunter = () => {
                     </div>
                     <div className="flex items-center text-slate-600">
                       <Mail className="h-4 w-4 mr-1" />
-                      <span className="text-sm">{lead.email}</span>
+                      <button 
+                        onClick={() => handleEmailClick(lead.email, lead.company)}
+                        className="text-sm text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                        title="Kliknite za slanje emaila"
+                      >
+                        {lead.email}
+                      </button>
                     </div>
                   </div>
                   

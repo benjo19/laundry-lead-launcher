@@ -14,6 +14,12 @@ import { Lead } from '@/types';
 const Index = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [leads, setLeads] = useLocalStorage<Lead[]>('leads', []);
+  
+  // State for passing email data to EmailGenerator
+  const [emailGeneratorData, setEmailGeneratorData] = useState<{
+    email?: string;
+    company?: string;
+  }>({});
 
   const addLead = (newLeadData: Omit<Lead, 'id' | 'dateAdded'>) => {
     const newLead: Lead = {
@@ -24,16 +30,26 @@ const Index = () => {
     setLeads([...leads, newLead]);
   };
 
+  const handleNavigateToEmailGenerator = (email: string, company: string) => {
+    setEmailGeneratorData({ email, company });
+    setActiveModule('email-generator');
+  };
+
   const renderActiveModule = () => {
     switch (activeModule) {
       case 'dashboard':
         return <Dashboard />;
       case 'lead-hunter':
-        return <LeadHunter />;
+        return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
       case 'lead-discovery':
-        return <LeadDiscovery onAddLead={addLead} />;
+        return <LeadDiscovery onAddLead={addLead} onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
       case 'email-generator':
-        return <EmailGenerator />;
+        return (
+          <EmailGenerator 
+            preSelectedEmail={emailGeneratorData.email}
+            preSelectedCompany={emailGeneratorData.company}
+          />
+        );
       case 'crm-reminder':
         return <CRMReminder />;
       case 'content-booster':

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -8,9 +7,16 @@ import { DiscoveredLead } from './SearchForm';
 interface LeadCardProps {
   lead: DiscoveredLead;
   onAddLead: (lead: DiscoveredLead) => void;
+  onNavigateToEmailGenerator?: (email: string, company: string) => void;
 }
 
-const LeadCard = ({ lead, onAddLead }: LeadCardProps) => {
+const LeadCard = ({ lead, onAddLead, onNavigateToEmailGenerator }: LeadCardProps) => {
+  const handleEmailClick = () => {
+    if (lead.email && onNavigateToEmailGenerator) {
+      onNavigateToEmailGenerator(lead.email, lead.name);
+    }
+  };
+
   return (
     <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
       <div className="flex justify-between items-start mb-3">
@@ -85,7 +91,13 @@ const LeadCard = ({ lead, onAddLead }: LeadCardProps) => {
           <Mail className="h-4 w-4 mr-1" />
           {lead.email ? (
             <div className="flex items-center">
-              <span className="text-green-700">{lead.email}</span>
+              <button 
+                onClick={handleEmailClick}
+                className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                title="Kliknite za slanje emaila"
+              >
+                {lead.email}
+              </button>
               {lead.emailScraped && (
                 <div className="ml-1" title="Email automatski pronađen">
                   <CheckCircle className="h-3 w-3 text-green-500" />

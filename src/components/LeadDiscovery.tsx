@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Lead } from '@/types';
@@ -9,9 +8,10 @@ import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
+  onNavigateToEmailGenerator?: (email: string, company: string) => void;
 }
 
-const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
+const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
   const [industry, setIndustry] = useState('laundry');
@@ -230,7 +230,8 @@ const LeadDiscovery = ({ onAddLead }: LeadDiscoveryProps) => {
 
       <LeadList 
         discoveredLeads={discoveredLeads} 
-        onAddLead={addDiscoveredLead} 
+        onAddLead={addDiscoveredLead}
+        onNavigateToEmailGenerator={onNavigateToEmailGenerator}
       />
 
       {discoveredLeads.length === 0 && !isSearching && <EmptyState />}

@@ -1,17 +1,22 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Send, FileText, Sparkles, Trash2 } from 'lucide-react';
+import { Mail, Send, FileText, Sparkles, Trash2, Users } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Email } from '@/types';
+import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 
-const EmailGenerator = () => {
-  const [recipient, setRecipient] = useState('');
+interface EmailGeneratorProps {
+  preSelectedEmail?: string;
+  preSelectedCompany?: string;
+}
+
+const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGeneratorProps) => {
+  const [recipient, setRecipient] = useState(preSelectedEmail || '');
+  const [selectedCompany, setSelectedCompany] = useState(preSelectedCompany || '');
   const [subject, setSubject] = useState('');
   const [emailContent, setEmailContent] = useState('');
   const [template, setTemplate] = useState('');
@@ -51,6 +56,10 @@ const EmailGenerator = () => {
     }
   ]);
 
+  // Get leads from localStorage
+  const [leads] = useLocalStorage<Lead[]>('leads', []);
+  const [discoveredLeads] = useLocalStorage<any[]>('discoveredLeads', []);
+
   const { toast } = useToast();
 
   const templates = [
@@ -60,67 +69,79 @@ const EmailGenerator = () => {
     { value: 'reminder', label: 'Podsjetnik' },
   ];
 
-  const templateContent = {
-    intro: `Poštovani,
+  // Personalized template content
+  const getPersonalizedTemplateContent = (templateType: string, companyName: string) => {
+    const company = companyName || '[NAZIV TVRTKE]';
+    
+    const templateContent = {
+      intro: `Poštovani,
 
-Nadamo se da ste dobro. Pišemo Vam jer vjerujemo da bi naša Marketing Agent platforma mogla značajno unaprijediti Vaš marketing pristup u industriji profesionalnih praonica rublja.
+Nadamo se da ste dobro. Pišemo Vam jer vjerujemo da bi naša Marketing Agent platforma mogla značajno unaprijediti marketing pristup ${company} u industriji profesionalnih praonica rublja.
 
 Naš sustav omogućava:
 • Automatsko pronalaženje novih klijenata
-• Personalizirane email kampanje
+• Personalizirane email kampanje  
 • Praćenje komunikacije s klijentima
 • Automatsko generiranje sadržaja za društvene mreže
+
+Posebno za ${company}, vidimo priliku za:
+- Povećanje broja novih klijenata za 40-60%
+- Smanjenje vremena utrošenog na marketing za 70%
+- Automatizaciju rutinskih marketing zadataka
 
 Rado bismo Vam predstavili platformu u kratkom online sastanku. Imate li vremena sljedeći tjedan?
 
 S poštovanjem,
 Vaš Marketing Agent tim`,
 
-    'follow-up': `Poštovani,
+      'follow-up': `Poštovani,
 
-U nastavku našeg razgovora, šaljemo Vam dodatne informacije o Marketing Agent platformi.
+U nastavku našeg razgovora o Marketing Agent platformi za ${company}, šaljemo Vam dodatne informacije.
 
-Kao što smo spomenuli, naša platforma može:
+Kao što smo spomenuli, naša platforma može pomoći ${company}:
 - Povećati broj novih klijenata za 40-60%
 - Smanjiti vrijeme utrošeno na marketing za 70%
 - Automatizirati rutinske marketing zadatke
 
-Priložili smo detaljnu analizu mogućih ušteda za Vašu praonicu.
+Priložili smo detaljnu analizu mogućih ušteda specifično za ${company}.
 
-Čekamo Vaš odgovor.
+Čekamo Vaš odgovor kako bismo mogli zakazati sljedeći korak.
 
 S poštovanjem,
 Marketing Agent tim`,
 
-    proposal: `Poštovani,
+      proposal: `Poštovani,
 
-S obzirom na Vaše potrebe i zahtjeve, pripremili smo personalizirani poslovni prijedlog za implementaciju Marketing Agent sustava u Vašoj praoni.
+S obzirom na specifične potrebe ${company} i naš razgovor, pripremili smo personalizirani poslovni prijedlog za implementaciju Marketing Agent sustava.
 
-PAKET USLUGA:
+PAKET USLUGA ZA ${company}:
 - Lead Hunter modul - 99€/mjesec
-- Email automatizacija - 79€/mjesec
+- Email automatizacija - 79€/mjesec  
 - CRM podsjetnici - 59€/mjesec
 - Social media management - 89€/mjesec
 
-PRVA 3 MJESECA: 50% POPUST
+EKSKLUZIVNO ZA ${company}: PRVA 3 MJESECA 50% POPUST
 
-Implementacija: BESPLATNO
-Obuka osoblja: UKLJUČENO
-24/7 podrška: UKLJUČENO
+Uključeno:
+✓ Implementacija: BESPLATNO
+✓ Obuka osoblja: UKLJUČENO
+✓ 24/7 podrška: UKLJUČENO
+✓ Personalizacija za ${company}: UKLJUČENO
 
 Molimo Vas za povratnu informaciju do kraja tjedna.
 
 S poštovanjem,
 Marketing Agent tim`,
 
-    reminder: `Poštovani,
+      reminder: `Poštovani,
 
-Ovo je podsjetnik o našem dogovorenom sastanku/pozivu koji je zakazan za [DATUM] u [VRIJEME].
+Ovo je podsjetnik o našem dogovorenom sastanku/pozivu za ${company} koji je zakazan za [DATUM] u [VRIJEME].
 
-Dnevni red:
+Dnevni red specifično za ${company}:
 - Prezentacija Marketing Agent platforme
-- Analiza Vaših trenutnih marketing procesa
+- Analiza trenutnih marketing procesa ${company}
 - Demonstracija ključnih funkcionalnosti
+- Personalizirani prijedlog za ${company}
 - Q&A sesija
 
 Link za sastanak: [LINK]
@@ -129,6 +150,9 @@ Molimo potvrdite svoju prisutnost.
 
 S poštovanjem,
 Marketing Agent tim`
+    };
+
+    return templateContent[templateType as keyof typeof templateContent] || '';
   };
 
   const generateEmail = () => {
@@ -141,22 +165,22 @@ Marketing Agent tim`
       return;
     }
 
-    const content = templateContent[template as keyof typeof templateContent];
+    const content = getPersonalizedTemplateContent(template, selectedCompany);
     setEmailContent(content);
     
-    // Auto-generate subject based on template
+    // Auto-generate personalized subject based on template and company
     const subjects = {
-      intro: 'Predstavljamo Marketing Agent - Revolucionarnite Vaš marketing!',
-      'follow-up': 'Follow-up: Marketing Agent prijedlog za Vašu praonicu',
-      proposal: 'Ekskluzivni prijedlog: Marketing Agent za Vašu tvrtku',
-      reminder: 'Podsjetnik: Zakazani sastanak - Marketing Agent'
+      intro: `Predstavljamo Marketing Agent - Revolucionirajte marketing ${selectedCompany || 'Vaše tvrtke'}!`,
+      'follow-up': `Follow-up: Marketing Agent prijedlog za ${selectedCompany || 'Vašu tvrtku'}`,
+      proposal: `Ekskluzivni prijedlog: Marketing Agent za ${selectedCompany || 'Vašu tvrtku'}`,
+      reminder: `Podsjetnik: Zakazani sastanak - Marketing Agent (${selectedCompany || 'Vaša tvrtka'})`
     };
     
     setSubject(subjects[template as keyof typeof subjects] || '');
     
     toast({
       title: "Email generiran",
-      description: "AI sadržaj je uspješno generiran na temelju odabranog predloška.",
+      description: `Personalizirani AI sadržaj je uspješno generiran za ${selectedCompany || 'odabranu tvrtku'}.`,
     });
   };
 
@@ -184,6 +208,7 @@ Marketing Agent tim`
     
     // Reset form
     setRecipient('');
+    setSelectedCompany('');
     setSubject('');
     setEmailContent('');
     setTemplate('');
@@ -229,6 +254,32 @@ Marketing Agent tim`
     });
   };
 
+  // Get all available email addresses from leads
+  const getAllEmailAddresses = () => {
+    const leadEmails = leads.filter(lead => lead.email).map(lead => ({
+      email: lead.email,
+      company: lead.company,
+      source: 'Lead Hunter'
+    }));
+    
+    const discoveredEmails = discoveredLeads.filter(lead => lead.email).map(lead => ({
+      email: lead.email,
+      company: lead.name,
+      source: 'Lead Discovery'
+    }));
+    
+    return [...leadEmails, ...discoveredEmails];
+  };
+
+  const handleRecipientSelect = (selectedEmail: string) => {
+    setRecipient(selectedEmail);
+    const allEmails = getAllEmailAddresses();
+    const selectedContact = allEmails.find(contact => contact.email === selectedEmail);
+    if (selectedContact) {
+      setSelectedCompany(selectedContact.company);
+    }
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -253,12 +304,47 @@ Marketing Agent tim`
           <CardContent className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
-                Primatelj
+                Odaberite primatelja iz leadova
+              </label>
+              <Select value={recipient} onValueChange={handleRecipientSelect}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberite iz postojećih leadova" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getAllEmailAddresses().map((contact, index) => (
+                    <SelectItem key={index} value={contact.email}>
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-2 text-slate-500" />
+                        <div>
+                          <div className="font-medium">{contact.company}</div>
+                          <div className="text-xs text-slate-500">{contact.email} • {contact.source}</div>
+                        </div>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Ili unesite email ručno
               </label>
               <Input
-                placeholder="email@praonica.hr"
+                placeholder="email@tvrtka.hr"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Naziv tvrtke (za personalizaciju)
+              </label>
+              <Input
+                placeholder="Naziv tvrtke"
+                value={selectedCompany}
+                onChange={(e) => setSelectedCompany(e.target.value)}
               />
             </div>
 
@@ -293,7 +379,7 @@ Marketing Agent tim`
 
             <Button onClick={generateEmail} className="w-full bg-purple-600 hover:bg-purple-700">
               <Sparkles className="h-4 w-4 mr-2" />
-              Generiraj AI Email
+              Generiraj Personalizirani AI Email
             </Button>
           </CardContent>
         </Card>
@@ -304,7 +390,7 @@ Marketing Agent tim`
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
-              placeholder="Vaš email sadržaj će se pojaviti ovdje..."
+              placeholder="Vaš personalizirani email sadržaj će se pojaviti ovdje..."
               value={emailContent}
               onChange={(e) => setEmailContent(e.target.value)}
               className="min-h-64"
