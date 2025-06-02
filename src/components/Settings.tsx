@@ -121,16 +121,37 @@ const Settings = () => {
 
     setLoading(true);
     try {
-      const { error } = await supabase
+      // First, check if settings exist for this user
+      const { data: existingSettings } = await supabase
         .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          email_settings: emailSettings,
-          social_platforms: socialPlatforms,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existingSettings) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('user_settings')
+          .update({
+            email_settings: emailSettings,
+            social_platforms: socialPlatforms,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } else {
+        // Insert new settings
+        const { error } = await supabase
+          .from('user_settings')
+          .insert({
+            user_id: user.id,
+            email_settings: emailSettings,
+            social_platforms: socialPlatforms
+          });
+
+        if (error) throw error;
+      }
 
       toast({
         title: "Postavke spremljene",
