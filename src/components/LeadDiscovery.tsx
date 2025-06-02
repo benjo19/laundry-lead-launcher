@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
 import { Lead } from '@/types';
 import SearchForm, { industries, DiscoveredLead } from './lead-discovery/SearchForm';
 import LeadList from './lead-discovery/LeadList';
@@ -12,13 +15,45 @@ interface LeadDiscoveryProps {
 }
 
 const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryProps) => {
+  const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [location, setLocation] = useState('');
   const [industry, setIndustry] = useState('laundry');
   const [isSearching, setIsSearching] = useState(false);
   const [discoveredLeads, setDiscoveredLeads] = useState<DiscoveredLead[]>([]);
   const [apiKey, setApiKey] = useState('');
+  const [savedApiKey, setSavedApiKey] = useState('');
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (user) {
+      loadApiKey();
+    }
+  }, [user]);
+
+  const loadApiKey = async () => {
+    try {
+      const { data: settings, error } = await supabase
+        .from('user_settings')
+        .select('ai_settings')
+        .eq('user_id', user?.id)
+        .maybeSingle();
+
+      if (error && error.code !== 'PGRST116') {
+        throw error;
+      }
+
+      if (settings?.ai_settings) {
+        const aiSettings = settings.ai_settings as any;
+        if (aiSettings.google_maps_api_key) {
+          setSavedApiKey(aiSettings.google_maps_api_key);
+          setApiKey(aiSettings.google_maps_api_key);
+        }
+      }
+    } catch (error) {
+      console.error('Error loading API key:', error);
+    }
+  };
 
   const getPlaceDetails = async (placeId: string) => {
     try {
@@ -45,10 +80,12 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
   };
 
   const searchLeads = async () => {
-    if (!apiKey) {
+    const currentApiKey = apiKey || savedApiKey;
+    
+    if (!currentApiKey) {
       toast({
         title: "API ključ potreban",
-        description: "Molimo unesite Google Maps API ključ.",
+        description: "Molimo unesite Google Maps API ključ ili ga postavite u Settings.",
         variant: "destructive",
       });
       return;
@@ -70,7 +107,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       
       // Using a CORS proxy to avoid CORS issues with Google Maps API
       const proxyUrl = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + ' in ' + location)}&key=${apiKey}`;
+      const targetUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + ' in ' + location)}&key=${currentApiKey}`;
       
       console.log('Searching for:', query + ' in ' + location);
       
@@ -205,11 +242,14 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900">Lead Discovery</h2>
-          <p className="text-slate-600">Pronađite nove leadove pomoću Google Maps i AI analize</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Lead Discovery</h2>
+          <p className="text-slate-600 text-sm sm:text-base">Pronađite nove leadove pomoću Google Maps i AI analize</p>
+          {savedApiKey && (
+            <p className="text-xs text-green-600 mt-1">✓ Google Maps API ključ učitan iz postavki</p>
+          )}
         </div>
       </div>
 
@@ -226,6 +266,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
         discoveredLeads={discoveredLeads}
         onSearchLeads={searchLeads}
         onAnalyzeWithAI={analyzeWithAI}
+        showApiKeyInput={!savedApiKey}
       />
 
       <LeadList 

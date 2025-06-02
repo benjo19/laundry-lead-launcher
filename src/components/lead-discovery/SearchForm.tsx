@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,7 @@ interface SearchFormProps {
   discoveredLeads: DiscoveredLead[];
   onSearchLeads: () => void;
   onAnalyzeWithAI: (leads: DiscoveredLead[]) => void;
+  showApiKeyInput?: boolean;
 }
 
 const SearchForm = ({
@@ -51,15 +53,16 @@ const SearchForm = ({
   isSearching,
   discoveredLeads,
   onSearchLeads,
-  onAnalyzeWithAI
+  onAnalyzeWithAI,
+  showApiKeyInput = true
 }: SearchFormProps) => {
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center justify-between">
+          <CardTitle className="flex items-center justify-between text-lg sm:text-xl">
             <span className="flex items-center">
-              <Search className="h-5 w-5 mr-2 text-blue-600" />
+              <Search className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-blue-600" />
               Pretraživanje Leadova
             </span>
             {discoveredLeads.length > 0 && (
@@ -72,17 +75,23 @@ const SearchForm = ({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="apiKey">Google Maps API ključ</Label>
-              <Input
-                id="apiKey"
-                type="password"
-                placeholder="Unesite Google Maps API ključ"
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-              />
-            </div>
+          <div className="grid grid-cols-1 gap-4">
+            {showApiKeyInput && (
+              <div className="space-y-2">
+                <Label htmlFor="apiKey">Google Maps API ključ</Label>
+                <Input
+                  id="apiKey"
+                  type="password"
+                  placeholder="Unesite Google Maps API ključ ili ga postavite u Settings"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                />
+                <p className="text-xs text-slate-500">
+                  💡 Postavite API ključ u Settings da ga ne morate unositi svaki put
+                </p>
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="location">Lokacija</Label>
               <div className="relative">
