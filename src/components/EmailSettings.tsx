@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Save, Loader2 } from 'lucide-react';
+import { Mail, Save, Loader2, Chrome, Globe } from 'lucide-react';
 
 interface EmailSettings {
   smtp_server: string;
@@ -21,6 +21,7 @@ interface EmailSettings {
   use_tls: boolean;
   auto_signature: boolean;
   signature_template: string;
+  provider_type?: 'manual' | 'gmail' | 'outlook';
 }
 
 const EmailSettings = () => {
@@ -37,7 +38,8 @@ const EmailSettings = () => {
     from_email: '',
     use_tls: true,
     auto_signature: true,
-    signature_template: ''
+    signature_template: '',
+    provider_type: 'manual'
   });
 
   useEffect(() => {
@@ -64,6 +66,26 @@ const EmailSettings = () => {
       console.error('Error loading email settings:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleProviderSelect = (provider: 'gmail' | 'outlook') => {
+    if (provider === 'gmail') {
+      setSettings({
+        ...settings,
+        provider_type: 'gmail',
+        smtp_server: 'smtp.gmail.com',
+        smtp_port: 587,
+        use_tls: true
+      });
+    } else if (provider === 'outlook') {
+      setSettings({
+        ...settings,
+        provider_type: 'outlook',
+        smtp_server: 'smtp-mail.outlook.com',
+        smtp_port: 587,
+        use_tls: true
+      });
     }
   };
 
@@ -134,6 +156,63 @@ const EmailSettings = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Provider Selection */}
+        <div className="space-y-4">
+          <Label className="text-base font-medium">Odaberite email pružatelja</Label>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Button
+              type="button"
+              variant={settings.provider_type === 'gmail' ? 'default' : 'outline'}
+              onClick={() => handleProviderSelect('gmail')}
+              className="flex items-center gap-2 h-12"
+            >
+              <Chrome className="h-5 w-5" />
+              Gmail
+            </Button>
+            <Button
+              type="button"
+              variant={settings.provider_type === 'outlook' ? 'default' : 'outline'}
+              onClick={() => handleProviderSelect('outlook')}
+              className="flex items-center gap-2 h-12"
+            >
+              <Globe className="h-5 w-5" />
+              Outlook
+            </Button>
+            <Button
+              type="button"
+              variant={settings.provider_type === 'manual' ? 'default' : 'outline'}
+              onClick={() => setSettings({ ...settings, provider_type: 'manual' })}
+              className="flex items-center gap-2 h-12"
+            >
+              <Mail className="h-5 w-5" />
+              Ručno
+            </Button>
+          </div>
+        </div>
+
+        {/* Provider-specific instructions */}
+        {settings.provider_type === 'gmail' && (
+          <div className="bg-blue-50 p-4 rounded-lg">
+            <h4 className="font-medium text-blue-900 mb-2">Gmail postavke</h4>
+            <ul className="text-sm text-blue-800 space-y-1">
+              <li>• Koristite vaš Gmail email kao username</li>
+              <li>• Za lozinku koristite App Password, ne običnu lozinku</li>
+              <li>• App Password možete kreirati u Google Account postavkama</li>
+            </ul>
+          </div>
+        )}
+
+        {settings.provider_type === 'outlook' && (
+          <div className="bg-purple-50 p-4 rounded-lg">
+            <h4 className="font-medium text-purple-900 mb-2">Outlook postavke</h4>
+            <ul className="text-sm text-purple-800 space-y-1">
+              <li>• Koristite vaš Outlook/Hotmail email kao username</li>
+              <li>• Koristite običnu lozinku vašeg Microsoft računa</li>
+              <li>• Provjerite da je SMTP omogućen u Outlook postavkama</li>
+            </ul>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="smtp_server">SMTP Server</Label>
@@ -142,6 +221,7 @@ const EmailSettings = () => {
               value={settings.smtp_server}
               onChange={(e) => setSettings({ ...settings, smtp_server: e.target.value })}
               placeholder="smtp.gmail.com"
+              disabled={settings.provider_type !== 'manual'}
             />
           </div>
           <div>
@@ -151,28 +231,43 @@ const EmailSettings = () => {
               type="number"
               value={settings.smtp_port}
               onChange={(e) => setSettings({ ...settings, smtp_port: parseInt(e.target.value) || 587 })}
+              disabled={settings.provider_type !== 'manual'}
             />
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="smtp_username">SMTP Username</Label>
+            <Label htmlFor="smtp_username">
+              {settings.provider_type === 'gmail' ? 'Gmail Email' : 
+               settings.provider_type === 'outlook' ? 'Outlook Email' : 'SMTP Username'}
+            </Label>
             <Input
               id="smtp_username"
               value={settings.smtp_username}
               onChange={(e) => setSettings({ ...settings, smtp_username: e.target.value })}
-              placeholder="vaš-email@gmail.com"
+              placeholder={
+                settings.provider_type === 'gmail' ? 'vaš-email@gmail.com' :
+                settings.provider_type === 'outlook' ? 'vaš-email@outlook.com' :
+                'vaš-email@example.com'
+              }
             />
           </div>
           <div>
-            <Label htmlFor="smtp_password">SMTP Password</Label>
+            <Label htmlFor="smtp_password">
+              {settings.provider_type === 'gmail' ? 'App Password' : 
+               settings.provider_type === 'outlook' ? 'Lozinka' : 'SMTP Password'}
+            </Label>
             <Input
               id="smtp_password"
               type="password"
               value={settings.smtp_password}
               onChange={(e) => setSettings({ ...settings, smtp_password: e.target.value })}
-              placeholder="app-specific password"
+              placeholder={
+                settings.provider_type === 'gmail' ? 'App-specific password' :
+                settings.provider_type === 'outlook' ? 'Microsoft account password' :
+                'password'
+              }
             />
           </div>
         </div>
@@ -204,6 +299,7 @@ const EmailSettings = () => {
             id="use_tls"
             checked={settings.use_tls}
             onCheckedChange={(checked) => setSettings({ ...settings, use_tls: checked })}
+            disabled={settings.provider_type !== 'manual'}
           />
           <Label htmlFor="use_tls">Koristi TLS/SSL enkripciju</Label>
         </div>
