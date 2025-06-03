@@ -1,25 +1,35 @@
 
 import React, { useState, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Lead } from '@/types';
+import { Lead, Reminder } from '@/types';
 import { useReminders } from '@/hooks/useReminders';
 import ExportButton from './ExportButton';
 import ReminderFilters from './crm/ReminderFilters';
 import ReminderForm from './crm/ReminderForm';
 import ReminderList from './crm/ReminderList';
 
+interface NewReminderForm {
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  priority: Reminder['priority'];
+  company: string;
+  companyInputMode: 'select' | 'manual';
+}
+
 const CRMReminder = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   
-  const [newReminder, setNewReminder] = useState({
+  const [newReminder, setNewReminder] = useState<NewReminderForm>({
     title: '',
     description: '',
     date: '',
     time: '',
-    priority: 'Srednji' as const,
+    priority: 'Srednji',
     company: '',
-    companyInputMode: 'select' as const
+    companyInputMode: 'select'
   });
 
   const [leads] = useLocalStorage<Lead[]>('leads', []);
