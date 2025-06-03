@@ -217,7 +217,7 @@ async function generateWithGemini(systemPrompt: string, userPrompt: string, apiK
 }
 
 function buildSystemPrompt(businessContext?: string): string {
-  let systemPrompt = `Ti si ekspert za B2B marketing i prodaju. Tvoj zadatak je kreiranje personaliziranih, profesionalnih emailova na hrvatskom jeziku za Marketing Agent platformu.
+  let systemPrompt = `Ti si ekspert za B2B marketing i prodaju. Tvoj zadatak je kreiranje personaliziranih, profesionalnih emailova na hrvatskom jeziku.
 
 VAŽNE SMJERNICE:
 - Uvijek piši na hrvatskom jeziku
@@ -231,15 +231,7 @@ VAŽNE SMJERNICE:
 STRUKTURA ODGOVORA:
 Odgovori u sljedećem formatu:
 SUBJECT: [naslov emaila]
-CONTENT: [sadržaj emaila]
-
-Marketing Agent platforma pomaže tvrtkama:
-- Automatsko pronalaženje novih klijenata
-- Personalizirane email kampanje
-- CRM podsjetnici
-- Automatsko generiranje sadržaja za društvene mreže
-- Povećanje broja klijenata za 40-60%
-- Smanjenje vremena utrošenog na marketing za 70%`;
+CONTENT: [sadržaj emaila]`;
 
   if (businessContext) {
     systemPrompt += `\n\nINFORMACIJE O POŠILJATELJU:\n${businessContext}`;
