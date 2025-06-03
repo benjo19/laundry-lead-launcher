@@ -35,7 +35,11 @@ export const useAISettings = () => {
       }
 
       if (data?.ai_settings) {
-        setAISettings(data.ai_settings as AISettings);
+        // Type assertion with proper validation
+        const settings = data.ai_settings as any;
+        if (settings && typeof settings === 'object' && settings.provider && settings.api_key) {
+          setAISettings(settings as AISettings);
+        }
       }
     } catch (error) {
       console.error('Error loading AI settings:', error);
@@ -52,7 +56,7 @@ export const useAISettings = () => {
         .from('user_settings')
         .upsert({
           user_id: user.id,
-          ai_settings: settings,
+          ai_settings: settings as any,
           updated_at: new Date().toISOString()
         });
 

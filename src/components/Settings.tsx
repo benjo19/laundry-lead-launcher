@@ -9,7 +9,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Save, Mail, Share2, CheckCircle, XCircle, AlertCircle, ExternalLink, Bot, MapPin } from 'lucide-react';
+import { Save, Mail, Share2, CheckCircle, XCircle, AlertCircle, ExternalLink, Bot, MapPin, Building2 } from 'lucide-react';
+import BusinessProfileSettings from './BusinessProfileSettings';
 
 interface EmailSettings {
   smtp_host: string;
@@ -251,8 +252,13 @@ const Settings = () => {
           <p className="text-slate-600 mt-2 text-sm sm:text-base">Konfigurirajte svoje AI, email i društvene mreže integracije</p>
         </div>
 
-        <Tabs defaultValue="ai" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 text-xs sm:text-sm">
+        <Tabs defaultValue="business" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-4 text-xs sm:text-sm">
+            <TabsTrigger value="business" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4">
+              <Building2 className="h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Poslovanje</span>
+              <span className="sm:hidden">Biz</span>
+            </TabsTrigger>
             <TabsTrigger value="ai" className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4">
               <Bot className="h-3 w-3 sm:h-4 sm:w-4" />
               <span className="hidden sm:inline">AI & API</span>
@@ -288,6 +294,10 @@ const Settings = () => {
               })()}
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="business">
+            <BusinessProfileSettings />
+          </TabsContent>
 
           <TabsContent value="ai">
             <div className="space-y-6">

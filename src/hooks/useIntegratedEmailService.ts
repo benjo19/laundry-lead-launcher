@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { useAISettings } from './useAISettings';
+import { useBusinessProfile } from './useBusinessProfile';
 
 interface EmailGenerationParams {
   recipientCompany: string;
@@ -27,6 +28,7 @@ export const useIntegratedEmailService = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { isAIConfigured } = useAISettings();
+  const { getContextForAI } = useBusinessProfile();
 
   const generateEmail = async (params: EmailGenerationParams): Promise<GeneratedEmailContent | null> => {
     if (!user) {
@@ -50,8 +52,15 @@ export const useIntegratedEmailService = () => {
     try {
       console.log('Generating email with params:', params);
 
+      // Add business context to the parameters
+      const businessContext = getContextForAI();
+      const enhancedParams = {
+        ...params,
+        businessContext: businessContext
+      };
+
       const { data, error } = await supabase.functions.invoke('generate-email', {
-        body: params
+        body: enhancedParams
       });
 
       if (error) {

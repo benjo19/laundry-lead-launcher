@@ -45,6 +45,9 @@ const ContentBooster = () => {
         <div>
           <h2 className="text-3xl font-bold text-slate-900">Content Booster</h2>
           <p className="text-slate-600">Generirajte i planirajte sadržaj za društvene mreže pomoću AI-a</p>
+          <p className="text-sm text-slate-500 mt-1">
+            💡 Postavite vaš poslovni profil u Postavkama za personaliziraniu sadržaja
+          </p>
         </div>
         <div className="flex space-x-2">
           <span className="text-sm text-slate-600">
