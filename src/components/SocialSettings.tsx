@@ -68,8 +68,9 @@ const SocialSettings = () => {
 
       if (error) throw error;
 
-      if (data?.social_platforms) {
-        setPlatforms({ ...platforms, ...data.social_platforms });
+      if (data?.social_platforms && typeof data.social_platforms === 'object' && data.social_platforms !== null) {
+        const socialPlatforms = data.social_platforms as Record<string, any>;
+        setPlatforms(prev => ({ ...prev, ...socialPlatforms }));
       }
     } catch (error) {
       console.error('Error loading social settings:', error);
@@ -94,7 +95,7 @@ const SocialSettings = () => {
         result = await supabase
           .from('user_settings')
           .update({
-            social_platforms: platforms,
+            social_platforms: platforms as any,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
@@ -103,7 +104,7 @@ const SocialSettings = () => {
           .from('user_settings')
           .insert({
             user_id: user.id,
-            social_platforms: platforms,
+            social_platforms: platforms as any,
             updated_at: new Date().toISOString()
           });
       }

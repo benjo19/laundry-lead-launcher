@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -57,8 +56,9 @@ const EmailSettings = () => {
 
       if (error) throw error;
 
-      if (data?.email_settings) {
-        setSettings({ ...settings, ...data.email_settings });
+      if (data?.email_settings && typeof data.email_settings === 'object' && data.email_settings !== null) {
+        const emailSettings = data.email_settings as Record<string, any>;
+        setSettings(prev => ({ ...prev, ...emailSettings }));
       }
     } catch (error) {
       console.error('Error loading email settings:', error);
@@ -83,7 +83,7 @@ const EmailSettings = () => {
         result = await supabase
           .from('user_settings')
           .update({
-            email_settings: settings,
+            email_settings: settings as any,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
@@ -92,7 +92,7 @@ const EmailSettings = () => {
           .from('user_settings')
           .insert({
             user_id: user.id,
-            email_settings: settings,
+            email_settings: settings as any,
             updated_at: new Date().toISOString()
           });
       }
