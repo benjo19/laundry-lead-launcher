@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Save, Loader2, Chrome, Globe } from 'lucide-react';
+import { Mail, Save, Loader2, Chrome, Globe, ExternalLink } from 'lucide-react';
 
 interface EmailSettings {
   smtp_server: string;
@@ -89,6 +89,22 @@ const EmailSettings = () => {
     }
   };
 
+  const handleGoogleSignIn = () => {
+    window.open('https://accounts.google.com/signin', '_blank');
+    toast({
+      title: "Google Sign In",
+      description: "Otvorena je nova kartica za Google prijavu. Nakon prijave, kopirajte vaš email i stvorite App Password.",
+    });
+  };
+
+  const handleOutlookSignIn = () => {
+    window.open('https://outlook.live.com/owa/', '_blank');
+    toast({
+      title: "Outlook Sign In",
+      description: "Otvorena je nova kartica za Outlook prijavu. Nakon prijave, kopirajte vaš email i lozinku.",
+    });
+  };
+
   const saveSettings = async () => {
     if (!user) return;
 
@@ -156,6 +172,36 @@ const EmailSettings = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Quick Sign In Section */}
+        <div className="space-y-4">
+          <Label className="text-base font-medium">Brze poveznice za prijavu</Label>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleGoogleSignIn}
+              className="flex items-center gap-2 h-12"
+            >
+              <Chrome className="h-5 w-5" />
+              Prijavite se u Google
+              <ExternalLink className="h-4 w-4 ml-auto" />
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleOutlookSignIn}
+              className="flex items-center gap-2 h-12"
+            >
+              <Globe className="h-5 w-5" />
+              Prijavite se u Outlook
+              <ExternalLink className="h-4 w-4 ml-auto" />
+            </Button>
+          </div>
+          <p className="text-sm text-slate-600">
+            Koristite ove poveznice za lakšu prijavu u vaše email račune. Nakon prijave, kopirajte potrebne podatke u polja ispod.
+          </p>
+        </div>
+
         {/* Provider Selection */}
         <div className="space-y-4">
           <Label className="text-base font-medium">Odaberite email pružatelja</Label>
@@ -198,6 +244,7 @@ const EmailSettings = () => {
               <li>• Koristite vaš Gmail email kao username</li>
               <li>• Za lozinku koristite App Password, ne običnu lozinku</li>
               <li>• App Password možete kreirati u Google Account postavkama</li>
+              <li>• Kliknite "Prijavite se u Google" iznad za brži pristup</li>
             </ul>
           </div>
         )}
@@ -209,10 +256,12 @@ const EmailSettings = () => {
               <li>• Koristite vaš Outlook/Hotmail email kao username</li>
               <li>• Koristite običnu lozinku vašeg Microsoft računa</li>
               <li>• Provjerite da je SMTP omogućen u Outlook postavkama</li>
+              <li>• Kliknite "Prijavite se u Outlook" iznad za brži pristup</li>
             </ul>
           </div>
         )}
 
+        {/* SMTP Configuration */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <Label htmlFor="smtp_server">SMTP Server</Label>
