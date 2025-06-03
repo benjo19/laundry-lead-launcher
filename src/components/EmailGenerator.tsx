@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Send, FileText, Sparkles, Trash2, Users, Bot } from 'lucide-react';
+import { Mail, Send, FileText, Sparkles, Trash2, Users, Settings } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
-import { AIEmailService, AIProvider } from '@/services/aiEmailService';
+import { useIntegratedEmailService } from '@/hooks/useIntegratedEmailService';
+import { Link } from 'react-router-dom';
 
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
@@ -21,6 +22,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [subject, setSubject] = useState('');
   const [emailContent, setEmailContent] = useState('');
   const [template, setTemplate] = useState('');
+  
   const [emails, setEmails] = useLocalStorage<Email[]>('emails', [
     {
       id: 1,
@@ -57,14 +59,12 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   ]);
 
-  // Get leads from localStorage
   const [leads] = useLocalStorage<Lead[]>('leads', []);
   const [discoveredLeads] = useLocalStorage<any[]>('discoveredLeads', []);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [aiProvider, setAiProvider] = useState<AIProvider>('openai');
 
   const { toast } = useToast();
+  const { generateEmail } = useIntegratedEmailService();
 
   const templates = [
     { value: 'intro', label: 'Uvodna prezentacija' },
@@ -73,25 +73,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     { value: 'reminder', label: 'Podsjetnik' },
   ];
 
-  const aiProviders = [
-    { value: 'openai', label: 'OpenAI GPT', placeholder: 'sk-...', docs: 'https://platform.openai.com/api-keys' },
-    { value: 'gemini', label: 'Google Gemini', placeholder: 'AIza...', docs: 'https://aistudio.google.com/app/apikey' },
-  ];
-
-  const generateEmail = async () => {
+  const generateEmailContent = async () => {
     if (!template) {
       toast({
         title: "Greška",
         description: "Molimo odaberite predložak prije generiranja emaila.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    if (!apiKey) {
-      toast({
-        title: "API ključ potreban",
-        description: `Molimo unesite ${aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'} API ključ za AI generiranje emailova.`,
         variant: "destructive"
       });
       return;
@@ -109,8 +95,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setIsGenerating(true);
     
     try {
-      const aiService = new AIEmailService(apiKey, aiProvider);
-      
       // Find additional context about the company
       const allEmails = getAllEmailAddresses();
       const selectedContact = allEmails.find(contact => contact.email === recipient);
@@ -122,7 +106,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         industry = 'profesionalne praone rublja';
       }
 
-      const result = await aiService.generatePersonalizedEmail({
+      const result = await generateEmail({
         recipientCompany: selectedCompany || 'tvrtka',
         recipientEmail: recipient,
         emailType: template as 'intro' | 'follow-up' | 'proposal' | 'reminder',
@@ -133,20 +117,12 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         }
       });
 
-      setSubject(result.subject);
-      setEmailContent(result.content);
-      
-      toast({
-        title: "AI Email generiran",
-        description: `Personalizirani AI sadržaj je uspješno generiran za ${selectedCompany || 'odabranu tvrtku'} pomoću ${aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'}.`,
-      });
+      if (result) {
+        setSubject(result.subject);
+        setEmailContent(result.content);
+      }
     } catch (error) {
       console.error('AI generation error:', error);
-      toast({
-        title: "Greška pri generiranju",
-        description: error instanceof Error ? error.message : "Dogodila se greška pri AI generiranju emaila.",
-        variant: "destructive"
-      });
     } finally {
       setIsGenerating(false);
     }
@@ -222,7 +198,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     });
   };
 
-  // Get all available email addresses from leads
   const getAllEmailAddresses = () => {
     const leadEmails = leads.filter(lead => lead.email).map(lead => ({
       email: lead.email,
@@ -248,19 +223,25 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
-  const currentProvider = aiProviders.find(p => p.value === aiProvider);
-
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-slate-900">Email Generator</h2>
-          <p className="text-slate-600">Stvorite personalizirane emailove za Vaše klijente pomoću AI-a</p>
+          <p className="text-slate-600">Stvorite personalizirane emailove za Vaše klijente pomoću integrirane AI</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <FileText className="h-4 w-4 mr-2" />
-          Upravljaj Predlošcima
-        </Button>
+        <div className="flex space-x-2">
+          <Link to="/settings">
+            <Button variant="outline">
+              <Settings className="h-4 w-4 mr-2" />
+              AI Postavke
+            </Button>
+          </Link>
+          <Button className="bg-blue-600 hover:bg-blue-700">
+            <FileText className="h-4 w-4 mr-2" />
+            Upravljaj Predlošcima
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -272,44 +253,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                <Bot className="h-4 w-4 inline mr-1" />
-                AI Provider
-              </label>
-              <Select value={aiProvider} onValueChange={(value: AIProvider) => setAiProvider(value)}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Odaberite AI servis" />
-                </SelectTrigger>
-                <SelectContent>
-                  {aiProviders.map((provider) => (
-                    <SelectItem key={provider.value} value={provider.value}>
-                      {provider.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                {currentProvider?.label} API Ključ
-              </label>
-              <Input
-                type="password"
-                placeholder={currentProvider?.placeholder}
-                value={apiKey}
-                onChange={(e) => setApiKey(e.target.value)}
-                className="mb-2"
-              />
-              <p className="text-xs text-slate-500">
-                Potreban za AI generiranje personaliziranih emailova. 
-                <a href={currentProvider?.docs} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
-                  Nabavite API ključ ovdje
-                </a>
-              </p>
-            </div>
-
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Odaberite primatelja iz leadova
@@ -386,12 +329,12 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             </div>
 
             <Button 
-              onClick={generateEmail} 
+              onClick={generateEmailContent} 
               disabled={isGenerating}
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              {isGenerating ? `Generiranje ${currentProvider?.label} sadržaja...` : `Generiraj Personalizirani AI Email (${currentProvider?.label})`}
+              {isGenerating ? 'Generiranje AI sadržaja...' : 'Generiraj Personalizirani AI Email'}
             </Button>
           </CardContent>
         </Card>
