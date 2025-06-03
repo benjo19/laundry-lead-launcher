@@ -8,6 +8,7 @@ interface AISettings {
   provider: 'openai' | 'gemini';
   api_key: string;
   model?: string;
+  google_maps_api_key?: string;
 }
 
 export const useAISettings = () => {

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAISettings } from '@/hooks/useAISettings';
-import { Brain, Key, Save, Loader2, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Brain, Key, Save, Loader2, CheckCircle, AlertTriangle, MapPin } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const AISettings = () => {
@@ -16,17 +16,20 @@ const AISettings = () => {
   const [formData, setFormData] = useState({
     provider: 'openai' as 'openai' | 'gemini',
     api_key: '',
-    model: ''
+    model: '',
+    google_maps_api_key: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showGoogleMapsKey, setShowGoogleMapsKey] = useState(false);
 
   useEffect(() => {
     if (aiSettings) {
       setFormData({
         provider: aiSettings.provider || 'openai',
         api_key: aiSettings.api_key || '',
-        model: aiSettings.model || ''
+        model: aiSettings.model || '',
+        google_maps_api_key: aiSettings.google_maps_api_key || ''
       });
     }
   }, [aiSettings]);
@@ -35,7 +38,7 @@ const AISettings = () => {
     if (!formData.api_key.trim()) {
       toast({
         title: "Greška",
-        description: "API ključ je obavezan.",
+        description: "AI API ključ je obavezan.",
         variant: "destructive",
       });
       return;
@@ -55,7 +58,7 @@ const AISettings = () => {
     if (!formData.api_key) {
       toast({
         title: "Greška",
-        description: "Unesite API ključ prije testiranja.",
+        description: "Unesite AI API ključ prije testiranja.",
         variant: "destructive",
       });
       return;
@@ -128,7 +131,7 @@ const AISettings = () => {
         </div>
 
         <div>
-          <Label htmlFor="api_key">API Ključ</Label>
+          <Label htmlFor="api_key">AI API Ključ</Label>
           <div className="flex gap-2">
             <Input
               id="api_key"
@@ -156,6 +159,34 @@ const AISettings = () => {
               ? "Dobijte API ključ na platform.openai.com/api-keys"
               : "Dobijte API ključ na aistudio.google.com/app/apikey"
             }
+          </p>
+        </div>
+
+        <div>
+          <Label htmlFor="google_maps_api_key" className="flex items-center gap-2">
+            <MapPin className="h-4 w-4" />
+            Google Maps API Ključ (opcionalno)
+          </Label>
+          <div className="flex gap-2">
+            <Input
+              id="google_maps_api_key"
+              type={showGoogleMapsKey ? "text" : "password"}
+              value={formData.google_maps_api_key}
+              onChange={(e) => setFormData({ ...formData, google_maps_api_key: e.target.value })}
+              placeholder="AIza..."
+              className="flex-1"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setShowGoogleMapsKey(!showGoogleMapsKey)}
+            >
+              {showGoogleMapsKey ? "Sakrij" : "Prikaži"}
+            </Button>
+          </div>
+          <p className="text-sm text-slate-500 mt-1">
+            Za Lead Discovery funkcionalnost - dobijte ključ na console.cloud.google.com
           </p>
         </div>
 
@@ -206,25 +237,36 @@ const AISettings = () => {
         </div>
 
         <div className="bg-slate-50 p-4 rounded-lg">
-          <h4 className="font-medium mb-2">Kako dobiti API ključ:</h4>
+          <h4 className="font-medium mb-2">Kako dobiti API ključeve:</h4>
           <div className="space-y-2 text-sm text-slate-600">
-            {formData.provider === 'openai' ? (
-              <>
-                <p>1. Idite na <strong>platform.openai.com</strong></p>
-                <p>2. Registrirajte se ili se prijavite</p>
-                <p>3. Idite na "API Keys" u vašem dashboard-u</p>
-                <p>4. Kliknite "Create new secret key"</p>
-                <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
-              </>
-            ) : (
-              <>
-                <p>1. Idite na <strong>aistudio.google.com</strong></p>
-                <p>2. Prijavite se s Google računom</p>
-                <p>3. Kliknite "Get API key"</p>
-                <p>4. Kreirajte novi API ključ</p>
-                <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
-              </>
-            )}
+            <div>
+              <strong>AI API ključ:</strong>
+              {formData.provider === 'openai' ? (
+                <>
+                  <p>1. Idite na <strong>platform.openai.com</strong></p>
+                  <p>2. Registrirajte se ili se prijavite</p>
+                  <p>3. Idite na "API Keys" u vašem dashboard-u</p>
+                  <p>4. Kliknite "Create new secret key"</p>
+                  <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
+                </>
+              ) : (
+                <>
+                  <p>1. Idite na <strong>aistudio.google.com</strong></p>
+                  <p>2. Prijavite se s Google računom</p>
+                  <p>3. Kliknite "Get API key"</p>
+                  <p>4. Kreirajte novi API ključ</p>
+                  <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
+                </>
+              )}
+            </div>
+            <div className="mt-3">
+              <strong>Google Maps API ključ:</strong>
+              <p>1. Idite na <strong>console.cloud.google.com</strong></p>
+              <p>2. Kreirajte novi projekt ili odaberite postojeći</p>
+              <p>3. Omogućite "Places API" i "Maps JavaScript API"</p>
+              <p>4. Kreirajte API ključ u "Credentials" sekciji</p>
+              <p>5. Kopirajte ključ za Lead Discovery funkcije</p>
+            </div>
           </div>
         </div>
       </CardContent>

@@ -7,6 +7,7 @@ import SearchForm, { industries, DiscoveredLead } from './lead-discovery/SearchF
 import LeadList from './lead-discovery/LeadList';
 import EmptyState from './lead-discovery/EmptyState';
 import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
+import { useAISettings } from '@/hooks/useAISettings';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
@@ -20,17 +21,18 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
   const [industry, setIndustry] = useState('laundry');
   const [isSearching, setIsSearching] = useState(false);
   const [discoveredLeads, setDiscoveredLeads] = useState<DiscoveredLead[]>([]);
-  const [apiKey, setApiKey] = useState('');
-  const [savedApiKey, setSavedApiKey] = useState('');
+  const [tempApiKey, setTempApiKey] = useState('');
+  const [savedGoogleMapsApiKey, setSavedGoogleMapsApiKey] = useState('');
   const { toast } = useToast();
+  const { aiSettings, saveAISettings } = useAISettings();
 
   useEffect(() => {
     if (user) {
-      loadApiKey();
+      loadGoogleMapsApiKey();
     }
-  }, [user]);
+  }, [user, aiSettings]);
 
-  const loadApiKey = async () => {
+  const loadGoogleMapsApiKey = async () => {
     try {
       const { data: settings, error } = await supabase
         .from('user_settings')
@@ -43,18 +45,44 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       }
 
       if (settings?.ai_settings) {
-        const aiSettings = settings.ai_settings as any;
-        if (aiSettings.google_maps_api_key) {
-          setSavedApiKey(aiSettings.google_maps_api_key);
-          setApiKey(aiSettings.google_maps_api_key);
+        const currentAiSettings = settings.ai_settings as any;
+        if (currentAiSettings.google_maps_api_key) {
+          setSavedGoogleMapsApiKey(currentAiSettings.google_maps_api_key);
+          setTempApiKey(currentAiSettings.google_maps_api_key);
         }
       }
     } catch (error) {
-      console.error('Error loading API key:', error);
+      console.error('Error loading Google Maps API key:', error);
     }
   };
 
-  const getPlaceDetails = async (placeId: string) => {
+  const saveGoogleMapsApiKey = async (apiKey: string) => {
+    if (!user || !aiSettings) return;
+
+    try {
+      const updatedSettings = {
+        ...aiSettings,
+        google_maps_api_key: apiKey
+      };
+
+      await saveAISettings(updatedSettings);
+      setSavedGoogleMapsApiKey(apiKey);
+      
+      toast({
+        title: "API ključ spremljen",
+        description: "Google Maps API ključ je uspješno spremljen u AI postavke.",
+      });
+    } catch (error) {
+      console.error('Error saving Google Maps API key:', error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška prilikom spremanja API ključa.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getPlaceDetails = async (placeId: string, apiKey: string) => {
     try {
       const proxyUrl = 'https://api.allorigins.win/raw?url=';
       const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours&key=${apiKey}`;
@@ -79,7 +107,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
   };
 
   const searchLeads = async () => {
-    const currentApiKey = apiKey || savedApiKey;
+    const currentApiKey = tempApiKey || savedGoogleMapsApiKey;
     
     if (!currentApiKey) {
       toast({
@@ -90,11 +118,16 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       return;
     }
 
+    // Save the API key if it's entered manually and different from saved one
+    if (tempApiKey && tempApiKey !== savedGoogleMapsApiKey) {
+      await saveGoogleMapsApiKey(tempApiKey);
+    }
+
     if (!location) {
       toast({
         title: "Lokacija potrebna",
         description: "Molimo unesite lokaciju za pretraživanje.",
-        variant: "destructive",
+        variant: "destructive"
       });
       return;
     }
@@ -141,7 +174,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       const detailedLeads = [];
       
       for (const place of data.results.slice(0, 10)) {
-        const details = await getPlaceDetails(place.place_id);
+        const details = await getPlaceDetails(place.place_id, currentApiKey);
         
         if (details) {
           const enhancedLead: DiscoveredLead = {
@@ -246,8 +279,8 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Lead Discovery</h2>
           <p className="text-slate-600 text-sm sm:text-base">Pronađite nove leadove pomoću Google Maps i AI analize</p>
-          {savedApiKey && (
-            <p className="text-xs text-green-600 mt-1">✓ Google Maps API ključ učitan iz postavki</p>
+          {savedGoogleMapsApiKey && (
+            <p className="text-xs text-green-600 mt-1">✓ Google Maps API ključ učitan iz AI postavki</p>
           )}
         </div>
       </div>
@@ -259,13 +292,13 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
         setLocation={setLocation}
         industry={industry}
         setIndustry={setIndustry}
-        apiKey={apiKey}
-        setApiKey={setApiKey}
+        apiKey={tempApiKey}
+        setApiKey={setTempApiKey}
         isSearching={isSearching}
         discoveredLeads={discoveredLeads}
         onSearchLeads={searchLeads}
         onAnalyzeWithAI={analyzeWithAI}
-        showApiKeyInput={!savedApiKey}
+        showApiKeyInput={!savedGoogleMapsApiKey}
       />
 
       <LeadList 
