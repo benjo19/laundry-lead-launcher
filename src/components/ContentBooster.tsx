@@ -90,7 +90,7 @@ const ContentBooster = () => {
           onGenerateContent={generateContent}
           onPublishNow={publishNow}
           onSchedulePost={schedulePost}
-          isAIConfigured={isAIConfigured}
+          isAIConfigured={() => Boolean(isAIConfigured())}
           businessProfile={businessProfile}
         />
 
