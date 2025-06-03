@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { DiscoveredLead } from './SearchForm';
 import LeadCard from './LeadCard';
 import { Search } from 'lucide-react';
+import { Lead } from '@/types';
 
 interface LeadListProps {
   discoveredLeads: DiscoveredLead[];
-  onAddLead: (lead: DiscoveredLead) => void;
+  onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
 }
 
