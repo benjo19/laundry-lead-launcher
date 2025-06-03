@@ -170,8 +170,7 @@ const AISettings = () => {
                 <SelectValue placeholder="Odaberite model ili ostavite prazno za default" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Default (gpt-4o-mini)</SelectItem>
-                <SelectItem value="gpt-4o-mini">GPT-4o Mini (brže, jeftinije)</SelectItem>
+                <SelectItem value="gpt-4o-mini">GPT-4o Mini (Default - brže, jeftinije)</SelectItem>
                 <SelectItem value="gpt-4o">GPT-4o (moćnije, skuplje)</SelectItem>
               </SelectContent>
             </Select>
