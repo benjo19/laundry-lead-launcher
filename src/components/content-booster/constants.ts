@@ -18,16 +18,17 @@ export const contentTypes = [
 ];
 
 export const industries = [
-  { value: 'praone', label: 'Profesionalne praone rublja' },
+  { value: 'marketing', label: 'Marketing i oglašavanje' },
+  { value: 'tehnologija', label: 'Tehnologija i IT' },
+  { value: 'usluge', label: 'Poslovne usluge' },
   { value: 'ugostiteljstvo', label: 'Ugostiteljstvo i turizam' },
   { value: 'zdravstvo', label: 'Zdravstvo i medicina' },
   { value: 'obrazovanje', label: 'Obrazovanje' },
-  { value: 'tehnologija', label: 'Tehnologija i IT' },
   { value: 'retail', label: 'Maloprodaja' },
   { value: 'proizvodnja', label: 'Proizvodnja' },
-  { value: 'usluge', label: 'Poslovne usluge' },
   { value: 'nekretnine', label: 'Nekretnine' },
   { value: 'fitness', label: 'Fitness i wellness' },
+  { value: 'praone', label: 'Profesionalne praone rublja' },
   { value: 'općenito', label: 'Općenito poslovanje' },
 ];
 

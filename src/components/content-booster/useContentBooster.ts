@@ -39,17 +39,17 @@ export const useContentBooster = () => {
     {
       id: 1,
       platform: 'LinkedIn',
-      content: '🧽 Znate li da profesionalne praone troše 40% manje vode kad koriste moderne sustave za upravljanje procesima? Marketing Agent pomaže praonama optimizirati ne samo marketing, već i operativne procese. #Sustainability #LaundryTech',
-      contentType: 'tip',
+      content: '🚀 Marketing Agent pomaže poduzećima da automatiziraju svoje marketing procese i pronalaze nove klijente kroz naprednu AI tehnologiju. Saznajte kako možemo transformirati vaš pristup marketing-u! #MarketingAutomation #AI #DigitalMarketing',
+      contentType: 'promotional',
       date: '2024-02-15',
       status: 'Published',
-      engagement: '47 lajkova, 8 komentara'
+      engagement: '42 lajkova, 6 komentara'
     },
     {
       id: 2,
       platform: 'Facebook',
-      content: 'Vaša praonica zaslužuje najbolje! 💪 S Marketing Agent platformom automatski pronađite nove klijente i zadržite postojeće kroz personaliziranu komunikaciju. Saznajte više o tome kako digitalizirati Vaš business! 📈',
-      contentType: 'promotional',
+      content: 'Znate li da 73% poduzeća koja koriste marketing automatizaciju vide povećanje konverzije? 📈 Marketing Agent platformu koriste tvrtke diljem Europe za poboljšanje svojih marketing rezultata. Pridružite se uspješnima! 💪',
+      contentType: 'tip',
       date: '2024-02-14',
       status: 'Scheduled',
       scheduledTime: '18:00'
@@ -95,17 +95,23 @@ export const useContentBooster = () => {
       
       // Get business context for better content generation
       const businessContext = getContextForAI();
-      const enhancedAdditionalContext = businessContext 
-        ? `${additionalContext}\n\nInformacije o poduzeću:\n${businessContext}`
-        : additionalContext;
+      
+      // Add specific context about Marketing Agent if company name contains it or if no specific company context
+      let enhancedContext = additionalContext;
+      if (businessContext) {
+        enhancedContext = `${additionalContext}\n\nInformacije o poduzeću:\n${businessContext}`;
+      } else {
+        // Default context for Marketing Agent platform
+        enhancedContext = `${additionalContext}\n\nMarketing Agent je napredna AI platforma za marketing automatizaciju koja pomaže poduzećima u generiranju leadova, stvaranju personaliziranog sadržaja i automatizaciji komunikacije s klijentima.`;
+      }
       
       const result = await aiService.generateContent({
         platform,
         contentType,
         industry,
-        companyName: companyName || undefined,
+        companyName: companyName || 'Marketing Agent',
         topic: topic || undefined,
-        additionalContext: enhancedAdditionalContext || undefined,
+        additionalContext: enhancedContext || undefined,
         format: contentFormat,
       });
 
