@@ -1,12 +1,13 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Settings2, User, Brain, Mail, Share2, ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import BusinessProfileSettings from './BusinessProfileSettings';
 import AISettings from './AISettings';
+import EmailSettings from './EmailSettings';
+import SocialSettings from './SocialSettings';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -61,37 +62,11 @@ const Settings = () => {
         </TabsContent>
 
         <TabsContent value="email">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Email Postavke
-              </CardTitle>
-              <CardDescription>
-                Konfigurirajte vaše email postavke za slanje emailova
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-500">Email postavke će biti dostupne uskoro...</p>
-            </CardContent>
-          </Card>
+          <EmailSettings />
         </TabsContent>
 
         <TabsContent value="social">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Share2 className="h-5 w-5" />
-                Društvene Mreže
-              </CardTitle>
-              <CardDescription>
-                Povežite vaše račune društvenih mreža
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-slate-500">Postavke društvenih mreža će biti dostupne uskoro...</p>
-            </CardContent>
-          </Card>
+          <SocialSettings />
         </TabsContent>
       </Tabs>
     </div>

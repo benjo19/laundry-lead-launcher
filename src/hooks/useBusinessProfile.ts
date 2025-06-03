@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
@@ -63,15 +62,48 @@ export const useBusinessProfile = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      console.log('Attempting to save profile for user:', user.id);
+      
+      // First, check if user_settings record exists
+      const { data: existingRecord, error: checkError } = await supabase
         .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          business_profile: profileData as any,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (checkError) {
+        console.error('Error checking existing record:', checkError);
+        throw checkError;
+      }
+
+      let result;
+      
+      if (existingRecord) {
+        // Update existing record
+        console.log('Updating existing record');
+        result = await supabase
+          .from('user_settings')
+          .update({
+            business_profile: profileData as any,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+      } else {
+        // Insert new record
+        console.log('Inserting new record');
+        result = await supabase
+          .from('user_settings')
+          .insert({
+            user_id: user.id,
+            business_profile: profileData as any,
+            updated_at: new Date().toISOString()
+          });
+      }
+
+      if (result.error) {
+        console.error('Database operation error:', result.error);
+        throw result.error;
+      }
 
       setProfile(profileData);
       toast({
@@ -85,6 +117,7 @@ export const useBusinessProfile = () => {
         description: "Dogodila se greška prilikom spremanja profila.",
         variant: "destructive",
       });
+      throw error;
     }
   };
 
