@@ -3,6 +3,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Search, 
@@ -23,6 +24,7 @@ interface SidebarProps {
 
 const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -36,6 +38,10 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
 
   const handleSignOut = async () => {
     await signOut();
+  };
+
+  const handleSettingsClick = () => {
+    navigate('/settings');
   };
 
   return (
@@ -85,7 +91,7 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
         <Button
           variant="ghost"
           className="w-full justify-start text-slate-700 hover:bg-slate-100"
-          onClick={() => onModuleChange('settings')}
+          onClick={handleSettingsClick}
         >
           <Settings className="h-4 w-4 mr-3" />
           Postavke
