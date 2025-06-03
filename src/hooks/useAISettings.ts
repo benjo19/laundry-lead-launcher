@@ -52,15 +52,43 @@ export const useAISettings = () => {
     if (!user) return;
 
     try {
-      const { error } = await supabase
+      // First, check if a record exists
+      const { data: existingData, error: selectError } = await supabase
         .from('user_settings')
-        .upsert({
-          user_id: user.id,
-          ai_settings: settings as any,
-          updated_at: new Date().toISOString()
-        });
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (selectError) {
+        console.error('Error checking existing settings:', selectError);
+        throw selectError;
+      }
+
+      let result;
+      if (existingData) {
+        // Update existing record
+        result = await supabase
+          .from('user_settings')
+          .update({
+            ai_settings: settings as any,
+            updated_at: new Date().toISOString()
+          })
+          .eq('user_id', user.id);
+      } else {
+        // Insert new record
+        result = await supabase
+          .from('user_settings')
+          .insert({
+            user_id: user.id,
+            ai_settings: settings as any,
+            updated_at: new Date().toISOString()
+          });
+      }
+
+      if (result.error) {
+        console.error('Error saving AI settings:', result.error);
+        throw result.error;
+      }
 
       setAISettings(settings);
       toast({
