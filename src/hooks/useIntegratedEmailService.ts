@@ -57,7 +57,7 @@ export const useIntegratedEmailService = () => {
       // Add business context to the parameters with error handling
       let businessContext = '';
       try {
-        businessContext = getContextForAI();
+        businessContext = await getContextForAI();
       } catch (error) {
         console.warn('Error getting business context:', error);
         businessContext = '';
