@@ -27,7 +27,10 @@ const BusinessProfileSettings = () => {
 
   useEffect(() => {
     if (profile) {
-      setFormData(profile);
+      setFormData({
+        ...profile,
+        ai_goals: Array.isArray(profile.ai_goals) ? profile.ai_goals : []
+      });
     }
   }, [profile]);
 
@@ -41,10 +44,11 @@ const BusinessProfileSettings = () => {
   ];
 
   const handleGoalChange = (goal: string, checked: boolean) => {
+    const currentGoals = Array.isArray(formData.ai_goals) ? formData.ai_goals : [];
     if (checked) {
-      setFormData({ ...formData, ai_goals: [...formData.ai_goals, goal] });
+      setFormData({ ...formData, ai_goals: [...currentGoals, goal] });
     } else {
-      setFormData({ ...formData, ai_goals: formData.ai_goals.filter(g => g !== goal) });
+      setFormData({ ...formData, ai_goals: currentGoals.filter(g => g !== goal) });
     }
   };
 
@@ -55,6 +59,8 @@ const BusinessProfileSettings = () => {
   if (isLoading) {
     return <div>Učitava...</div>;
   }
+
+  const safeAiGoals = Array.isArray(formData.ai_goals) ? formData.ai_goals : [];
 
   return (
     <Card>
@@ -162,7 +168,7 @@ const BusinessProfileSettings = () => {
               <div key={goal} className="flex items-center space-x-2">
                 <Checkbox
                   id={goal}
-                  checked={formData.ai_goals.includes(goal)}
+                  checked={safeAiGoals.includes(goal)}
                   onCheckedChange={(checked) => handleGoalChange(goal, checked as boolean)}
                 />
                 <Label htmlFor={goal} className="text-sm">{goal}</Label>
