@@ -18,7 +18,8 @@ const CRMReminder = () => {
     date: '',
     time: '',
     priority: 'Srednji' as Reminder['priority'],
-    company: ''
+    company: '',
+    companyInputMode: 'select' as 'select' | 'manual'
   });
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -73,8 +74,13 @@ const CRMReminder = () => {
     }
 
     const reminder: Reminder = {
-      ...newReminder,
       id: Date.now(),
+      title: newReminder.title,
+      description: newReminder.description,
+      date: newReminder.date,
+      time: newReminder.time,
+      priority: newReminder.priority,
+      company: newReminder.company,
       status: 'Aktivan'
     };
 
@@ -85,7 +91,8 @@ const CRMReminder = () => {
       date: '',
       time: '',
       priority: 'Srednji',
-      company: ''
+      company: '',
+      companyInputMode: 'select'
     });
 
     toast({
@@ -331,35 +338,59 @@ const CRMReminder = () => {
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Tvrtka *
               </label>
-              <Select 
-                value={newReminder.company} 
-                onValueChange={(value) => setNewReminder({...newReminder, company: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Odaberite tvrtku iz Lead Huntera" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leads.map((lead) => (
-                    <SelectItem key={lead.id} value={lead.company}>
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-2" />
-                        {lead.company}
-                        <span className="text-xs text-slate-500 ml-2">({lead.status})</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                  <SelectItem value="custom">
-                    Unesite ručno...
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {newReminder.company === 'custom' && (
-                <Input
-                  placeholder="Naziv tvrtke"
-                  className="mt-2"
-                  onChange={(e) => setNewReminder({...newReminder, company: e.target.value})}
-                />
-              )}
+              <div className="space-y-2">
+                <Select 
+                  value={newReminder.companyInputMode} 
+                  onValueChange={(value: 'select' | 'manual') => {
+                    setNewReminder({
+                      ...newReminder, 
+                      companyInputMode: value,
+                      company: ''
+                    });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Odaberite način unosa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="select">Odaberi iz Lead Hunter-a</SelectItem>
+                    <SelectItem value="manual">Unesi ručno</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {newReminder.companyInputMode === 'select' ? (
+                  <Select 
+                    value={newReminder.company} 
+                    onValueChange={(value) => setNewReminder({...newReminder, company: value})}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Odaberite tvrtku" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {leads.map((lead) => (
+                        <SelectItem key={lead.id} value={lead.company}>
+                          <div className="flex items-center">
+                            <Users className="h-4 w-4 mr-2" />
+                            {lead.company}
+                            <span className="text-xs text-slate-500 ml-2">({lead.status})</span>
+                          </div>
+                        </SelectItem>
+                      ))}
+                      {leads.length === 0 && (
+                        <SelectItem value="" disabled>
+                          Nema leadova u sustavu
+                        </SelectItem>
+                      )}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input
+                    placeholder="Unesite naziv tvrtke"
+                    value={newReminder.company}
+                    onChange={(e) => setNewReminder({...newReminder, company: e.target.value})}
+                  />
+                )}
+              </div>
             </div>
 
             <div>
