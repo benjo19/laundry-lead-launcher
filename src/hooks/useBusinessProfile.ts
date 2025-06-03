@@ -43,8 +43,8 @@ export const useBusinessProfile = () => {
 
       if (data?.business_profile) {
         const businessData = data.business_profile;
-        if (businessData && typeof businessData === 'object') {
-          setProfile(businessData as BusinessProfile);
+        if (businessData && typeof businessData === 'object' && !Array.isArray(businessData)) {
+          setProfile(businessData as unknown as BusinessProfile);
         }
       }
     } catch (error) {
@@ -62,7 +62,7 @@ export const useBusinessProfile = () => {
         .from('user_settings')
         .upsert({
           user_id: user.id,
-          business_profile: profileData,
+          business_profile: profileData as any,
           updated_at: new Date().toISOString()
         });
 
