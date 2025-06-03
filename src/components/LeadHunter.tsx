@@ -1,16 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, MapPin, Users, Phone, Mail, Edit, Trash2, Loader2 } from 'lucide-react';
+import { Search, Filter, MapPin, Users, Phone, Mail, Edit, Trash2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead } from '@/types';
 import AddLeadDialog from './AddLeadDialog';
 import ExportButton from './ExportButton';
-import { useLeads } from '@/hooks/useLeads';
+import { useToast } from '@/hooks/use-toast';
 
 interface LeadHunterProps {
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
@@ -37,8 +36,92 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
     });
   }, [searchTerm, statusFilter, potentialFilter, setSavedFilterData]);
 
-  // Use the new useLeads hook
-  const { leads, isLoading, addLead, updateLeadStatus, deleteLead } = useLeads();
+  const [leads, setLeads] = useLocalStorage<Lead[]>('leads', [
+    {
+      id: 1,
+      company: 'Praonica Split',
+      location: 'Split, Croatia',
+      employees: '15-25',
+      phone: '+385 21 123 456',
+      email: 'info@praonica-split.hr',
+      status: 'Nova',
+      potential: 'Visok',
+      dateAdded: '2024-02-10'
+    },
+    {
+      id: 2,
+      company: 'Čistoća Zagreb d.o.o.',
+      location: 'Zagreb, Croatia',
+      employees: '50-100',
+      phone: '+385 1 987 654',
+      email: 'kontakt@cistoca-zg.hr',
+      status: 'Kontaktiran',
+      potential: 'Srednji',
+      dateAdded: '2024-02-08'
+    },
+    {
+      id: 3,
+      company: 'Bijelo rublje Rijeka',
+      location: 'Rijeka, Croatia',
+      employees: '10-20',
+      phone: '+385 51 456 789',
+      email: 'office@bijelo-rublje.hr',
+      status: 'Zainteresiran',
+      potential: 'Visok',
+      dateAdded: '2024-02-05'
+    },
+  ]);
+
+  const { toast } = useToast();
+
+  const checkForDuplicate = (company: string, email: string): boolean => {
+    return leads.some(lead => 
+      lead.company.toLowerCase() === company.toLowerCase() || 
+      lead.email.toLowerCase() === email.toLowerCase()
+    );
+  };
+
+  const addLead = (newLeadData: Omit<Lead, 'id' | 'dateAdded'>) => {
+    // Check for duplicates
+    if (checkForDuplicate(newLeadData.company, newLeadData.email)) {
+      toast({
+        title: "Duplikat pronađen",
+        description: `Lead s tim nazivom tvrtke ili email adresom već postoji.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newLead: Lead = {
+      ...newLeadData,
+      id: Date.now(),
+      dateAdded: new Date().toISOString().split('T')[0]
+    };
+    setLeads([...leads, newLead]);
+    toast({
+      title: "Lead dodan",
+      description: `${newLead.company} je uspješno dodan u sustav.`,
+    });
+  };
+
+  const updateLeadStatus = (leadId: number, newStatus: Lead['status']) => {
+    setLeads(leads.map(lead => 
+      lead.id === leadId ? { ...lead, status: newStatus } : lead
+    ));
+    toast({
+      title: "Status ažuriran",
+      description: "Status lead-a je uspješno ažuriran.",
+    });
+  };
+
+  const deleteLead = (leadId: number) => {
+    const leadToDelete = leads.find(lead => lead.id === leadId);
+    setLeads(leads.filter(lead => lead.id !== leadId));
+    toast({
+      title: "Lead obrisan",
+      description: `${leadToDelete?.company} je obrisan iz sustava.`,
+    });
+  };
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -73,17 +156,6 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
       onNavigateToEmailGenerator(email, company);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="p-6 space-y-6">
-        <div className="flex justify-center items-center h-64">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          <span className="ml-2 text-lg text-slate-600">Učitavam leadove...</span>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="p-6 space-y-6">
@@ -202,12 +274,9 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
                 </div>
               </div>
             ))}
-            {filteredLeads.length === 0 && !isLoading && (
+            {filteredLeads.length === 0 && (
               <div className="text-center py-8 text-slate-500">
-                {leads.length === 0 
-                  ? "Nema leadova. Dodajte prvi lead!" 
-                  : "Nema leadova koji odgovaraju kriterijima pretrage."
-                }
+                Nema leadova koji odgovaraju kriterijima pretrage.
               </div>
             )}
           </div>

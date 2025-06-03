@@ -1,14 +1,12 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { MapPin, Plus, Phone, Mail, Globe, Star, CheckCircle, AlertCircle } from 'lucide-react';
 import { DiscoveredLead } from './SearchForm';
-import { Lead } from '@/types';
 
 interface LeadCardProps {
   lead: DiscoveredLead;
-  onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
+  onAddLead: (lead: DiscoveredLead) => void;
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
 }
 
@@ -17,22 +15,6 @@ const LeadCard = ({ lead, onAddLead, onNavigateToEmailGenerator }: LeadCardProps
     if (lead.email && onNavigateToEmailGenerator) {
       onNavigateToEmailGenerator(lead.email, lead.name);
     }
-  };
-
-  const handleAddLead = () => {
-    // Transform DiscoveredLead to Lead format
-    const leadData: Omit<Lead, 'id' | 'dateAdded'> = {
-      company: lead.name,
-      location: lead.address,
-      employees: '', // This field is not available from Google Places
-      phone: lead.phone || '',
-      email: lead.email || '',
-      status: 'Nova',
-      potential: 'Srednji',
-      notes: lead.website ? `Website: ${lead.website}` : undefined
-    };
-    
-    onAddLead(leadData);
   };
 
   return (
@@ -76,7 +58,7 @@ const LeadCard = ({ lead, onAddLead, onNavigateToEmailGenerator }: LeadCardProps
           </div>
           <Button 
             size="sm"
-            onClick={handleAddLead}
+            onClick={() => onAddLead(lead)}
             className="bg-green-600 hover:bg-green-700"
           >
             <Plus className="h-4 w-4 mr-1" />
