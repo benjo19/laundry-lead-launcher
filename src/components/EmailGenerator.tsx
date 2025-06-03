@@ -9,6 +9,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIntegratedEmailService } from '@/hooks/useIntegratedEmailService';
+import { useAISettings } from '@/hooks/useAISettings';
 import { Link } from 'react-router-dom';
 
 interface EmailGeneratorProps {
@@ -65,6 +66,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
   const { toast } = useToast();
   const { generateEmail } = useIntegratedEmailService();
+  const { aiSettings, isAIConfigured } = useAISettings();
 
   const templates = [
     { value: 'intro', label: 'Uvodna prezentacija' },
@@ -74,6 +76,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   ];
 
   const generateEmailContent = async () => {
+    console.log('generateEmailContent called');
+    console.log('Current AI settings:', aiSettings);
+    console.log('Is AI configured:', isAIConfigured());
+
     if (!template) {
       toast({
         title: "Greška",
@@ -87,6 +93,15 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       toast({
         title: "Primatelj potreban",
         description: "Molimo odaberite ili unesite email primatelja.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!isAIConfigured()) {
+      toast({
+        title: "AI nije konfiguriran",
+        description: "Molimo postavite AI postavke u Postavkama prije generiranja emaila.",
         variant: "destructive"
       });
       return;
@@ -106,6 +121,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         industry = 'profesionalne praone rublja';
       }
 
+      console.log('Calling generateEmail with params:', {
+        recipientCompany: selectedCompany || 'tvrtka',
+        recipientEmail: recipient,
+        emailType: template,
+        industry,
+        additionalContext: selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : undefined,
+        companyInfo: {
+          location: selectedContact ? leads.find(l => l.email === recipient)?.location : undefined,
+        }
+      });
+
       const result = await generateEmail({
         recipientCompany: selectedCompany || 'tvrtka',
         recipientEmail: recipient,
@@ -116,6 +142,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
           location: selectedContact ? leads.find(l => l.email === recipient)?.location : undefined,
         }
       });
+
+      console.log('generateEmail result:', result);
 
       if (result) {
         setSubject(result.subject);
@@ -229,6 +257,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         <div>
           <h2 className="text-3xl font-bold text-slate-900">Email Generator</h2>
           <p className="text-slate-600">Stvorite personalizirane emailove za Vaše klijente pomoću integrirane AI</p>
+          {!isAIConfigured() && (
+            <p className="text-sm text-orange-600 mt-1">
+              ⚠️ AI nije konfiguriran - idite u Postavke da postavite API ključ
+            </p>
+          )}
         </div>
         <div className="flex space-x-2">
           <Link to="/settings">
@@ -330,7 +363,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
             <Button 
               onClick={generateEmailContent} 
-              disabled={isGenerating}
+              disabled={isGenerating || !isAIConfigured()}
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
             >
               <Sparkles className="h-4 w-4 mr-2" />

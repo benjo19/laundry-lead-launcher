@@ -27,7 +27,7 @@ interface GeneratedEmailContent {
 export const useIntegratedEmailService = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { isAIConfigured } = useAISettings();
+  const { aiSettings, isAIConfigured } = useAISettings();
   const { getContextForAI } = useBusinessProfile();
 
   const generateEmail = async (params: EmailGenerationParams): Promise<GeneratedEmailContent | null> => {
@@ -39,6 +39,8 @@ export const useIntegratedEmailService = () => {
       });
       return null;
     }
+
+    console.log('Checking AI configuration:', { aiSettings, isConfigured: isAIConfigured() });
 
     if (!isAIConfigured()) {
       toast({
@@ -59,9 +61,13 @@ export const useIntegratedEmailService = () => {
         businessContext: businessContext
       };
 
+      console.log('Enhanced params with business context:', enhancedParams);
+
       const { data, error } = await supabase.functions.invoke('generate-email', {
         body: enhancedParams
       });
+
+      console.log('Supabase function response:', { data, error });
 
       if (error) {
         console.error('Supabase function error:', error);
@@ -69,6 +75,7 @@ export const useIntegratedEmailService = () => {
       }
 
       if (!data || !data.subject || !data.content) {
+        console.error('Invalid response from AI service:', data);
         throw new Error('Invalid response from AI service');
       }
 
@@ -88,6 +95,10 @@ export const useIntegratedEmailService = () => {
         errorMessage = 'AI postavke nisu konfigurirane. Molimo postavite AI API ključ u Postavkama.';
       } else if (error.message?.includes('AI API key not found')) {
         errorMessage = 'AI API ključ nije pronađen. Molimo konfigurirajte ga u Postavkama.';
+      } else if (error.message?.includes('Invalid authorization')) {
+        errorMessage = 'Problem s autorizacijom. Molimo osvježite stranicu i pokušajte ponovo.';
+      } else if (error.message) {
+        errorMessage = `Greška: ${error.message}`;
       }
 
       toast({
