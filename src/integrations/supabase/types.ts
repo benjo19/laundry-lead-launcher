@@ -134,6 +134,7 @@ export type Database = {
       }
       user_settings: {
         Row: {
+          ai_settings: Json | null
           created_at: string | null
           email_provider: string | null
           email_settings: Json | null
@@ -143,6 +144,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          ai_settings?: Json | null
           created_at?: string | null
           email_provider?: string | null
           email_settings?: Json | null
@@ -152,6 +154,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          ai_settings?: Json | null
           created_at?: string | null
           email_provider?: string | null
           email_settings?: Json | null
