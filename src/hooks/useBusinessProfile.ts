@@ -35,14 +35,14 @@ export const useBusinessProfile = () => {
         .from('user_settings')
         .select('business_profile')
         .eq('user_id', user?.id)
-        .single();
+        .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         throw error;
       }
 
       if (data?.business_profile) {
-        const businessData = data.business_profile as any;
+        const businessData = data.business_profile;
         if (businessData && typeof businessData === 'object') {
           setProfile(businessData as BusinessProfile);
         }
@@ -62,7 +62,7 @@ export const useBusinessProfile = () => {
         .from('user_settings')
         .upsert({
           user_id: user.id,
-          business_profile: profileData as any,
+          business_profile: profileData,
           updated_at: new Date().toISOString()
         });
 
