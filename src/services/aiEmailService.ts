@@ -22,10 +22,12 @@ export type AIProvider = 'openai' | 'gemini';
 export class AIEmailService {
   private apiKey: string;
   private provider: AIProvider;
+  private customSystemPrompt?: string;
 
-  constructor(apiKey: string, provider: AIProvider = 'openai') {
+  constructor(apiKey: string, provider: AIProvider = 'openai', customSystemPrompt?: string) {
     this.apiKey = apiKey;
     this.provider = provider;
+    this.customSystemPrompt = customSystemPrompt;
   }
 
   async generatePersonalizedEmail(params: EmailGenerationParams): Promise<GeneratedEmailContent> {
@@ -142,7 +144,7 @@ export class AIEmailService {
   }
 
   private buildSystemPrompt(): string {
-    return `Ti si ekspert za B2B marketing i prodaju. Tvoj zadatak je kreiranje personaliziranih, profesionalnih emailova na hrvatskom jeziku za Marketing Agent platformu.
+    let systemPrompt = `Ti si ekspert za B2B marketing i prodaju. Tvoj zadatak je kreiranje personaliziranih, profesionalnih emailova na hrvatskom jeziku za Marketing Agent platformu.
 
 VAŽNE SMJERNICE:
 - Uvijek piši na hrvatskom jeziku
@@ -165,6 +167,12 @@ Marketing Agent platforma pomaže tvrtkama:
 - Automatsko generiranje sadržaja za društvene mreže
 - Povećanje broja klijenata za 40-60%
 - Smanjenje vremena utrošenog na marketing za 70%`;
+
+    if (this.customSystemPrompt) {
+      systemPrompt += `\n\nDODATNE INSTRUKCIJE ZA PONAŠANJE:\n${this.customSystemPrompt}`;
+    }
+
+    return systemPrompt;
   }
 
   private buildUserPrompt(params: EmailGenerationParams): string {

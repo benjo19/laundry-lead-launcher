@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useAISettings } from '@/hooks/useAISettings';
-import { Brain, Key, Save, Loader2, CheckCircle, AlertTriangle, MapPin } from 'lucide-react';
+import { Brain, Key, Save, Loader2, CheckCircle, AlertTriangle, MapPin, MessageSquare } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const AISettings = () => {
@@ -17,7 +18,8 @@ const AISettings = () => {
     provider: 'openai' as 'openai' | 'gemini',
     api_key: '',
     model: '',
-    google_maps_api_key: ''
+    google_maps_api_key: '',
+    custom_system_prompt: ''
   });
   const [isSaving, setIsSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);
@@ -29,7 +31,8 @@ const AISettings = () => {
         provider: aiSettings.provider || 'openai',
         api_key: aiSettings.api_key || '',
         model: aiSettings.model || '',
-        google_maps_api_key: aiSettings.google_maps_api_key || ''
+        google_maps_api_key: aiSettings.google_maps_api_key || '',
+        custom_system_prompt: aiSettings.custom_system_prompt || ''
       });
     }
   }, [aiSettings]);
@@ -207,6 +210,24 @@ const AISettings = () => {
             </Select>
           </div>
         )}
+
+        <div>
+          <Label htmlFor="custom_system_prompt" className="flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            Prilagodi AI ponašanje (opcionalno)
+          </Label>
+          <Textarea
+            id="custom_system_prompt"
+            value={formData.custom_system_prompt}
+            onChange={(e) => setFormData({ ...formData, custom_system_prompt: e.target.value })}
+            placeholder="Opiši kako želiš da se AI ponaša pri generiranju emailova i sadržaja..."
+            rows={4}
+            className="resize-none"
+          />
+          <p className="text-sm text-slate-500 mt-1">
+            Definiraj specifične instrukcije za AI kako se ponašati (npr. ton, stil, fokus na određene industrije...)
+          </p>
+        </div>
 
         <div className="flex gap-3 pt-4">
           <Button 

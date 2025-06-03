@@ -66,6 +66,7 @@ serve(async (req) => {
     const aiSettings = userSettings.ai_settings as any;
     const aiProvider = aiSettings.provider || 'openai';
     const apiKey = aiSettings.api_key;
+    const customSystemPrompt = aiSettings.custom_system_prompt;
 
     if (!apiKey) {
       throw new Error('AI API key not found in settings. Please configure it in Settings.');
@@ -75,7 +76,7 @@ serve(async (req) => {
     const params: EmailGenerationRequest = await req.json();
 
     // Generate email using AI
-    const generatedEmail = await generatePersonalizedEmail(params, apiKey, aiProvider);
+    const generatedEmail = await generatePersonalizedEmail(params, apiKey, aiProvider, customSystemPrompt);
 
     return new Response(
       JSON.stringify(generatedEmail),
@@ -102,9 +103,10 @@ serve(async (req) => {
 async function generatePersonalizedEmail(
   params: EmailGenerationRequest, 
   apiKey: string, 
-  provider: string
+  provider: string,
+  customSystemPrompt?: string
 ): Promise<GeneratedEmailContent> {
-  const systemPrompt = buildSystemPrompt(params.businessContext);
+  const systemPrompt = buildSystemPrompt(params.businessContext, customSystemPrompt);
   const userPrompt = buildUserPrompt(params);
 
   try {
@@ -216,7 +218,7 @@ async function generateWithGemini(systemPrompt: string, userPrompt: string, apiK
   return parseGeneratedEmail(generatedText);
 }
 
-function buildSystemPrompt(businessContext?: string): string {
+function buildSystemPrompt(businessContext?: string, customSystemPrompt?: string): string {
   let systemPrompt = `Ti si ekspert za B2B marketing i prodaju. Tvoj zadatak je kreiranje personaliziranih, profesionalnih emailova na hrvatskom jeziku.
 
 VAŽNE SMJERNICE:
@@ -232,6 +234,10 @@ STRUKTURA ODGOVORA:
 Odgovori u sljedećem formatu:
 SUBJECT: [naslov emaila]
 CONTENT: [sadržaj emaila]`;
+
+  if (customSystemPrompt) {
+    systemPrompt += `\n\nDODATNE INSTRUKCIJE ZA PONAŠANJE:\n${customSystemPrompt}`;
+  }
 
   if (businessContext) {
     systemPrompt += `\n\nINFORMACIJE O POŠILJATELJU:\n${businessContext}`;

@@ -9,6 +9,7 @@ interface AISettings {
   api_key: string;
   model?: string;
   google_maps_api_key?: string;
+  custom_system_prompt?: string;
 }
 
 export const useAISettings = () => {
