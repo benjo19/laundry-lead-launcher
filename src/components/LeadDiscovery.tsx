@@ -8,6 +8,7 @@ import LeadList from './lead-discovery/LeadList';
 import EmptyState from './lead-discovery/EmptyState';
 import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
 import { useAISettings } from '@/hooks/useAISettings';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
@@ -16,15 +17,34 @@ interface LeadDiscoveryProps {
 
 const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryProps) => {
   const { user } = useAuth();
-  const [searchQuery, setSearchQuery] = useState('');
-  const [location, setLocation] = useState('');
-  const [industry, setIndustry] = useState('laundry');
+  
+  // Load saved form data from localStorage
+  const [savedFormData, setSavedFormData] = useLocalStorage('leadDiscoveryForm', {
+    searchQuery: '',
+    location: '',
+    industry: 'laundry',
+    tempApiKey: ''
+  });
+
+  const [searchQuery, setSearchQuery] = useState(savedFormData.searchQuery || '');
+  const [location, setLocation] = useState(savedFormData.location || '');
+  const [industry, setIndustry] = useState(savedFormData.industry || 'laundry');
   const [isSearching, setIsSearching] = useState(false);
-  const [discoveredLeads, setDiscoveredLeads] = useState<DiscoveredLead[]>([]);
-  const [tempApiKey, setTempApiKey] = useState('');
+  const [discoveredLeads, setDiscoveredLeads] = useLocalStorage<DiscoveredLead[]>('discoveredLeads', []);
+  const [tempApiKey, setTempApiKey] = useState(savedFormData.tempApiKey || '');
   const [savedGoogleMapsApiKey, setSavedGoogleMapsApiKey] = useState('');
   const { toast } = useToast();
   const { aiSettings, saveAISettings } = useAISettings();
+
+  // Save form data to localStorage whenever fields change
+  useEffect(() => {
+    setSavedFormData({
+      searchQuery,
+      location,
+      industry,
+      tempApiKey
+    });
+  }, [searchQuery, location, industry, tempApiKey, setSavedFormData]);
 
   useEffect(() => {
     if (user) {

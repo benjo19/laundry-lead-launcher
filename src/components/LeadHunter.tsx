@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,9 +16,26 @@ interface LeadHunterProps {
 }
 
 const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [potentialFilter, setPotentialFilter] = useState<string>('all');
+  // Load saved filter data from localStorage
+  const [savedFilterData, setSavedFilterData] = useLocalStorage('leadHunterFilters', {
+    searchTerm: '',
+    statusFilter: 'all',
+    potentialFilter: 'all'
+  });
+
+  const [searchTerm, setSearchTerm] = useState(savedFilterData.searchTerm || '');
+  const [statusFilter, setStatusFilter] = useState<string>(savedFilterData.statusFilter || 'all');
+  const [potentialFilter, setPotentialFilter] = useState<string>(savedFilterData.potentialFilter || 'all');
+  
+  // Save filter data to localStorage whenever filters change
+  useEffect(() => {
+    setSavedFilterData({
+      searchTerm,
+      statusFilter,
+      potentialFilter
+    });
+  }, [searchTerm, statusFilter, potentialFilter, setSavedFilterData]);
+
   const [leads, setLeads] = useLocalStorage<Lead[]>('leads', [
     {
       id: 1,

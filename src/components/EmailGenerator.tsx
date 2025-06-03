@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Send, FileText, Sparkles, Trash2, Users, Settings } from 'lucide-react';
+import { Mail, Send, Sparkles, Trash2, Users, Settings } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -18,12 +18,38 @@ interface EmailGeneratorProps {
 }
 
 const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGeneratorProps) => {
-  const [recipient, setRecipient] = useState(preSelectedEmail || '');
-  const [selectedCompany, setSelectedCompany] = useState(preSelectedCompany || '');
-  const [subject, setSubject] = useState('');
-  const [emailContent, setEmailContent] = useState('');
-  const [template, setTemplate] = useState('');
+  // Load saved form data from localStorage
+  const [savedFormData, setSavedFormData] = useLocalStorage('emailGeneratorForm', {
+    recipient: '',
+    selectedCompany: '',
+    subject: '',
+    emailContent: '',
+    template: ''
+  });
+
+  const [recipient, setRecipient] = useState(preSelectedEmail || savedFormData.recipient || '');
+  const [selectedCompany, setSelectedCompany] = useState(preSelectedCompany || savedFormData.selectedCompany || '');
+  const [subject, setSubject] = useState(savedFormData.subject || '');
+  const [emailContent, setEmailContent] = useState(savedFormData.emailContent || '');
+  const [template, setTemplate] = useState(savedFormData.template || '');
   
+  // Save form data to localStorage whenever fields change
+  useEffect(() => {
+    setSavedFormData({
+      recipient,
+      selectedCompany,
+      subject,
+      emailContent,
+      template
+    });
+  }, [recipient, selectedCompany, subject, emailContent, template, setSavedFormData]);
+
+  // Override with pre-selected values when they change
+  useEffect(() => {
+    if (preSelectedEmail) setRecipient(preSelectedEmail);
+    if (preSelectedCompany) setSelectedCompany(preSelectedCompany);
+  }, [preSelectedEmail, preSelectedCompany]);
+
   const [emails, setEmails] = useLocalStorage<Email[]>('emails', [
     {
       id: 1,
@@ -178,12 +204,21 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
     setEmails([newEmail, ...emails]);
     
-    // Reset form
+    // Reset form and clear saved data
+    const resetData = {
+      recipient: '',
+      selectedCompany: '',
+      subject: '',
+      emailContent: '',
+      template: ''
+    };
+    
     setRecipient('');
     setSelectedCompany('');
     setSubject('');
     setEmailContent('');
     setTemplate('');
+    setSavedFormData(resetData);
 
     toast({
       title: "Email poslan",
@@ -270,10 +305,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               AI Postavke
             </Button>
           </Link>
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <FileText className="h-4 w-4 mr-2" />
-            Upravljaj Predlošcima
-          </Button>
         </div>
       </div>
 
