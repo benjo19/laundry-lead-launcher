@@ -261,28 +261,17 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     }
   };
 
-  const addDiscoveredLead = (discoveredLead: DiscoveredLead) => {
-    const newLead: Omit<Lead, 'id' | 'dateAdded'> = {
-      company: discoveredLead.name,
-      location: discoveredLead.address,
-      employees: '10-50', // Default estimate
-      phone: discoveredLead.phone || '',
-      email: discoveredLead.email || '', // Now includes scraped emails
-      status: 'Nova',
-      potential: 'Srednji',
-      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen' : ''}`
-    };
-
-    onAddLead(newLead);
+  const handleAddDiscoveredLead = (lead: Omit<Lead, 'id' | 'dateAdded'>) => {
+    onAddLead(lead);
     
-    // Remove from discovered leads
+    // Find and remove the corresponding discovered lead
     setDiscoveredLeads(prevLeads => 
-      prevLeads.filter(lead => lead.place_id !== discoveredLead.place_id)
+      prevLeads.filter(discoveredLead => discoveredLead.name !== lead.company)
     );
 
     toast({
       title: "Lead dodan",
-      description: `${discoveredLead.name} je dodan u Lead Hunter.`,
+      description: `${lead.company} je dodan u Lead Hunter.`,
     });
   };
 
@@ -323,7 +312,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
 
       <LeadList 
         discoveredLeads={discoveredLeads} 
-        onAddLead={addDiscoveredLead}
+        onAddLead={handleAddDiscoveredLead}
         onNavigateToEmailGenerator={onNavigateToEmailGenerator}
       />
 
