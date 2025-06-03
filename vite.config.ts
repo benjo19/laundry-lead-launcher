@@ -15,10 +15,7 @@ export default defineConfig(({ mode }) => ({
     }
   },
   plugins: [
-    react({
-      // Add error recovery
-      plugins: [["@swc/plugin-styled-components", {}]],
-    }),
+    react(),
     mode === 'development' &&
     componentTagger(),
   ].filter(Boolean),
