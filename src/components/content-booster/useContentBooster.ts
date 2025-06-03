@@ -1,11 +1,13 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ContentPost } from '@/types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
 import { AIContentService } from '@/services/aiContentService';
 import { AIProvider } from '@/services/aiEmailService';
 import { useSocialService } from '@/hooks/useSocialService';
+import { useAISettings } from '@/hooks/useAISettings';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 
 export const useContentBooster = () => {
   const [content, setContent] = useState('');
@@ -18,10 +20,20 @@ export const useContentBooster = () => {
   const [scheduledTime, setScheduledTime] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [apiKey, setApiKey] = useState('');
-  const [aiProvider, setAiProvider] = useState<AIProvider>('openai');
   const [contentFormat, setContentFormat] = useState('text');
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+
+  // Use AI settings and business profile hooks
+  const { aiSettings, isAIConfigured } = useAISettings();
+  const { profile, getContextForAI } = useBusinessProfile();
+
+  // Initialize form fields from business profile
+  useEffect(() => {
+    if (profile) {
+      setIndustry(profile.industry || '');
+      setCompanyName(profile.company_name || '');
+    }
+  }, [profile]);
 
   const [posts, setPosts] = useLocalStorage<ContentPost[]>('contentPosts', [
     {
@@ -57,16 +69,16 @@ export const useContentBooster = () => {
       return;
     }
 
-    if (!apiKey) {
+    if (!isAIConfigured()) {
       toast({
-        title: "API ključ potreban",
-        description: `Molimo unesite ${aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'} API ključ za AI generiranje sadržaja.`,
+        title: "AI nije konfiguriran",
+        description: "Molimo konfigurirajte AI postavke u Postavkama prije generiranja sadržaja.",
         variant: "destructive"
       });
       return;
     }
 
-    if (contentFormat === 'text-with-image' && aiProvider !== 'openai') {
+    if (contentFormat === 'text-with-image' && aiSettings?.provider !== 'openai') {
       toast({
         title: "Generiranje slika nije podržano",
         description: "Generiranje slika je dostupno samo s OpenAI providerom.",
@@ -79,7 +91,13 @@ export const useContentBooster = () => {
     setGeneratedImageUrl('');
     
     try {
-      const aiService = new AIContentService(apiKey, aiProvider);
+      const aiService = new AIContentService(aiSettings!.api_key, aiSettings!.provider);
+      
+      // Get business context for better content generation
+      const businessContext = getContextForAI();
+      const enhancedAdditionalContext = businessContext 
+        ? `${additionalContext}\n\nInformacije o poduzeću:\n${businessContext}`
+        : additionalContext;
       
       const result = await aiService.generateContent({
         platform,
@@ -87,7 +105,7 @@ export const useContentBooster = () => {
         industry,
         companyName: companyName || undefined,
         topic: topic || undefined,
-        additionalContext: additionalContext || undefined,
+        additionalContext: enhancedAdditionalContext || undefined,
         format: contentFormat,
       });
 
@@ -99,7 +117,7 @@ export const useContentBooster = () => {
       
       toast({
         title: "AI Sadržaj generiran",
-        description: `Personalizirani sadržaj je uspješno generiran za ${industry} industriju pomoću ${aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'}.`,
+        description: `Personalizirani sadržaj je uspješno generiran za ${industry} industriju pomoću ${aiSettings!.provider === 'openai' ? 'OpenAI' : 'Google Gemini'}.`,
       });
     } catch (error) {
       console.error('AI generation error:', error);
@@ -117,8 +135,7 @@ export const useContentBooster = () => {
     setContent('');
     setPlatform('');
     setContentType('');
-    setIndustry('');
-    setCompanyName('');
+    // Don't reset industry and companyName as they come from business profile
     setTopic('');
     setAdditionalContext('');
     setScheduledDate('');
@@ -223,10 +240,11 @@ export const useContentBooster = () => {
     scheduledDate,
     setScheduledDate,
     isGenerating,
-    apiKey,
-    setApiKey,
-    aiProvider,
-    setAiProvider,
+    // Remove manual API key and provider since we're using saved settings
+    apiKey: aiSettings?.api_key || '',
+    setApiKey: () => {}, // No-op since we use saved settings
+    aiProvider: (aiSettings?.provider || 'openai') as AIProvider,
+    setAiProvider: () => {}, // No-op since we use saved settings
     contentFormat,
     setContentFormat,
     generatedImageUrl,
@@ -235,5 +253,8 @@ export const useContentBooster = () => {
     publishNow,
     schedulePost,
     deletePost,
+    // Add new properties for checking AI configuration
+    isAIConfigured,
+    businessProfile: profile,
   };
 };

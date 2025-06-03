@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { Sparkles, Share2, Calendar, Bot, Image } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Sparkles, Share2, Calendar, Bot, Image, Settings, CheckCircle, AlertTriangle } from 'lucide-react';
 import { AIProvider } from '@/services/aiEmailService';
-import { platforms, contentTypes, industries, aiProviders, contentFormats } from './constants';
+import { platforms, contentTypes, industries, contentFormats } from './constants';
+import { useNavigate } from 'react-router-dom';
 
 interface ContentFormProps {
   content: string;
@@ -39,6 +41,8 @@ interface ContentFormProps {
   onGenerateContent: () => void;
   onPublishNow: () => void;
   onSchedulePost: () => void;
+  isAIConfigured: () => boolean;
+  businessProfile: any;
 }
 
 const ContentForm: React.FC<ContentFormProps> = ({
@@ -61,18 +65,21 @@ const ContentForm: React.FC<ContentFormProps> = ({
   scheduledDate,
   setScheduledDate,
   isGenerating,
-  apiKey,
-  setApiKey,
   aiProvider,
-  setAiProvider,
   contentFormat,
   setContentFormat,
   generatedImageUrl,
   onGenerateContent,
   onPublishNow,
   onSchedulePost,
+  isAIConfigured,
+  businessProfile,
 }) => {
-  const currentProvider = aiProviders.find(p => p.value === aiProvider);
+  const navigate = useNavigate();
+
+  const handleGoToSettings = () => {
+    navigate('/settings');
+  };
 
   return (
     <Card>
@@ -83,43 +90,47 @@ const ContentForm: React.FC<ContentFormProps> = ({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            <Bot className="h-4 w-4 inline mr-1" />
-            AI Provider
-          </label>
-          <Select value={aiProvider} onValueChange={(value: AIProvider) => setAiProvider(value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Odaberite AI servis" />
-            </SelectTrigger>
-            <SelectContent>
-              {aiProviders.map((provider) => (
-                <SelectItem key={provider.value} value={provider.value}>
-                  {provider.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        {/* AI Configuration Status */}
+        {isAIConfigured() ? (
+          <Alert className="border-green-200 bg-green-50">
+            <CheckCircle className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-800">
+              AI je konfiguriran i spreman za korištenje ({aiProvider === 'openai' ? 'OpenAI' : 'Google Gemini'}).
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="border-orange-200 bg-orange-50">
+            <AlertTriangle className="h-4 w-4 text-orange-600" />
+            <AlertDescription className="text-orange-800 flex items-center justify-between">
+              <span>AI nije konfiguriran. Idite u Postavke za konfiguraciju.</span>
+              <Button variant="outline" size="sm" onClick={handleGoToSettings}>
+                <Settings className="h-4 w-4 mr-2" />
+                Postavke
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            {currentProvider?.label} API Ključ
-          </label>
-          <Input
-            type="password"
-            placeholder={currentProvider?.placeholder}
-            value={apiKey}
-            onChange={(e) => setApiKey(e.target.value)}
-            className="mb-2"
-          />
-          <p className="text-xs text-slate-500">
-            Potreban za AI generiranje sadržaja. 
-            <a href={currentProvider?.docs} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">
-              Nabavite API ključ ovdje
-            </a>
-          </p>
-        </div>
+        {/* Business Profile Status */}
+        {businessProfile ? (
+          <Alert className="border-blue-200 bg-blue-50">
+            <CheckCircle className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-blue-800">
+              Poslovni profil konfiguriran: {businessProfile.company_name} ({businessProfile.industry})
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Alert className="border-yellow-200 bg-yellow-50">
+            <AlertTriangle className="h-4 w-4 text-yellow-600" />
+            <AlertDescription className="text-yellow-800 flex items-center justify-between">
+              <span>Konfigurirajte poslovni profil za bolji sadržaj.</span>
+              <Button variant="outline" size="sm" onClick={handleGoToSettings}>
+                <Settings className="h-4 w-4 mr-2" />
+                Postavke
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
@@ -207,13 +218,19 @@ const ContentForm: React.FC<ContentFormProps> = ({
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Naziv tvrtke (opcionalno)
+            Naziv tvrtke
           </label>
           <Input
             placeholder="Vaša tvrtka d.o.o."
             value={companyName}
             onChange={(e) => setCompanyName(e.target.value)}
+            disabled={!!businessProfile?.company_name}
           />
+          {businessProfile?.company_name && (
+            <p className="text-xs text-slate-500 mt-1">
+              Popunjeno iz poslovnog profila
+            </p>
+          )}
         </div>
 
         <div>
@@ -237,15 +254,20 @@ const ContentForm: React.FC<ContentFormProps> = ({
             onChange={(e) => setAdditionalContext(e.target.value)}
             className="min-h-20"
           />
+          {businessProfile && (
+            <p className="text-xs text-slate-500 mt-1">
+              Informacije iz poslovnog profila će automatski biti uključene
+            </p>
+          )}
         </div>
 
         <Button 
           onClick={onGenerateContent} 
-          disabled={isGenerating}
+          disabled={isGenerating || !isAIConfigured()}
           className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
         >
           <Sparkles className="h-4 w-4 mr-2" />
-          {isGenerating ? `Generiranje ${currentProvider?.label} sadržaja...` : `Generiraj AI Sadržaj (${currentProvider?.label})`}
+          {isGenerating ? `Generiranje sadržaja...` : `Generiraj AI Sadržaj`}
         </Button>
 
         {generatedImageUrl && (
