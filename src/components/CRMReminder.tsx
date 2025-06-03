@@ -367,19 +367,20 @@ const CRMReminder = () => {
                       <SelectValue placeholder="Odaberite tvrtku" />
                     </SelectTrigger>
                     <SelectContent>
-                      {leads.map((lead) => (
-                        <SelectItem key={lead.id} value={lead.company}>
-                          <div className="flex items-center">
-                            <Users className="h-4 w-4 mr-2" />
-                            {lead.company}
-                            <span className="text-xs text-slate-500 ml-2">({lead.status})</span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                      {leads.length === 0 && (
-                        <SelectItem value="" disabled>
+                      {leads.length > 0 ? (
+                        leads.map((lead) => (
+                          <SelectItem key={lead.id} value={lead.company}>
+                            <div className="flex items-center">
+                              <Users className="h-4 w-4 mr-2" />
+                              {lead.company}
+                              <span className="text-xs text-slate-500 ml-2">({lead.status})</span>
+                            </div>
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <div className="px-2 py-1 text-sm text-slate-500">
                           Nema leadova u sustavu
-                        </SelectItem>
+                        </div>
                       )}
                     </SelectContent>
                   </Select>
