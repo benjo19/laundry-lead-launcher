@@ -2,17 +2,16 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Users, Mail, Calendar, TrendingUp, Target, MessageSquare, Loader2 } from 'lucide-react';
+import { Users, Mail, Calendar, TrendingUp, Target, MessageSquare } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Email, Reminder, ContentPost } from '@/types';
-import { useLeads } from '@/hooks/useLeads';
+import { Lead, Email, Reminder, ContentPost } from '@/types';
 
 interface DashboardProps {
   onNavigateToModule?: (module: string) => void;
 }
 
 const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
-  const { leads, isLoading: leadsLoading } = useLeads();
+  const [leads] = useLocalStorage<Lead[]>('leads', []);
   const [emails] = useLocalStorage<Email[]>('emails', []);
   const [reminders] = useLocalStorage<Reminder[]>('reminders', []);
   const [posts] = useLocalStorage<ContentPost[]>('contentPosts', []);
@@ -31,7 +30,7 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
   const stats = [
     { 
       title: 'Ukupno Leadova', 
-      value: leadsLoading ? '...' : totalLeads.toString(), 
+      value: totalLeads.toString(), 
       change: leadChange, 
       icon: Users, 
       color: 'text-blue-600',
@@ -137,12 +136,7 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 <Icon className={`h-5 w-5 ${stat.color}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900 flex items-center">
-                  {leadsLoading && stat.title === 'Ukupno Leadova' ? (
-                    <Loader2 className="h-5 w-5 animate-spin mr-2" />
-                  ) : null}
-                  {stat.value}
-                </div>
+                <div className="text-2xl font-bold text-slate-900">{stat.value}</div>
                 <p className="text-xs text-green-600 font-medium">
                   {stat.change} od prošlog tjedna
                 </p>
