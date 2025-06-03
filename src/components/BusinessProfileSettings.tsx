@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -35,8 +36,16 @@ const BusinessProfileSettings = () => {
   useEffect(() => {
     if (profile) {
       const profileData = {
-        ...profile,
-        ai_goals: Array.isArray(profile.ai_goals) ? profile.ai_goals : []
+        company_name: profile.company_name || '',
+        industry: profile.industry || '',
+        business_description: profile.business_description || '',
+        target_audience: profile.target_audience || '',
+        company_values: profile.company_values || '',
+        ai_tone: profile.ai_tone || 'professional',
+        ai_goals: Array.isArray(profile.ai_goals) ? profile.ai_goals : [],
+        email_signature: profile.email_signature || '',
+        website: profile.website || '',
+        location: profile.location || ''
       };
       setFormData(profileData);
       setOriginalData(profileData);
@@ -116,11 +125,27 @@ const BusinessProfileSettings = () => {
     setShowConfirmDialog(false);
     
     try {
-      await saveProfile(formData);
-      setOriginalData({ ...formData });
+      // Ensure all required fields are present and ai_goals is an array
+      const cleanedData = {
+        ...formData,
+        ai_goals: Array.isArray(formData.ai_goals) ? formData.ai_goals : [],
+        company_name: formData.company_name.trim(),
+        industry: formData.industry.trim(),
+        business_description: formData.business_description.trim()
+      };
+
+      console.log('Saving profile data:', cleanedData);
+      
+      await saveProfile(cleanedData);
+      setOriginalData({ ...cleanedData });
       setValidationErrors([]);
     } catch (error) {
       console.error('Error saving profile:', error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška prilikom spremanja profila. Molimo pokušajte ponovo.",
+        variant: "destructive",
+      });
     } finally {
       setIsSaving(false);
     }
