@@ -54,8 +54,15 @@ export const useIntegratedEmailService = () => {
     try {
       console.log('Generating email with params:', params);
 
-      // Add business context to the parameters
-      const businessContext = getContextForAI();
+      // Add business context to the parameters with error handling
+      let businessContext = '';
+      try {
+        businessContext = getContextForAI();
+      } catch (error) {
+        console.warn('Error getting business context:', error);
+        businessContext = '';
+      }
+
       const enhancedParams = {
         ...params,
         businessContext: businessContext
