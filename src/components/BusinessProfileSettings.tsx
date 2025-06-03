@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useBusinessProfile, BusinessProfile } from '@/hooks/useBusinessProfile';
 import { Building2, Target, MessageSquare, Globe, Save, RotateCcw, Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import BusinessDocuments from './BusinessDocuments';
 
 const BusinessProfileSettings = () => {
   const { profile, isLoading, saveProfile } = useBusinessProfile();
@@ -178,7 +179,7 @@ const BusinessProfileSettings = () => {
   const safeAiGoals = Array.isArray(formData.ai_goals) ? formData.ai_goals : [];
 
   return (
-    <>
+    <div className="space-y-6">
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -351,6 +352,8 @@ const BusinessProfileSettings = () => {
         </CardContent>
       </Card>
 
+      <BusinessDocuments />
+
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent>
           <DialogHeader>
@@ -370,7 +373,7 @@ const BusinessProfileSettings = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 };
 

@@ -121,7 +121,50 @@ export const useBusinessProfile = () => {
     }
   };
 
-  const getContextForAI = () => {
+  const getDocumentsContent = async (): Promise<string> => {
+    if (!user) return '';
+    
+    try {
+      const { data: files, error } = await supabase.storage
+        .from('business-documents')
+        .list(user.id, { limit: 10 });
+
+      if (error || !files || files.length === 0) {
+        return '';
+      }
+
+      const documentContents: string[] = [];
+
+      for (const file of files) {
+        try {
+          const { data: urlData } = await supabase.storage
+            .from('business-documents')
+            .createSignedUrl(`${user.id}/${file.name}`, 300); // 5 min expiry
+
+          if (urlData?.signedUrl) {
+            const response = await fetch(urlData.signedUrl);
+            const blob = await response.blob();
+            
+            if (file.metadata?.mimetype === 'text/plain' || file.metadata?.mimetype === 'text/csv') {
+              const content = await blob.text();
+              documentContents.push(`\n--- Dokument: ${file.name} ---\n${content.substring(0, 2000)}`);
+            } else {
+              documentContents.push(`\n--- Dokument: ${file.name} (${file.metadata?.mimetype || 'nepoznat format'}) ---`);
+            }
+          }
+        } catch (error) {
+          console.error(`Error reading document ${file.name}:`, error);
+        }
+      }
+
+      return documentContents.join('\n');
+    } catch (error) {
+      console.error('Error loading documents for AI context:', error);
+      return '';
+    }
+  };
+
+  const getContextForAI = async (): Promise<string> => {
     if (!profile) return '';
     
     // Ensure all fields have default values to prevent undefined errors
@@ -137,7 +180,10 @@ export const useBusinessProfile = () => {
       website: profile.website || ''
     };
     
-    return `
+    // Get documents content
+    const documentsContent = await getDocumentsContent();
+    
+    const baseContext = `
 Tvrtka: ${safeProfile.company_name}
 Industrija: ${safeProfile.industry}
 Opis poslovanja: ${safeProfile.business_description}
@@ -148,6 +194,8 @@ Ciljevi AI asistenta: ${safeProfile.ai_goals.join(', ')}
 Lokacija: ${safeProfile.location}
 Website: ${safeProfile.website}
     `.trim();
+
+    return documentsContent ? `${baseContext}\n\nDodatni dokumenti:${documentsContent}` : baseContext;
   };
 
   return {

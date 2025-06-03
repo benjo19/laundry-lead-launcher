@@ -93,8 +93,8 @@ export const useContentBooster = () => {
     try {
       const aiService = new AIContentService(aiSettings!.api_key, aiSettings!.provider);
       
-      // Get business context for better content generation
-      const businessContext = getContextForAI();
+      // Get business context for better content generation (now async)
+      const businessContext = await getContextForAI();
       
       // Add specific context about Marketing Agent if company name contains it or if no specific company context
       let enhancedContext = additionalContext;
