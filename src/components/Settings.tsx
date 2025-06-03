@@ -2,16 +2,34 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Settings2, User, Brain, Mail, Share2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Settings2, User, Brain, Mail, Share2, ArrowLeft } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import BusinessProfileSettings from './BusinessProfileSettings';
 import AISettings from './AISettings';
 
 const Settings = () => {
+  const navigate = useNavigate();
+
+  const handleBackToDashboard = () => {
+    navigate('/');
+  };
+
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-slate-900">Postavke</h2>
-        <p className="text-slate-600">Upravljajte vašim korisničkim postavkama i preferencijama</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-3xl font-bold text-slate-900">Postavke</h2>
+          <p className="text-slate-600">Upravljajte vašim korisničkim postavkama i preferencijama</p>
+        </div>
+        <Button 
+          variant="outline" 
+          onClick={handleBackToDashboard}
+          className="flex items-center gap-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Povratak na Dashboard
+        </Button>
       </div>
 
       <Tabs defaultValue="business" className="space-y-6">
