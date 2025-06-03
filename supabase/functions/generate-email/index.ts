@@ -1,4 +1,3 @@
-
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -13,6 +12,7 @@ interface EmailGenerationRequest {
   emailType: 'intro' | 'follow-up' | 'proposal' | 'reminder';
   additionalContext?: string;
   industry?: string;
+  businessContext?: string;
   companyInfo?: {
     location?: string;
     website?: string;
@@ -104,7 +104,7 @@ async function generatePersonalizedEmail(
   apiKey: string, 
   provider: string
 ): Promise<GeneratedEmailContent> {
-  const systemPrompt = buildSystemPrompt();
+  const systemPrompt = buildSystemPrompt(params.businessContext);
   const userPrompt = buildUserPrompt(params);
 
   try {
@@ -216,8 +216,8 @@ async function generateWithGemini(systemPrompt: string, userPrompt: string, apiK
   return parseGeneratedEmail(generatedText);
 }
 
-function buildSystemPrompt(): string {
-  return `Ti si ekspert za B2B marketing i prodaju. Tvoj zadatak je kreiranje personaliziranih, profesionalnih emailova na hrvatskom jeziku za Marketing Agent platformu.
+function buildSystemPrompt(businessContext?: string): string {
+  let systemPrompt = `Ti si ekspert za B2B marketing i prodaju. Tvoj zadatak je kreiranje personaliziranih, profesionalnih emailova na hrvatskom jeziku za Marketing Agent platformu.
 
 VAŽNE SMJERNICE:
 - Uvijek piši na hrvatskom jeziku
@@ -240,6 +240,12 @@ Marketing Agent platforma pomaže tvrtkama:
 - Automatsko generiranje sadržaja za društvene mreže
 - Povećanje broja klijenata za 40-60%
 - Smanjenje vremena utrošenog na marketing za 70%`;
+
+  if (businessContext) {
+    systemPrompt += `\n\nINFORMACIJE O POŠILJATELJU:\n${businessContext}`;
+  }
+
+  return systemPrompt;
 }
 
 function buildUserPrompt(params: EmailGenerationRequest): string {
@@ -265,7 +271,7 @@ EMAIL: ${recipientEmail}`;
     prompt += `\nDODATNE INFORMACIJE: ${additionalContext}`;
   }
 
-  prompt += `\n\nPersonaliziraj email specifično za ${recipientCompany} koristeći dostupne informacije.`;
+  prompt += `\n\nPersonaliziraj email specifično za ${recipientCompany} koristeći dostupne informacije o pošiljatelju i primatelju.`;
 
   return prompt;
 }
