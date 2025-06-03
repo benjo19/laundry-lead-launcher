@@ -4,9 +4,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, MapPin, Sparkles } from 'lucide-react';
+import { Search, MapPin, Sparkles, Settings } from 'lucide-react';
 import IndustrySelector, { industries } from './IndustrySelector';
 import ExportButton from '@/components/ExportButton';
+import { useAISettings } from '@/hooks/useAISettings';
 
 export interface DiscoveredLead {
   name: string;
@@ -56,6 +57,8 @@ const SearchForm = ({
   onAnalyzeWithAI,
   showApiKeyInput = true
 }: SearchFormProps) => {
+  const { isAIConfigured } = useAISettings();
+
   return (
     <div className="space-y-4">
       <Card>
@@ -136,13 +139,26 @@ const SearchForm = ({
               <Button 
                 onClick={() => onAnalyzeWithAI(discoveredLeads)}
                 variant="outline"
+                disabled={!isAIConfigured()}
                 className="bg-purple-50 border-purple-200 hover:bg-purple-100"
               >
                 <Sparkles className="h-4 w-4 mr-2" />
                 AI Analiza
+                {!isAIConfigured() && (
+                  <Settings className="h-4 w-4 ml-1 text-amber-500" />
+                )}
               </Button>
             )}
           </div>
+
+          {!isAIConfigured() && discoveredLeads.length > 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-sm text-amber-800">
+                <Settings className="h-4 w-4 inline mr-1" />
+                Za AI analizu potrebno je postaviti AI ključ u Postavkama.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

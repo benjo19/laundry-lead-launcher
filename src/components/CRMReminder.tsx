@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, Plus, AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
+import { Calendar, Clock, Plus, AlertCircle, CheckCircle2, Trash2, Users, Filter } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Reminder } from '@/types';
+import { Reminder, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import ExportButton from './ExportButton';
 
 const CRMReminder = () => {
   const [newReminder, setNewReminder] = useState({
@@ -20,6 +20,9 @@ const CRMReminder = () => {
     priority: 'Srednji' as Reminder['priority'],
     company: ''
   });
+
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [priorityFilter, setPriorityFilter] = useState<string>('all');
 
   const [reminders, setReminders] = useLocalStorage<Reminder[]>('reminders', [
     {
@@ -53,6 +56,9 @@ const CRMReminder = () => {
       company: 'Bijelo rublje'
     },
   ]);
+
+  // Učitaj leadove iz Lead Huntera
+  const [leads] = useLocalStorage<Lead[]>('leads', []);
 
   const { toast } = useToast();
 
@@ -113,7 +119,6 @@ const CRMReminder = () => {
     const reminder = reminders.find(r => r.id === reminderId);
     if (!reminder) return;
 
-    // Postpone by 1 day
     const currentDate = new Date(reminder.date);
     currentDate.setDate(currentDate.getDate() + 1);
     const newDate = currentDate.toISOString().split('T')[0];
@@ -127,6 +132,12 @@ const CRMReminder = () => {
       description: `"${reminder.title}" je odgođen za jedan dan.`,
     });
   };
+
+  const filteredReminders = reminders.filter(reminder => {
+    const matchesStatus = statusFilter === 'all' || reminder.status === statusFilter;
+    const matchesPriority = priorityFilter === 'all' || reminder.priority === priorityFilter;
+    return matchesStatus && matchesPriority;
+  });
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -145,7 +156,6 @@ const CRMReminder = () => {
 
   const activeReminders = reminders.filter(r => r.status === 'Aktivan');
   const completedReminders = reminders.filter(r => r.status === 'Završen');
-  const postponedReminders = reminders.filter(r => r.status === 'Odgođen');
 
   return (
     <div className="p-6 space-y-6">
@@ -154,40 +164,84 @@ const CRMReminder = () => {
           <h2 className="text-3xl font-bold text-slate-900">CRM Podsjetnik</h2>
           <p className="text-slate-600">Upravljajte terminima i komunikacijom s klijentima</p>
         </div>
-        <div className="flex space-x-2">
-          <span className="text-sm text-slate-600">
-            Aktivno: {activeReminders.length} | Završeno: {completedReminders.length}
-          </span>
+        <div className="flex items-center space-x-4">
+          <div className="flex space-x-4 text-sm text-slate-600">
+            <span className="flex items-center">
+              <div className="w-2 h-2 bg-blue-500 rounded-full mr-1"></div>
+              Aktivno: {activeReminders.length}
+            </span>
+            <span className="flex items-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full mr-1"></div>
+              Završeno: {completedReminders.length}
+            </span>
+          </div>
+          <ExportButton data={filteredReminders} filename="crm-podsjetnici" type="reminders" />
         </div>
       </div>
 
+      {/* Filtri */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center text-lg">
+            <Filter className="h-5 w-5 mr-2 text-slate-600" />
+            Filtri
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex space-x-4">
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Svi statusi</SelectItem>
+                <SelectItem value="Aktivan">Aktivan</SelectItem>
+                <SelectItem value="Završen">Završen</SelectItem>
+                <SelectItem value="Odgođen">Odgođen</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Prioritet" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Svi prioriteti</SelectItem>
+                <SelectItem value="Visok">Visok</SelectItem>
+                <SelectItem value="Srednji">Srednji</SelectItem>
+                <SelectItem value="Nizak">Nizak</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Lista podsjetnika */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center">
               <Calendar className="h-5 w-5 mr-2 text-blue-600" />
-              Svi Podsjetnici
+              Podsjetnici ({filteredReminders.length})
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              {reminders.map((reminder) => (
-                <div key={reminder.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex items-start justify-between mb-3">
+            <div className="space-y-3">
+              {filteredReminders.map((reminder) => (
+                <div key={reminder.id} className="border rounded-lg p-4 hover:shadow-sm transition-all">
+                  <div className="flex items-start justify-between mb-2">
                     <div className="flex-1">
                       <div className="flex items-center space-x-2 mb-1">
                         {getStatusIcon(reminder.status)}
-                        <h3 className="font-semibold text-slate-900">{reminder.title}</h3>
-                        <span className={`px-2 py-1 rounded-full text-xs ${
-                          reminder.status === 'Aktivan' ? 'bg-blue-100 text-blue-800' :
-                          reminder.status === 'Završen' ? 'bg-green-100 text-green-800' :
-                          'bg-orange-100 text-orange-800'
-                        }`}>
+                        <h3 className="font-medium text-slate-900">{reminder.title}</h3>
+                        <Badge variant="secondary" className="text-xs">
                           {reminder.status}
-                        </span>
+                        </Badge>
                       </div>
-                      <p className="text-sm text-slate-600 mb-2">{reminder.description}</p>
-                      <p className="text-xs text-slate-500">{reminder.company}</p>
+                      <p className="text-sm text-slate-600 mb-1">{reminder.description}</p>
+                      <p className="text-xs text-slate-500 flex items-center">
+                        <Users className="h-3 w-3 mr-1" />
+                        {reminder.company}
+                      </p>
                     </div>
                     <Badge className={getPriorityColor(reminder.priority)}>
                       {reminder.priority}
@@ -195,19 +249,20 @@ const CRMReminder = () => {
                   </div>
                   
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center text-sm text-slate-600">
-                      <Calendar className="h-4 w-4 mr-1" />
+                    <div className="flex items-center text-xs text-slate-500">
+                      <Calendar className="h-3 w-3 mr-1" />
                       <span>{reminder.date}</span>
-                      <Clock className="h-4 w-4 ml-3 mr-1" />
+                      <Clock className="h-3 w-3 ml-3 mr-1" />
                       <span>{reminder.time}</span>
                     </div>
-                    <div className="flex space-x-2">
+                    <div className="flex space-x-1">
                       {reminder.status === 'Aktivan' && (
                         <>
                           <Button 
                             variant="outline" 
                             size="sm"
                             onClick={() => updateReminderStatus(reminder.id, 'Završen')}
+                            className="text-xs px-2 py-1 h-7"
                           >
                             Završi
                           </Button>
@@ -215,6 +270,7 @@ const CRMReminder = () => {
                             variant="outline" 
                             size="sm"
                             onClick={() => postponeReminder(reminder.id)}
+                            className="text-xs px-2 py-1 h-7"
                           >
                             Odgodi
                           </Button>
@@ -225,6 +281,7 @@ const CRMReminder = () => {
                           variant="outline" 
                           size="sm"
                           onClick={() => updateReminderStatus(reminder.id, 'Aktivan')}
+                          className="text-xs px-2 py-1 h-7"
                         >
                           Aktiviraj
                         </Button>
@@ -233,23 +290,24 @@ const CRMReminder = () => {
                         variant="outline"
                         size="sm"
                         onClick={() => deleteReminder(reminder.id)}
-                        className="text-red-600 hover:text-red-700"
+                        className="text-red-600 hover:text-red-700 text-xs px-2 py-1 h-7"
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
                 </div>
               ))}
-              {reminders.length === 0 && (
+              {filteredReminders.length === 0 && (
                 <div className="text-center py-8 text-slate-500">
-                  Nemate kreanih podsjetnika.
+                  Nema podsjetnika koji odgovaraju filterima.
                 </div>
               )}
             </div>
           </CardContent>
         </Card>
 
+        {/* Novi podsjetnik */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -273,11 +331,35 @@ const CRMReminder = () => {
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Tvrtka *
               </label>
-              <Input
-                placeholder="Naziv tvrtke"
-                value={newReminder.company}
-                onChange={(e) => setNewReminder({...newReminder, company: e.target.value})}
-              />
+              <Select 
+                value={newReminder.company} 
+                onValueChange={(value) => setNewReminder({...newReminder, company: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Odaberite tvrtku iz Lead Huntera" />
+                </SelectTrigger>
+                <SelectContent>
+                  {leads.map((lead) => (
+                    <SelectItem key={lead.id} value={lead.company}>
+                      <div className="flex items-center">
+                        <Users className="h-4 w-4 mr-2" />
+                        {lead.company}
+                        <span className="text-xs text-slate-500 ml-2">({lead.status})</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                  <SelectItem value="custom">
+                    Unesite ručno...
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {newReminder.company === 'custom' && (
+                <Input
+                  placeholder="Naziv tvrtke"
+                  className="mt-2"
+                  onChange={(e) => setNewReminder({...newReminder, company: e.target.value})}
+                />
+              )}
             </div>
 
             <div>
@@ -288,7 +370,7 @@ const CRMReminder = () => {
                 placeholder="Opis aktivnosti"
                 value={newReminder.description}
                 onChange={(e) => setNewReminder({...newReminder, description: e.target.value})}
-                className="min-h-20"
+                className="min-h-16"
               />
             </div>
 
@@ -308,26 +390,27 @@ const CRMReminder = () => {
               </Select>
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Datum *
-              </label>
-              <Input
-                type="date"
-                value={newReminder.date}
-                onChange={(e) => setNewReminder({...newReminder, date: e.target.value})}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
-                Vrijeme *
-              </label>
-              <Input
-                type="time"
-                value={newReminder.time}
-                onChange={(e) => setNewReminder({...newReminder, time: e.target.value})}
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Datum *
+                </label>
+                <Input
+                  type="date"
+                  value={newReminder.date}
+                  onChange={(e) => setNewReminder({...newReminder, date: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">
+                  Vrijeme *
+                </label>
+                <Input
+                  type="time"
+                  value={newReminder.time}
+                  onChange={(e) => setNewReminder({...newReminder, time: e.target.value})}
+                />
+              </div>
             </div>
 
             <Button onClick={createReminder} className="w-full bg-green-600 hover:bg-green-700">

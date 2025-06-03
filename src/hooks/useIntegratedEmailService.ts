@@ -2,6 +2,7 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { useAISettings } from './useAISettings';
 
 interface EmailGenerationParams {
   recipientCompany: string;
@@ -25,12 +26,22 @@ interface GeneratedEmailContent {
 export const useIntegratedEmailService = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { isAIConfigured } = useAISettings();
 
   const generateEmail = async (params: EmailGenerationParams): Promise<GeneratedEmailContent | null> => {
     if (!user) {
       toast({
         title: "Greška",
         description: "Morate biti prijavljeni da biste generirali email.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    if (!isAIConfigured()) {
+      toast({
+        title: "AI nije konfiguriran",
+        description: "Molimo postavite AI API ključ u Postavkama prije generiranja emaila.",
         variant: "destructive",
       });
       return null;
@@ -80,5 +91,5 @@ export const useIntegratedEmailService = () => {
     }
   };
 
-  return { generateEmail };
+  return { generateEmail, isAIConfigured };
 };

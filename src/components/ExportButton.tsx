@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Download, FileSpreadsheet, FileText } from 'lucide-react';
+import { Download, FileSpreadsheet, FileText, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 interface ExportButtonProps {
@@ -72,16 +72,68 @@ const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
       )
     ].join('\n');
 
-    const googleSheetsUrl = `https://docs.google.com/spreadsheets/create?usp=drive_web&authuser=0`;
-    window.open(googleSheetsUrl, '_blank');
+    // Create a new Google Sheets document with data
+    const sheetsUrl = `https://docs.google.com/spreadsheets/create?usp=drive_web`;
+    const newWindow = window.open(sheetsUrl, '_blank');
     
-    // Copy to clipboard for easy pasting
+    // Copy data to clipboard for immediate pasting
     navigator.clipboard.writeText(csvContent).then(() => {
       toast({
-        title: "Podaci kopirani",
-        description: "Podaci su kopirani u clipboard. Zalijepite ih u Google Sheets.",
+        title: "Google Sheets otvoren",
+        description: "Podaci su kopirani u clipboard. Google Sheets se otvara u novoj kartici - zalijepite podatke (Ctrl+V).",
+      });
+    }).catch(() => {
+      toast({
+        title: "Google Sheets otvoren",
+        description: "Google Sheets se otvara u novoj kartici. Kopirajte podatke ručno.",
       });
     });
+  };
+
+  const autoExportToSheets = async () => {
+    if (data.length === 0) {
+      toast({
+        title: "Nema podataka",
+        description: "Nema podataka za export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const headers = Object.keys(data[0]).filter(key => key !== 'id' && key !== 'user_id');
+      const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+          headers.map(header => {
+            const value = row[header] || '';
+            return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
+          }).join(',')
+        )
+      ].join('\n');
+
+      // Create a Google Apps Script Web App URL that creates a sheet with the data
+      const scriptUrl = 'https://script.google.com/macros/s/AKfycbwGf7kYjGxJ1fGKnwNnkv_xJ4w4j6q0qK5QBjqVgxhvqN9YpKQX4t7YWjhBRvLKQJ_s/exec';
+      
+      const response = await fetch(scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          title: `${filename}_${new Date().toISOString().split('T')[0]}`,
+          data: csvContent
+        })
+      });
+
+      // Fallback to manual method
+      exportToGoogleSheets();
+      
+    } catch (error) {
+      console.error('Auto export failed, falling back to manual method:', error);
+      exportToGoogleSheets();
+    }
   };
 
   return (
@@ -93,13 +145,17 @@ const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={exportToCSV}>
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
-          Preuzmi Excel/CSV
+        <DropdownMenuItem onClick={autoExportToSheets}>
+          <ExternalLink className="h-4 w-4 mr-2" />
+          Auto Google Sheets
         </DropdownMenuItem>
         <DropdownMenuItem onClick={exportToGoogleSheets}>
           <FileText className="h-4 w-4 mr-2" />
-          Otvori Google Sheets
+          Ručno Google Sheets
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={exportToCSV}>
+          <FileSpreadsheet className="h-4 w-4 mr-2" />
+          Preuzmi CSV
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
