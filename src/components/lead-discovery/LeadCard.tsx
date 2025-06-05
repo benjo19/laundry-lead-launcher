@@ -1,12 +1,13 @@
+
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Plus, Phone, Mail, Globe, Star, CheckCircle, AlertCircle } from 'lucide-react';
-import { DiscoveredLead } from './SearchForm';
+import { MapPin, Plus, Phone, Mail, Globe, Star, CheckCircle, AlertCircle, Brain, Target, Clock } from 'lucide-react';
+import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 
 interface LeadCardProps {
-  lead: DiscoveredLead;
-  onAddLead: (lead: DiscoveredLead) => void;
+  lead: AnalyzedLead;
+  onAddLead: (lead: AnalyzedLead) => void;
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
 }
 
@@ -17,11 +18,39 @@ const LeadCard = ({ lead, onAddLead, onNavigateToEmailGenerator }: LeadCardProps
     }
   };
 
+  const getScoreColor = (score: number) => {
+    if (score >= 8) return 'bg-green-100 text-green-800 border-green-200';
+    if (score >= 6) return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    return 'bg-red-100 text-red-800 border-red-200';
+  };
+
+  const getPotentialColor = (potential: string) => {
+    switch (potential) {
+      case 'Visok': return 'bg-green-100 text-green-800';
+      case 'Srednji': return 'bg-yellow-100 text-yellow-800';
+      case 'Nizak': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
   return (
-    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+    <div className="border rounded-lg p-4 hover:shadow-md transition-shadow bg-white">
       <div className="flex justify-between items-start mb-3">
         <div className="flex-1">
-          <h3 className="text-lg font-semibold text-slate-900">{lead.name}</h3>
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-lg font-semibold text-slate-900">{lead.name}</h3>
+            {lead.aiAnalysis && (
+              <div className="flex items-center gap-1">
+                <Badge className={`${getScoreColor(lead.aiAnalysis.score)} border font-medium`}>
+                  <Brain className="h-3 w-3 mr-1" />
+                  {lead.aiAnalysis.score}/10
+                </Badge>
+                <Badge className={getPotentialColor(lead.aiAnalysis.potential)}>
+                  {lead.aiAnalysis.potential}
+                </Badge>
+              </div>
+            )}
+          </div>
           <div className="flex items-center text-slate-600 mt-1">
             <MapPin className="h-4 w-4 mr-1" />
             <span className="text-sm">{lead.address}</span>
@@ -67,7 +96,7 @@ const LeadCard = ({ lead, onAddLead, onNavigateToEmailGenerator }: LeadCardProps
         </div>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-slate-600">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-slate-600 mb-3">
         <div className="flex items-center">
           <Phone className="h-4 w-4 mr-1" />
           <span>{lead.phone || 'Broj nije dostupan'}</span>
@@ -114,6 +143,51 @@ const LeadCard = ({ lead, onAddLead, onNavigateToEmailGenerator }: LeadCardProps
           )}
         </div>
       </div>
+
+      {lead.aiAnalysis && (
+        <div className="border-t pt-3 mt-3 bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg">
+          <div className="flex items-center gap-2 mb-2">
+            <Brain className="h-4 w-4 text-purple-600" />
+            <span className="font-medium text-purple-800">AI Analiza</span>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <Target className="h-3 w-3 text-blue-600" />
+                <span className="font-medium text-slate-700">Pristup:</span>
+              </div>
+              <p className="text-slate-600 text-xs">{lead.aiAnalysis.approach}</p>
+            </div>
+            
+            <div>
+              <div className="flex items-center gap-1 mb-1">
+                <Clock className="h-3 w-3 text-green-600" />
+                <span className="font-medium text-slate-700">Timing:</span>
+              </div>
+              <p className="text-slate-600 text-xs">{lead.aiAnalysis.contactTiming}</p>
+            </div>
+          </div>
+
+          {lead.aiAnalysis.keyPoints.length > 0 && (
+            <div className="mt-2">
+              <span className="font-medium text-slate-700 text-xs">Ključne točke:</span>
+              <ul className="mt-1 space-y-1">
+                {lead.aiAnalysis.keyPoints.slice(0, 2).map((point, index) => (
+                  <li key={index} className="text-xs text-slate-600 flex items-start">
+                    <span className="text-purple-500 mr-1">•</span>
+                    {point}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          <div className="mt-2 text-xs text-slate-500 italic">
+            {lead.aiAnalysis.reasoning}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -4,10 +4,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Search, MapPin, Sparkles, Settings } from 'lucide-react';
+import { Search, MapPin, Sparkles, Settings, Loader2 } from 'lucide-react';
 import IndustrySelector, { industries } from './IndustrySelector';
 import ExportButton from '@/components/ExportButton';
 import { useAISettings } from '@/hooks/useAISettings';
+import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 
 export interface DiscoveredLead {
   name: string;
@@ -36,10 +37,11 @@ interface SearchFormProps {
   apiKey: string;
   setApiKey: (apiKey: string) => void;
   isSearching: boolean;
-  discoveredLeads: DiscoveredLead[];
+  discoveredLeads: AnalyzedLead[];
   onSearchLeads: () => void;
-  onAnalyzeWithAI: (leads: DiscoveredLead[]) => void;
+  onAnalyzeWithAI: (leads: AnalyzedLead[]) => void;
   showApiKeyInput?: boolean;
+  isAnalyzing?: boolean;
 }
 
 const SearchForm = ({
@@ -55,7 +57,8 @@ const SearchForm = ({
   discoveredLeads,
   onSearchLeads,
   onAnalyzeWithAI,
-  showApiKeyInput = true
+  showApiKeyInput = true,
+  isAnalyzing = false
 }: SearchFormProps) => {
   const { isAIConfigured } = useAISettings();
 
@@ -141,11 +144,20 @@ const SearchForm = ({
               <Button 
                 onClick={() => onAnalyzeWithAI(discoveredLeads)}
                 variant="outline"
-                disabled={!isAIConfigured()}
+                disabled={!isAIConfigured() || isAnalyzing}
                 className="bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-300 hover:from-purple-200 hover:to-pink-200 text-purple-700 font-semibold hover:scale-105 transition-all duration-200"
               >
-                <Sparkles className="h-4 w-4 mr-2" />
-                AI Analiza
+                {isAnalyzing ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    AI Analizira...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    AI Analiza
+                  </>
+                )}
                 {!isAIConfigured() && (
                   <Settings className="h-4 w-4 ml-1 text-amber-500" />
                 )}

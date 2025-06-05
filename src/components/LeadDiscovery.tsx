@@ -9,6 +9,7 @@ import EmptyState from './lead-discovery/EmptyState';
 import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
 import { useAISettings } from '@/hooks/useAISettings';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { AILeadAnalysisService, AnalyzedLead } from '@/services/aiLeadAnalysisService';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
@@ -30,11 +31,12 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
   const [location, setLocation] = useState(savedFormData.location || '');
   const [industry, setIndustry] = useState(savedFormData.industry || 'laundry');
   const [isSearching, setIsSearching] = useState(false);
-  const [discoveredLeads, setDiscoveredLeads] = useLocalStorage<DiscoveredLead[]>('discoveredLeads', []);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [discoveredLeads, setDiscoveredLeads] = useLocalStorage<AnalyzedLead[]>('discoveredLeads', []);
   const [tempApiKey, setTempApiKey] = useState(savedFormData.tempApiKey || '');
   const [savedGoogleMapsApiKey, setSavedGoogleMapsApiKey] = useState('');
   const { toast } = useToast();
-  const { aiSettings, saveAISettings } = useAISettings();
+  const { aiSettings, saveAISettings, isAIConfigured } = useAISettings();
 
   // Save form data to localStorage whenever fields change
   useEffect(() => {
@@ -261,7 +263,56 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     }
   };
 
-  const addDiscoveredLead = (discoveredLead: DiscoveredLead) => {
+  const analyzeWithAI = async (leads: AnalyzedLead[]) => {
+    if (!isAIConfigured()) {
+      toast({
+        title: "AI nije konfiguriran",
+        description: "Molimo postavite AI ključ u Settings prije korištenja AI analize.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!user) {
+      toast({
+        title: "Greška",
+        description: "Morate biti prijavljeni za AI analizu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      console.log('Starting AI analysis for leads...');
+      const analyzedLeads = await AILeadAnalysisService.analyzeLeads(leads, user.id);
+      
+      setDiscoveredLeads(analyzedLeads);
+      
+      const analyzedCount = analyzedLeads.filter(lead => lead.aiAnalysis).length;
+      const averageScore = analyzedCount > 0 
+        ? analyzedLeads
+            .filter(lead => lead.aiAnalysis)
+            .reduce((sum, lead) => sum + (lead.aiAnalysis?.score || 0), 0) / analyzedCount
+        : 0;
+
+      toast({
+        title: "AI analiza završena",
+        description: `Analizirano ${analyzedCount} leadova. Prosječni score: ${averageScore.toFixed(1)}/10`,
+      });
+    } catch (error) {
+      console.error('AI analysis error:', error);
+      toast({
+        title: "Greška AI analize",
+        description: error instanceof Error ? error.message : "Dogodila se greška prilikom AI analize.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const addDiscoveredLead = (discoveredLead: AnalyzedLead) => {
     const newLead: Omit<Lead, 'id' | 'dateAdded'> = {
       company: discoveredLead.name,
       location: discoveredLead.address,
@@ -269,8 +320,8 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       phone: discoveredLead.phone || '',
       email: discoveredLead.email || '', // Now includes scraped emails
       status: 'Nova',
-      potential: 'Srednji',
-      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen' : ''}`
+      potential: discoveredLead.aiAnalysis?.potential || 'Srednji',
+      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen' : ''}${discoveredLead.aiAnalysis ? `, AI Score: ${discoveredLead.aiAnalysis.score}/10, ${discoveredLead.aiAnalysis.reasoning}` : ''}`
     };
 
     onAddLead(newLead);
@@ -286,13 +337,6 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     });
   };
 
-  const analyzeWithAI = async (leads: DiscoveredLead[]) => {
-    toast({
-      title: "AI analiza",
-      description: "AI funkcionalnost će biti dodana u budućoj verziji.",
-    });
-  };
-
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex justify-between items-center">
@@ -301,6 +345,9 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
           <p className="text-slate-600 text-sm sm:text-base">Pronađite nove leadove pomoću Google Maps i AI analize</p>
           {savedGoogleMapsApiKey && (
             <p className="text-xs text-green-600 mt-1">✓ Google Maps API ključ učitan iz AI postavki</p>
+          )}
+          {isAIConfigured() && (
+            <p className="text-xs text-purple-600 mt-1">✓ AI konfiguriran za naprednu analizu leadova</p>
           )}
         </div>
       </div>
@@ -315,6 +362,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
         apiKey={tempApiKey}
         setApiKey={setTempApiKey}
         isSearching={isSearching}
+        isAnalyzing={isAnalyzing}
         discoveredLeads={discoveredLeads}
         onSearchLeads={searchLeads}
         onAnalyzeWithAI={analyzeWithAI}
