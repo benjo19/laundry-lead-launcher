@@ -6,7 +6,7 @@ export interface Lead {
   employees: string;
   phone: string;
   email: string;
-  status: 'Nova' | 'Kontaktiran' | 'Zainteresiran' | 'Odbačen';
+  status: 'Nova' | 'Kontaktiran' | 'Zainteresiran' | 'Odbačen' | 'Zatvoren';
   potential: 'Visok' | 'Srednji' | 'Nizak';
   dateAdded: string;
   notes?: string;
