@@ -9,6 +9,9 @@ export interface Industry {
 }
 
 export const industries: Industry[] = [
+  { value: 'hotel', label: 'Hoteli', query: 'hotel accommodation lodging' },
+  { value: 'hostel', label: 'Hosteli', query: 'hostel budget accommodation backpacker' },
+  { value: 'apartment', label: 'Apartmani', query: 'apartment rental vacation rental' },
   { value: 'laundry', label: 'Praonice', query: 'laundry cleaning dry cleaning' },
   { value: 'restaurant', label: 'Restorani', query: 'restaurant food dining' },
   { value: 'retail', label: 'Trgovina', query: 'shop store retail clothing' },
@@ -49,12 +52,16 @@ interface IndustrySelectorProps {
 const IndustrySelector = ({ value, onChange }: IndustrySelectorProps) => {
   return (
     <Select value={value} onValueChange={onChange}>
-      <SelectTrigger>
+      <SelectTrigger className="bg-white border-2 border-gray-200 hover:border-blue-300 transition-colors">
         <SelectValue placeholder="Odaberite industriju" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="bg-white border-2 border-gray-200 shadow-lg">
         {industries.map((industry) => (
-          <SelectItem key={industry.value} value={industry.value}>
+          <SelectItem 
+            key={industry.value} 
+            value={industry.value}
+            className="hover:bg-blue-50 cursor-pointer"
+          >
             {industry.label}
           </SelectItem>
         ))}
