@@ -9,18 +9,19 @@ import CRMReminder from '@/components/CRMReminder';
 import ContentBooster from '@/components/ContentBooster';
 import Analytics from '@/components/Analytics';
 import Settings from '@/components/Settings';
+import MobileHeader from '@/components/MobileHeader';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Lead } from '@/types';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Menu } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
   const [leads, setLeads] = useLocalStorage<Lead[]>('leads', []);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  const { t } = useLanguage();
   
   // State for passing email data to EmailGenerator
   const [emailGeneratorData, setEmailGeneratorData] = useState<{
@@ -53,6 +54,20 @@ const Index = () => {
     if (isMobile) setSidebarOpen(false);
   };
 
+  const getModuleTitle = () => {
+    switch (activeModule) {
+      case 'dashboard': return t('dashboard');
+      case 'lead-hunter': return t('lead_hunter');
+      case 'lead-discovery': return t('lead_discovery');
+      case 'email-generator': return t('email_generator');
+      case 'crm-reminder': return t('crm_reminder');
+      case 'content-booster': return t('content_booster');
+      case 'analytics': return t('analytics');
+      case 'settings': return t('settings');
+      default: return t('marketing_agent');
+    }
+  };
+
   const renderActiveModule = () => {
     switch (activeModule) {
       case 'dashboard':
@@ -83,22 +98,18 @@ const Index = () => {
 
   if (isMobile) {
     return (
-      <div className="flex min-h-screen bg-gray-50">
+      <div className="flex min-h-screen bg-gray-50 w-full">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-          <div className="flex-1 flex flex-col">
-            <header className="bg-white border-b border-gray-200 p-4 flex items-center justify-between lg:hidden">
-              <h1 className="text-xl font-semibold text-gray-900">Marketing Agent</h1>
-              <SheetTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Menu className="h-6 w-6" />
-                </Button>
-              </SheetTrigger>
-            </header>
-            <main className="flex-1 overflow-auto p-4">
+          <div className="flex-1 flex flex-col min-w-0">
+            <MobileHeader 
+              onMenuClick={() => setSidebarOpen(true)}
+              title={getModuleTitle()}
+            />
+            <main className="flex-1 overflow-auto p-3 sm:p-4">
               {renderActiveModule()}
             </main>
           </div>
-          <SheetContent side="left" className="w-64 p-0">
+          <SheetContent side="left" className="w-64 sm:w-72 p-0">
             <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
           </SheetContent>
         </Sheet>
@@ -107,9 +118,9 @@ const Index = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gray-50 w-full">
       <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
-      <main className="flex-1 overflow-auto">
+      <main className="flex-1 overflow-auto min-w-0">
         {renderActiveModule()}
       </main>
     </div>

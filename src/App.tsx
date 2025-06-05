@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./components/Settings";
@@ -22,6 +23,7 @@ const queryClient = new QueryClient({
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   console.log('ProtectedRoute: Rendering protected route');
   const { user, loading } = useAuth();
+  const { t } = useLanguage();
   
   console.log('ProtectedRoute: User state:', { user: !!user, loading });
   
@@ -31,7 +33,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
       <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-sm sm:text-base text-gray-600">Učitavanje...</p>
+          <p className="text-sm sm:text-base text-gray-600">{t('loading')}</p>
         </div>
       </div>
     );
@@ -46,7 +48,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => {
+const AppContent = () => {
   console.log('App: Starting application');
   
   try {
@@ -81,6 +83,14 @@ const App = () => {
     console.error('App: Error in App component:', error);
     throw error;
   }
+};
+
+const App = () => {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  );
 };
 
 export default App;
