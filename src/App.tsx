@@ -20,7 +20,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   console.log('ProtectedRoute: Rendering protected route');
   const { user, loading } = useAuth();
   const { t } = useLanguage();
@@ -48,7 +48,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const AppContent = () => {
+const AppContent: React.FC = () => {
   console.log('App: Starting application');
   
   try {
@@ -85,7 +85,7 @@ const AppContent = () => {
   }
 };
 
-const App = () => {
+const App: React.FC = () => {
   return (
     <LanguageProvider>
       <AppContent />
