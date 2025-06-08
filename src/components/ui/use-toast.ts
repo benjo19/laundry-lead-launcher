@@ -1,3 +1,3 @@
-import { useToast, toast } from "@/hooks/use-toast";
 
-export { useToast, toast };
+// Export the hooks directly instead of re-exporting with different syntax
+export { useToast, toast } from "@/hooks/use-toast";

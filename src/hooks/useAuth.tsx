@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
+// Make sure this is exported as a named export, not default
 export const useAuth = () => {
   console.log('useAuth: Hook initialized');
   
