@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Send, Sparkles, Trash2, Users, Settings } from 'lucide-react';
+import { Mail, Send, Sparkles, Trash2, Users, Settings, Edit3 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +32,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [subject, setSubject] = useState(savedFormData.subject || '');
   const [emailContent, setEmailContent] = useState(savedFormData.emailContent || '');
   const [template, setTemplate] = useState(savedFormData.template || '');
+  const [editingDraftId, setEditingDraftId] = useState<number | null>(null);
   
   // Save form data to localStorage whenever fields change
   useEffect(() => {
@@ -192,17 +193,27 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
-    const newEmail: Email = {
-      id: Date.now(),
-      to: recipient,
-      subject,
-      content: emailContent,
-      template: template || 'custom',
-      dateSent: new Date().toISOString().split('T')[0],
-      status: 'Sent'
-    };
-
-    setEmails([newEmail, ...emails]);
+    if (editingDraftId) {
+      // Update existing draft to sent
+      setEmails(emails.map(email => 
+        email.id === editingDraftId 
+          ? { ...email, to: recipient, subject, content: emailContent, status: 'Sent' as const, dateSent: new Date().toISOString().split('T')[0] }
+          : email
+      ));
+      setEditingDraftId(null);
+    } else {
+      // Create new sent email
+      const newEmail: Email = {
+        id: Date.now(),
+        to: recipient,
+        subject,
+        content: emailContent,
+        template: template || 'custom',
+        dateSent: new Date().toISOString().split('T')[0],
+        status: 'Sent'
+      };
+      setEmails([newEmail, ...emails]);
+    }
     
     // Reset form and clear saved data
     const resetData = {
@@ -236,25 +247,88 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
-    const draft: Email = {
-      id: Date.now(),
-      to: recipient,
-      subject,
-      content: emailContent,
-      template: template || 'custom',
-      dateSent: new Date().toISOString().split('T')[0],
-      status: 'Draft'
-    };
+    if (editingDraftId) {
+      // Update existing draft
+      setEmails(emails.map(email => 
+        email.id === editingDraftId 
+          ? { ...email, to: recipient, subject, content: emailContent, template: template || 'custom' }
+          : email
+      ));
+      toast({
+        title: "Draft ažuriran",
+        description: "Email draft je uspješno ažuriran.",
+      });
+    } else {
+      // Create new draft
+      const draft: Email = {
+        id: Date.now(),
+        to: recipient,
+        subject,
+        content: emailContent,
+        template: template || 'custom',
+        dateSent: new Date().toISOString().split('T')[0],
+        status: 'Draft'
+      };
+      setEmails([draft, ...emails]);
+      toast({
+        title: "Draft spremljen",
+        description: "Email draft je uspješno spremljen.",
+      });
+    }
+  };
 
-    setEmails([draft, ...emails]);
+  const editDraft = (email: Email) => {
+    setRecipient(email.to);
+    setSubject(email.subject);
+    setEmailContent(email.content);
+    setTemplate(email.template);
+    setEditingDraftId(email.id);
+    
+    // Find company name from the email address
+    const allEmails = getAllEmailAddresses();
+    const contact = allEmails.find(c => c.email === email.to);
+    if (contact) {
+      setSelectedCompany(contact.company);
+    }
+
     toast({
-      title: "Draft spremljen",
-      description: "Email draft je uspješno spremljen.",
+      title: "Draft učitan",
+      description: "Draft je učitan za uređivanje.",
+    });
+  };
+
+  const cancelEdit = () => {
+    setEditingDraftId(null);
+    // Reset form
+    const resetData = {
+      recipient: '',
+      selectedCompany: '',
+      subject: '',
+      emailContent: '',
+      template: ''
+    };
+    
+    setRecipient('');
+    setSelectedCompany('');
+    setSubject('');
+    setEmailContent('');
+    setTemplate('');
+    setSavedFormData(resetData);
+
+    toast({
+      title: "Uređivanje otkazano",
+      description: "Vraćeni ste na čisti obrazac.",
     });
   };
 
   const deleteEmail = (emailId: number) => {
     setEmails(emails.filter(email => email.id !== emailId));
+    
+    // If we're editing this draft, cancel the edit
+    if (editingDraftId === emailId) {
+      cancelEdit();
+    }
+
     toast({
       title: "Email obrisan",
       description: "Email je uspješno obrisan.",
@@ -286,6 +360,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
+  // Filter emails to show drafts and sent emails separately
+  const draftEmails = emails.filter(email => email.status === 'Draft');
+  const sentEmails = emails.filter(email => email.status === 'Sent');
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -297,8 +375,18 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               ⚠️ AI nije konfiguriran - idite u Postavke da postavite API ključ
             </p>
           )}
+          {editingDraftId && (
+            <p className="text-sm text-blue-600 mt-1">
+              ✏️ Uređujete draft email - možete ga ažurirati ili poslati
+            </p>
+          )}
         </div>
         <div className="flex space-x-2">
+          {editingDraftId && (
+            <Button variant="outline" onClick={cancelEdit}>
+              Otkaži uređivanje
+            </Button>
+          )}
           <Link to="/settings">
             <Button variant="outline">
               <Settings className="h-4 w-4 mr-2" />
@@ -314,6 +402,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             <CardTitle className="flex items-center">
               <Mail className="h-5 w-5 mr-2 text-blue-600" />
               Email Postavke
+              {editingDraftId && (
+                <span className="ml-2 text-sm text-blue-600">(Uređivanje draft-a)</span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -418,33 +509,84 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             <div className="flex space-x-2">
               <Button onClick={sendEmail} className="flex-1 bg-green-600 hover:bg-green-700">
                 <Send className="h-4 w-4 mr-2" />
-                Pošalji Email
+                {editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email'}
               </Button>
               <Button onClick={saveDraft} variant="outline">
-                Spremi Draft
+                {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
               </Button>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Draft Emails Section */}
+      {draftEmails.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Edit3 className="h-5 w-5 mr-2 text-orange-600" />
+              Draft Emailovi ({draftEmails.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {draftEmails.map((email) => (
+                <div key={email.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 bg-orange-50 rounded-lg px-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-1">
+                      <p className="font-medium text-slate-900">{email.subject}</p>
+                      <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                        Draft
+                      </span>
+                      {editingDraftId === email.id && (
+                        <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                          Uređuje se
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-sm text-slate-600">{email.to}</p>
+                    <p className="text-xs text-slate-500">Stvoren: {email.dateSent}</p>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => editDraft(email)}
+                      disabled={editingDraftId === email.id}
+                      className="text-blue-600 hover:text-blue-700"
+                    >
+                      <Edit3 className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => deleteEmail(email.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Sent Emails Section */}
       <Card>
         <CardHeader>
-          <CardTitle>Nedavni Emailovi</CardTitle>
+          <CardTitle>Poslani Emailovi ({sentEmails.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {emails.map((email) => (
+            {sentEmails.map((email) => (
               <div key={email.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-1">
                     <p className="font-medium text-slate-900">{email.subject}</p>
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      email.status === 'Sent' ? 'bg-green-100 text-green-800' : 
-                      email.status === 'Draft' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {email.status}
+                    <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+                      Sent
                     </span>
                   </div>
                   <p className="text-sm text-slate-600">{email.to}</p>

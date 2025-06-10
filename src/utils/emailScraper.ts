@@ -1,4 +1,6 @@
 
+// Enhanced email scraper with multiple strategies for finding email addresses
+
 export const scrapeEmailFromWebsite = async (website: string): Promise<string | null> => {
   if (!website) return null;
   
@@ -20,7 +22,7 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     
     if (!htmlContent) return null;
     
-    // Email regex patterns
+    // Email regex patterns (enhanced)
     const emailPatterns = [
       // Standard email pattern
       /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
@@ -28,7 +30,12 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
       /mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
       // Email with [at] or (at) instead of @
       /[a-zA-Z0-9._%+-]+\s*\[at\]\s*[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-      /[a-zA-Z0-9._%+-]+\s*\(at\)\s*[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g
+      /[a-zA-Z0-9._%+-]+\s*\(at\)\s*[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+      // Email with " at " or " AT " instead of @
+      /[a-zA-Z0-9._%+-]+\s+at\s+[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi,
+      // Email with [dot] or (dot) instead of .
+      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+\s*\[dot\]\s*[a-zA-Z]{2,}/gi,
+      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+\s*\(dot\)\s*[a-zA-Z]{2,}/gi,
     ];
     
     const foundEmails = new Set<string>();
@@ -46,11 +53,19 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
           }
           
           // Replace [at] and (at) with @
-          email = email.replace(/\s*\[at\]\s*/g, '@');
-          email = email.replace(/\s*\(at\)\s*/g, '@');
+          email = email.replace(/\s*\[at\]\s*/gi, '@');
+          email = email.replace(/\s*\(at\)\s*/gi, '@');
+          email = email.replace(/\s+at\s+/gi, '@');
+          
+          // Replace [dot] and (dot) with .
+          email = email.replace(/\s*\[dot\]\s*/gi, '.');
+          email = email.replace(/\s*\(dot\)\s*/gi, '.');
           
           // Remove any HTML tags
           email = email.replace(/<[^>]*>/g, '');
+          
+          // Remove extra spaces
+          email = email.replace(/\s+/g, '');
           
           // Validate email format
           const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -64,7 +79,13 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
               /example\.com/i,
               /test\.com/i,
               /placeholder/i,
-              /sample/i
+              /sample/i,
+              /webmaster/i,
+              /admin@/i,
+              /postmaster/i,
+              /newsletter/i,
+              /marketing@/i,
+              /support@/i // Actually, support emails might be useful
             ];
             
             const isExcluded = excludePatterns.some(pattern => pattern.test(email));
@@ -76,12 +97,12 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
       }
     });
     
-    // Return the first valid email found, preferring contact/info emails
+    // Return the first valid email found, preferring contact-related emails
     const emailsArray = Array.from(foundEmails);
     
     // Prioritize contact-related emails
     const priorityEmail = emailsArray.find(email => 
-      /^(info|contact|office|sales|hello|support)@/i.test(email)
+      /^(info|contact|office|sales|hello|inquiries|general)@/i.test(email)
     );
     
     if (priorityEmail) {
@@ -101,4 +122,51 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     console.error(`Error scraping email from ${website}:`, error);
     return null;
   }
+};
+
+// New function to guess email patterns for companies without websites
+export const guessBusinessEmail = (companyName: string, website?: string): string[] => {
+  if (!companyName) return [];
+  
+  const guessedEmails: string[] = [];
+  
+  // Clean company name for email generation
+  const cleanName = companyName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, '') // Remove special characters
+    .replace(/\s+/g, '') // Remove spaces
+    .substring(0, 15); // Limit length
+  
+  // If we have a website, extract domain
+  let domain = '';
+  if (website) {
+    try {
+      const url = website.startsWith('http') ? website : `https://${website}`;
+      domain = new URL(url).hostname.replace('www.', '');
+    } catch (error) {
+      // If website parsing fails, try to extract domain from website string
+      domain = website.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
+    }
+  }
+  
+  // If no domain from website, guess common Croatian domains
+  const commonDomains = domain ? [domain] : [`${cleanName}.hr`, `${cleanName}.com`, `${cleanName}.eu`];
+  
+  // Common business email prefixes
+  const prefixes = ['info', 'contact', 'office', 'sales', 'hello', 'general', 'admin'];
+  
+  // Generate combinations
+  commonDomains.forEach(dom => {
+    prefixes.forEach(prefix => {
+      guessedEmails.push(`${prefix}@${dom}`);
+    });
+  });
+  
+  return guessedEmails;
+};
+
+// Function to validate if an email address potentially exists (basic check)
+export const validateEmailFormat = (email: string): boolean => {
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  return emailRegex.test(email);
 };
