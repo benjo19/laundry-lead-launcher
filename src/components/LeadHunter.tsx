@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -123,9 +122,17 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
 
   const { toast } = useToast();
 
-  // Extract unique values for filter options
-  const uniqueCities = [...new Set(leads.map(lead => lead.location.split(',')[0].trim()))].sort();
-  const uniqueCountries = [...new Set(leads.map(lead => lead.location.split(',')[1]?.trim() || 'Unknown'))].sort();
+  // Extract unique values for filter options with proper null checks
+  const uniqueCities = [...new Set(leads.map(lead => {
+    const city = (lead.location || '').split(',')[0]?.trim() || 'Unknown';
+    return city;
+  }))].filter(city => city && city !== 'Unknown').sort();
+  
+  const uniqueCountries = [...new Set(leads.map(lead => {
+    const country = (lead.location || '').split(',')[1]?.trim() || 'Unknown';
+    return country;
+  }))].filter(country => country && country !== 'Unknown').sort();
+  
   const uniqueIndustries = [...new Set(leads.map(lead => lead.industry).filter(Boolean))].sort();
 
   const checkForDuplicate = (company: string, email: string): boolean => {
@@ -188,12 +195,12 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
 
   const filteredLeads = leads.filter(lead => {
     const matchesSearch = lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         lead.location.toLowerCase().includes(searchTerm.toLowerCase());
+                         (lead.location || '').toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
     const matchesPotential = potentialFilter === 'all' || lead.potential === potentialFilter;
     
-    const leadCity = lead.location.split(',')[0].trim();
-    const leadCountry = lead.location.split(',')[1]?.trim() || 'Unknown';
+    const leadCity = (lead.location || '').split(',')[0]?.trim() || 'Unknown';
+    const leadCountry = (lead.location || '').split(',')[1]?.trim() || 'Unknown';
     const matchesCity = cityFilter === 'all' || leadCity === cityFilter;
     const matchesCountry = countryFilter === 'all' || leadCountry === countryFilter;
     const matchesIndustry = industryFilter === 'all' || lead.industry === industryFilter;
@@ -349,7 +356,7 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
                     <h3 className="text-lg font-semibold text-slate-900">{lead.company}</h3>
                     <div className="flex items-center text-slate-600 mt-1">
                       <MapPin className="h-4 w-4 mr-1" />
-                      <span className="text-sm">{lead.location}</span>
+                      <span className="text-sm">{lead.location || 'Lokacija nepoznata'}</span>
                       <Users className="h-4 w-4 ml-4 mr-1" />
                       <span className="text-sm">{lead.employees} zaposlenika</span>
                       {lead.industry && (
