@@ -9,6 +9,7 @@ export interface Lead {
   status: 'Nova' | 'Kontaktiran' | 'Zainteresiran' | 'Odbačen' | 'Zatvoren';
   potential: 'Visok' | 'Srednji' | 'Nizak';
   dateAdded: string;
+  industry?: string;
   notes?: string;
 }
 

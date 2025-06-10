@@ -106,7 +106,6 @@ const SearchForm = ({
               <IndustrySelector 
                 value={industry} 
                 onChange={setIndustry} 
-                industries={industries} 
               />
             </div>
           </div>
