@@ -6,57 +6,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Search, Filter, X } from 'lucide-react';
 
 interface LeadFiltersProps {
-  searchTerm: string;
-  setSearchTerm: (value: string) => void;
-  statusFilter: string;
-  setStatusFilter: (value: string) => void;
-  potentialFilter: string;
-  setPotentialFilter: (value: string) => void;
-  cityFilter: string;
-  setCityFilter: (value: string) => void;
-  countryFilter: string;
-  setCountryFilter: (value: string) => void;
-  industryFilter: string;
-  setIndustryFilter: (value: string) => void;
+  selectedStatus: string;
+  setSelectedStatus: (value: string) => void;
+  selectedPotential: string;
+  setSelectedPotential: (value: string) => void;
+  selectedIndustry: string;
+  setSelectedIndustry: (value: string) => void;
+  selectedCity: string;
+  setSelectedCity: (value: string) => void;
+  selectedCountry: string;
+  setSelectedCountry: (value: string) => void;
+  uniqueStatuses: string[];
+  uniquePotentials: string[];
+  uniqueIndustries: string[];
   uniqueCities: string[];
   uniqueCountries: string[];
-  uniqueIndustries: string[];
   activeFiltersCount: number;
-  clearAllFilters: () => void;
 }
 
 const LeadFilters = ({
-  searchTerm,
-  setSearchTerm,
-  statusFilter,
-  setStatusFilter,
-  potentialFilter,
-  setPotentialFilter,
-  cityFilter,
-  setCityFilter,
-  countryFilter,
-  setCountryFilter,
-  industryFilter,
-  setIndustryFilter,
+  selectedStatus,
+  setSelectedStatus,
+  selectedPotential,
+  setSelectedPotential,
+  selectedIndustry,
+  setSelectedIndustry,
+  selectedCity,
+  setSelectedCity,
+  selectedCountry,
+  setSelectedCountry,
+  uniqueStatuses,
+  uniquePotentials,
+  uniqueIndustries,
   uniqueCities,
   uniqueCountries,
-  uniqueIndustries,
-  activeFiltersCount,
-  clearAllFilters
+  activeFiltersCount
 }: LeadFiltersProps) => {
+  const clearAllFilters = () => {
+    setSelectedStatus('');
+    setSelectedPotential('');
+    setSelectedIndustry('');
+    setSelectedCity('');
+    setSelectedCountry('');
+  };
+
   return (
     <div className="space-y-4">
-      {/* Search Bar */}
-      <div className="flex-1 relative">
-        <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-        <Input
-          placeholder="Pretražite tvrtke, lokacije..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
-      
       {/* Filter Row */}
       <div className="flex flex-wrap gap-2 items-center">
         <div className="flex items-center gap-1 text-sm font-medium text-slate-700">
@@ -64,62 +59,60 @@ const LeadFilters = ({
           Filteri:
         </div>
         
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
+        <Select value={selectedStatus} onValueChange={setSelectedStatus}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Svi statusi</SelectItem>
-            <SelectItem value="Nova">Nova</SelectItem>
-            <SelectItem value="Kontaktiran">Kontaktiran</SelectItem>
-            <SelectItem value="Zainteresiran">Zainteresiran</SelectItem>
-            <SelectItem value="Zatvoren">Zatvoren</SelectItem>
-            <SelectItem value="Odbačen">Odbačen</SelectItem>
+            <SelectItem value="">Svi statusi</SelectItem>
+            {uniqueStatuses.map((status) => (
+              <SelectItem key={status} value={status}>{status}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         
-        <Select value={potentialFilter} onValueChange={setPotentialFilter}>
+        <Select value={selectedPotential} onValueChange={setSelectedPotential}>
           <SelectTrigger className="w-40">
             <SelectValue placeholder="Potencijal" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Svi potencijali</SelectItem>
-            <SelectItem value="Visok">Visok</SelectItem>
-            <SelectItem value="Srednji">Srednji</SelectItem>
-            <SelectItem value="Nizak">Nizak</SelectItem>
+            <SelectItem value="">Svi potencijali</SelectItem>
+            {uniquePotentials.map((potential) => (
+              <SelectItem key={potential} value={potential}>{potential}</SelectItem>
+            ))}
           </SelectContent>
         </Select>
         
-        <Select value={cityFilter} onValueChange={setCityFilter}>
+        <Select value={selectedCity} onValueChange={setSelectedCity}>
           <SelectTrigger className="w-36">
             <SelectValue placeholder="Grad" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Svi gradovi</SelectItem>
+            <SelectItem value="">Svi gradovi</SelectItem>
             {uniqueCities.map((city) => (
               <SelectItem key={city} value={city}>{city}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         
-        <Select value={countryFilter} onValueChange={setCountryFilter}>
+        <Select value={selectedCountry} onValueChange={setSelectedCountry}>
           <SelectTrigger className="w-36">
             <SelectValue placeholder="Država" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Sve države</SelectItem>
+            <SelectItem value="">Sve države</SelectItem>
             {uniqueCountries.map((country) => (
               <SelectItem key={country} value={country}>{country}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         
-        <Select value={industryFilter} onValueChange={setIndustryFilter}>
+        <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
           <SelectTrigger className="w-44">
             <SelectValue placeholder="Tip poslovanja" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">Sve industrije</SelectItem>
+            <SelectItem value="">Sve industrije</SelectItem>
             {uniqueIndustries.map((industry) => (
               <SelectItem key={industry} value={industry}>{industry}</SelectItem>
             ))}

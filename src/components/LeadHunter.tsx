@@ -6,9 +6,13 @@ import { PlusCircle, Search } from 'lucide-react';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import LeadList from '@/components/lead-hunter/LeadList';
 import LeadFilters from '@/components/lead-hunter/LeadFilters';
-import { AddLeadDialog } from '@/components/AddLeadDialog';
+import AddLeadDialog from '@/components/AddLeadDialog';
 
-const LeadHunter = () => {
+interface LeadHunterProps {
+  onNavigateToEmailGenerator?: (email: string, company: string) => void;
+}
+
+const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
   const { leads, addLead, updateLeadStatus, deleteLead } = useLeadManagement();
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
@@ -31,16 +35,18 @@ const LeadHunter = () => {
   );
 
   const uniqueCities = useMemo(() => {
-    const cities = leads.map(lead => 
-      (lead.location || '').split(',')[0].trim() || 'Unknown'
-    ).filter(city => city && city !== 'Unknown');
+    const cities = leads.map(lead => {
+      const location = lead.location || '';
+      return location.split(',')[0]?.trim() || 'Unknown';
+    }).filter(city => city && city !== 'Unknown');
     return [...new Set(cities)];
   }, [leads]);
 
   const uniqueCountries = useMemo(() => {
-    const countries = leads.map(lead => 
-      (lead.location || '').split(',')[1]?.trim() || 'Unknown'
-    ).filter(country => country && country !== 'Unknown');
+    const countries = leads.map(lead => {
+      const location = lead.location || '';
+      return location.split(',')[1]?.trim() || 'Unknown';
+    }).filter(country => country && country !== 'Unknown');
     return [...new Set(countries)];
   }, [leads]);
 
@@ -55,8 +61,9 @@ const LeadHunter = () => {
       const matchesPotential = selectedPotential === '' || lead.potential === selectedPotential;
       const matchesIndustry = selectedIndustry === '' || lead.industry === selectedIndustry;
       
-      const leadCity = (lead.location || '').split(',')[0].trim() || 'Unknown';
-      const leadCountry = (lead.location || '').split(',')[1]?.trim() || 'Unknown';
+      const location = lead.location || '';
+      const leadCity = location.split(',')[0]?.trim() || 'Unknown';
+      const leadCountry = location.split(',')[1]?.trim() || 'Unknown';
       const matchesCity = selectedCity === '' || leadCity === selectedCity;
       const matchesCountry = selectedCountry === '' || leadCountry === selectedCountry;
 
@@ -71,9 +78,13 @@ const LeadHunter = () => {
   ].filter(Boolean).length;
 
   const handleEmailClick = (email: string, company: string) => {
-    const subject = encodeURIComponent(`Prilika za suradnju - ${company}`);
-    const body = encodeURIComponent(`Poštovani,\n\nObraćam vam se u vezi s potencijalnom suradnjom...\n\nS poštovanjem`);
-    window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+    if (onNavigateToEmailGenerator) {
+      onNavigateToEmailGenerator(email, company);
+    } else {
+      const subject = encodeURIComponent(`Prilika za suradnju - ${company}`);
+      const body = encodeURIComponent(`Poštovani,\n\nObraćam vam se u vezi s potencijalnom suradnjom...\n\nS poštovanjem`);
+      window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
+    }
   };
 
   return (

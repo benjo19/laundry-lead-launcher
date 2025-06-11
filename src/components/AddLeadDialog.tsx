@@ -1,19 +1,19 @@
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus } from 'lucide-react';
 import { Lead } from '@/types';
 
 interface AddLeadDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
 }
 
-const AddLeadDialog = ({ onAddLead }: AddLeadDialogProps) => {
-  const [open, setOpen] = useState(false);
+const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) => {
   const [formData, setFormData] = useState({
     company: '',
     location: '',
@@ -22,6 +22,7 @@ const AddLeadDialog = ({ onAddLead }: AddLeadDialogProps) => {
     email: '',
     status: 'Nova' as Lead['status'],
     potential: 'Srednji' as Lead['potential'],
+    industry: '',
     notes: ''
   });
 
@@ -36,19 +37,14 @@ const AddLeadDialog = ({ onAddLead }: AddLeadDialogProps) => {
       email: '',
       status: 'Nova',
       potential: 'Srednji',
+      industry: '',
       notes: ''
     });
-    setOpen(false);
+    onOpenChange(false);
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Plus className="h-4 w-4 mr-2" />
-          Dodaj Lead
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Dodaj Novi Lead</DialogTitle>
@@ -93,6 +89,14 @@ const AddLeadDialog = ({ onAddLead }: AddLeadDialogProps) => {
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
               required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Industrija</label>
+            <Input
+              value={formData.industry}
+              onChange={(e) => setFormData({...formData, industry: e.target.value})}
+              placeholder="npr. Praonice, Hoteli, Restorani..."
             />
           </div>
           <div>
