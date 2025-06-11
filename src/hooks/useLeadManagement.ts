@@ -1,8 +1,8 @@
-
 import { useState } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useZapierIntegration } from '@/hooks/useZapierIntegration';
 
 export const useLeadManagement = () => {
   const [leads, setLeads] = useLocalStorage<Lead[]>('leads', [
@@ -81,6 +81,7 @@ export const useLeadManagement = () => {
   ]);
 
   const { toast } = useToast();
+  const { triggerNewLead } = useZapierIntegration();
 
   const checkForDuplicate = (company: string, email: string): boolean => {
     return leads.some(lead => 
@@ -89,7 +90,7 @@ export const useLeadManagement = () => {
     );
   };
 
-  const addLead = (newLeadData: Omit<Lead, 'id' | 'dateAdded'>) => {
+  const addLead = async (newLeadData: Omit<Lead, 'id' | 'dateAdded'>) => {
     if (checkForDuplicate(newLeadData.company, newLeadData.email)) {
       toast({
         title: "Duplikat pronađen",
@@ -104,7 +105,12 @@ export const useLeadManagement = () => {
       id: Date.now(),
       dateAdded: new Date().toISOString().split('T')[0]
     };
+    
     setLeads([...leads, newLead]);
+    
+    // Trigger Zapier webhook for new lead
+    await triggerNewLead(newLead);
+    
     toast({
       title: "Lead dodan",
       description: `${newLead.company} je uspješno dodan u sustav.`,

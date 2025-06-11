@@ -2,13 +2,14 @@
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Settings2, User, Brain, Mail, Share2, ArrowLeft } from 'lucide-react';
+import { Settings2, User, Brain, Mail, Share2, ArrowLeft, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import BusinessProfileSettings from './BusinessProfileSettings';
 import AISettings from './AISettings';
 import EmailSettings from './EmailSettings';
 import SocialSettings from './SocialSettings';
+import ZapierIntegration from './ZapierIntegration';
 
 const Settings = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="business" className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto">
           <TabsTrigger value="business" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3">
             <User className="h-4 w-4" />
             <span className="text-xs sm:text-sm">{t('business_profile')}</span>
@@ -53,6 +54,10 @@ const Settings = () => {
           <TabsTrigger value="social" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3">
             <Share2 className="h-4 w-4" />
             <span className="text-xs sm:text-sm">{t('social_networks')}</span>
+          </TabsTrigger>
+          <TabsTrigger value="zapier" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3">
+            <Zap className="h-4 w-4" />
+            <span className="text-xs sm:text-sm">Zapier</span>
           </TabsTrigger>
         </TabsList>
 
@@ -70,6 +75,10 @@ const Settings = () => {
 
         <TabsContent value="social">
           <SocialSettings />
+        </TabsContent>
+
+        <TabsContent value="zapier">
+          <ZapierIntegration />
         </TabsContent>
       </Tabs>
     </div>
