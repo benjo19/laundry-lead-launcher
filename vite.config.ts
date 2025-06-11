@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ['react', 'react-dom'],
-    exclude: ['@supabase/supabase-js']
+    exclude: ['@supabase/supabase-js', '@supabase/postgrest-js']
   },
   build: {
     rollupOptions: {
@@ -41,5 +41,8 @@ export default defineConfig(({ mode }) => ({
         warn(warning);
       }
     }
+  },
+  ssr: {
+    noExternal: ['@supabase/postgrest-js']
   }
 }));
