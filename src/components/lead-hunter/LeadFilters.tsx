@@ -43,11 +43,11 @@ const LeadFilters = ({
   activeFiltersCount
 }: LeadFiltersProps) => {
   const clearAllFilters = () => {
-    setSelectedStatus('');
-    setSelectedPotential('');
-    setSelectedIndustry('');
-    setSelectedCity('');
-    setSelectedCountry('');
+    setSelectedStatus('all');
+    setSelectedPotential('all');
+    setSelectedIndustry('all');
+    setSelectedCity('all');
+    setSelectedCountry('all');
   };
 
   return (
@@ -64,7 +64,7 @@ const LeadFilters = ({
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Svi statusi</SelectItem>
+            <SelectItem value="all">Svi statusi</SelectItem>
             {uniqueStatuses.map((status) => (
               <SelectItem key={status} value={status}>{status}</SelectItem>
             ))}
@@ -76,7 +76,7 @@ const LeadFilters = ({
             <SelectValue placeholder="Potencijal" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Svi potencijali</SelectItem>
+            <SelectItem value="all">Svi potencijali</SelectItem>
             {uniquePotentials.map((potential) => (
               <SelectItem key={potential} value={potential}>{potential}</SelectItem>
             ))}
@@ -88,7 +88,7 @@ const LeadFilters = ({
             <SelectValue placeholder="Grad" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Svi gradovi</SelectItem>
+            <SelectItem value="all">Svi gradovi</SelectItem>
             {uniqueCities.map((city) => (
               <SelectItem key={city} value={city}>{city}</SelectItem>
             ))}
@@ -100,7 +100,7 @@ const LeadFilters = ({
             <SelectValue placeholder="Država" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Sve države</SelectItem>
+            <SelectItem value="all">Sve države</SelectItem>
             {uniqueCountries.map((country) => (
               <SelectItem key={country} value={country}>{country}</SelectItem>
             ))}
@@ -112,7 +112,7 @@ const LeadFilters = ({
             <SelectValue placeholder="Tip poslovanja" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Sve industrije</SelectItem>
+            <SelectItem value="all">Sve industrije</SelectItem>
             {uniqueIndustries.map((industry) => (
               <SelectItem key={industry} value={industry}>{industry}</SelectItem>
             ))}
