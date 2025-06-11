@@ -14,6 +14,61 @@ interface ExportButtonProps {
 const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
   const { toast } = useToast();
 
+  const getRelevantFields = (item: any, type: string) => {
+    switch (type) {
+      case 'leads':
+        return {
+          'Tvrtka': item.company || '',
+          'Email': item.email || '',
+          'Telefon': item.phone || '',
+          'Lokacija': item.location || '',
+          'Broj zaposlenika': item.employees || '',
+          'Tip poslovanja': item.industry || '',
+          'Status': item.status || '',
+          'Potencijal': item.potential || '',
+          'Datum dodavanja': item.dateAdded || '',
+          'Bilješke': item.notes || ''
+        };
+      case 'reminders':
+        return {
+          'Naslov': item.title || '',
+          'Opis': item.description || '',
+          'Tvrtka': item.company || '',
+          'Datum': item.date || '',
+          'Vrijeme': item.time || '',
+          'Prioritet': item.priority || '',
+          'Status': item.status || ''
+        };
+      case 'emails':
+        return {
+          'Prima': item.to || item.to_email || '',
+          'Predmet': item.subject || '',
+          'Sadržaj': item.content || '',
+          'Template': item.template || '',
+          'Status': item.status || '',
+          'Datum slanja': item.dateSent || item.sent_at || '',
+          'Stopa otvaranja': item.openRate || item.open_rate || '',
+          'Stopa klika': item.clickRate || item.click_rate || ''
+        };
+      case 'posts':
+        return {
+          'Platforma': item.platform || '',
+          'Sadržaj': item.content || '',
+          'Tip sadržaja': item.contentType || '',
+          'Datum': item.date || '',
+          'Status': item.status || '',
+          'Planirano vrijeme': item.scheduledTime || '',
+          'Engagement': item.engagement || ''
+        };
+      default:
+        // Fallback to original behavior
+        const filteredItem = { ...item };
+        delete filteredItem.id;
+        delete filteredItem.user_id;
+        return filteredItem;
+    }
+  };
+
   const exportToCSV = () => {
     if (data.length === 0) {
       toast({
@@ -24,15 +79,19 @@ const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
       return;
     }
 
-    const headers = Object.keys(data[0]).filter(key => key !== 'id' && key !== 'user_id');
+    // Get the first item to determine headers
+    const firstItem = getRelevantFields(data[0], type);
+    const headers = Object.keys(firstItem);
+    
     const csvContent = [
       headers.join(','),
-      ...data.map(row => 
-        headers.map(header => {
-          const value = row[header] || '';
+      ...data.map(row => {
+        const relevantData = getRelevantFields(row, type);
+        return headers.map(header => {
+          const value = relevantData[header] || '';
           return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
-        }).join(',')
-      )
+        }).join(',');
+      })
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -61,15 +120,19 @@ const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
       return;
     }
 
-    const headers = Object.keys(data[0]).filter(key => key !== 'id' && key !== 'user_id');
+    // Get the first item to determine headers
+    const firstItem = getRelevantFields(data[0], type);
+    const headers = Object.keys(firstItem);
+    
     const csvContent = [
       headers.join(','),
-      ...data.map(row => 
-        headers.map(header => {
-          const value = row[header] || '';
+      ...data.map(row => {
+        const relevantData = getRelevantFields(row, type);
+        return headers.map(header => {
+          const value = relevantData[header] || '';
           return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
-        }).join(',')
-      )
+        }).join(',');
+      })
     ].join('\n');
 
     // Create a new Google Sheets document with data
@@ -101,15 +164,19 @@ const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
     }
 
     try {
-      const headers = Object.keys(data[0]).filter(key => key !== 'id' && key !== 'user_id');
+      // Get the first item to determine headers
+      const firstItem = getRelevantFields(data[0], type);
+      const headers = Object.keys(firstItem);
+      
       const csvContent = [
         headers.join(','),
-        ...data.map(row => 
-          headers.map(header => {
-            const value = row[header] || '';
+        ...data.map(row => {
+          const relevantData = getRelevantFields(row, type);
+          return headers.map(header => {
+            const value = relevantData[header] || '';
             return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
-          }).join(',')
-        )
+          }).join(',');
+        })
       ].join('\n');
 
       // Create a Google Apps Script Web App URL that creates a sheet with the data
