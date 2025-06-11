@@ -6,13 +6,14 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { ExternalLink, Zap, Send, TestTube } from 'lucide-react';
+import { ExternalLink, Zap, Send, TestTube, CheckCircle, AlertCircle } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 
 const ZapierIntegration = () => {
   const [webhookUrl, setWebhookUrl] = useLocalStorage('zapier_webhook_url', '');
   const [testData, setTestData] = useState('{"message": "Test from Marketing Agent", "timestamp": ""}');
   const [isLoading, setIsLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const { toast } = useToast();
 
   const handleTriggerZap = async (e: React.FormEvent) => {
@@ -28,6 +29,7 @@ const ZapierIntegration = () => {
     }
 
     setIsLoading(true);
+    setConnectionStatus('idle');
     console.log("Triggering Zapier webhook:", webhookUrl);
 
     try {
@@ -44,7 +46,8 @@ const ZapierIntegration = () => {
         };
       }
 
-      const response = await fetch(webhookUrl, {
+      // Try to send the webhook
+      await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -53,12 +56,14 @@ const ZapierIntegration = () => {
         body: JSON.stringify(dataToSend),
       });
 
+      setConnectionStatus('success');
       toast({
         title: "Zahtjev poslan",
         description: "Zahtjev je poslan na Zapier. Provjerite historiju vašeg Zap-a da potvrdite da je pokrenut.",
       });
     } catch (error) {
       console.error("Error triggering webhook:", error);
+      setConnectionStatus('error');
       toast({
         title: "Greška",
         description: "Neuspješno pokretanje Zapier webhook-a. Molimo provjerite URL i pokušajte ponovo.",
@@ -69,49 +74,8 @@ const ZapierIntegration = () => {
     }
   };
 
-  const triggerWithLeadData = async (leadData: any) => {
-    if (!webhookUrl) {
-      toast({
-        title: "Greška",
-        description: "Molimo postavite Zapier webhook URL prije pokretanja",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      const dataToSend = {
-        type: "new_lead",
-        lead: leadData,
-        timestamp: new Date().toISOString(),
-        triggered_from: "Marketing Agent - Lead Hunter",
-      };
-
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        mode: "no-cors",
-        body: JSON.stringify(dataToSend),
-      });
-
-      toast({
-        title: "Lead poslan na Zapier",
-        description: `Podaci za ${leadData.company} su poslani na Zapier.`,
-      });
-    } catch (error) {
-      console.error("Error sending lead to Zapier:", error);
-      toast({
-        title: "Greška",
-        description: "Neuspješno slanje lead-a na Zapier.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
+  const validateWebhookUrl = (url: string) => {
+    return url.includes('hooks.zapier.com') && url.startsWith('https://');
   };
 
   return (
@@ -121,6 +85,8 @@ const ZapierIntegration = () => {
           <CardTitle className="flex items-center gap-2">
             <Zap className="h-5 w-5 text-orange-500" />
             Zapier Integracija
+            {connectionStatus === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
+            {connectionStatus === 'error' && <AlertCircle className="h-5 w-5 text-red-500" />}
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -131,9 +97,23 @@ const ZapierIntegration = () => {
               type="url"
               placeholder="https://hooks.zapier.com/hooks/catch/..."
               value={webhookUrl}
-              onChange={(e) => setWebhookUrl(e.target.value)}
-              className="mt-1"
+              onChange={(e) => {
+                setWebhookUrl(e.target.value);
+                setConnectionStatus('idle');
+              }}
+              className={`mt-1 ${
+                webhookUrl && !validateWebhookUrl(webhookUrl) 
+                  ? 'border-red-500' 
+                  : webhookUrl && validateWebhookUrl(webhookUrl)
+                  ? 'border-green-500'
+                  : ''
+              }`}
             />
+            {webhookUrl && !validateWebhookUrl(webhookUrl) && (
+              <p className="text-sm text-red-600 mt-1">
+                URL treba počinjati s "https://hooks.zapier.com"
+              </p>
+            )}
             <p className="text-sm text-muted-foreground mt-1">
               Stvorite novi Zap u Zapier-u s "Webhook by Zapier" triggerom i kopirajte URL ovdje.
             </p>
@@ -176,7 +156,11 @@ const ZapierIntegration = () => {
               </p>
             </div>
 
-            <Button type="submit" disabled={isLoading || !webhookUrl}>
+            <Button 
+              type="submit" 
+              disabled={isLoading || !webhookUrl || !validateWebhookUrl(webhookUrl)}
+              className="w-full"
+            >
               {isLoading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
@@ -218,6 +202,16 @@ const ZapierIntegration = () => {
               <li>Stvori novi sadržaj</li>
               <li>Postavlja reminder</li>
             </ul>
+          </div>
+
+          <div className="bg-amber-50 p-4 rounded-lg mt-4">
+            <h4 className="font-medium text-amber-900 mb-2">Troubleshooting</h4>
+            <div className="text-sm text-amber-800 space-y-1">
+              <p>• Provjerite da URL počinje s "https://hooks.zapier.com"</p>
+              <p>• Vaš Zap mora biti uključen (ON)</p>
+              <p>• Provjerite Zap History u Zapier-u za greške</p>
+              <p>• Test podaci se šalju čim pritisnete gumb</p>
+            </div>
           </div>
         </CardContent>
       </Card>
