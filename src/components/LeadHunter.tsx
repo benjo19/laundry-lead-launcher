@@ -1,141 +1,140 @@
 
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Lead } from '@/types';
-import AddLeadDialog from './AddLeadDialog';
-import ExportButton from './ExportButton';
-import LeadFilters from './lead-hunter/LeadFilters';
-import LeadList from './lead-hunter/LeadList';
+import React, { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { PlusCircle, Search } from 'lucide-react';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
+import LeadList from '@/components/lead-hunter/LeadList';
+import LeadFilters from '@/components/lead-hunter/LeadFilters';
+import { AddLeadDialog } from '@/components/AddLeadDialog';
 
-interface LeadHunterProps {
-  onNavigateToEmailGenerator?: (email: string, company: string) => void;
-}
-
-const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
-  // Load saved filter data from localStorage
-  const [savedFilterData, setSavedFilterData] = useLocalStorage('leadHunterFilters', {
-    searchTerm: '',
-    statusFilter: 'all',
-    potentialFilter: 'all',
-    cityFilter: 'all',
-    countryFilter: 'all',
-    industryFilter: 'all'
-  });
-
-  const [searchTerm, setSearchTerm] = useState(savedFilterData.searchTerm || '');
-  const [statusFilter, setStatusFilter] = useState<string>(savedFilterData.statusFilter || 'all');
-  const [potentialFilter, setPotentialFilter] = useState<string>(savedFilterData.potentialFilter || 'all');
-  const [cityFilter, setCityFilter] = useState<string>(savedFilterData.cityFilter || 'all');
-  const [countryFilter, setCountryFilter] = useState<string>(savedFilterData.countryFilter || 'all');
-  const [industryFilter, setIndustryFilter] = useState<string>(savedFilterData.industryFilter || 'all');
-  
-  // Save filter data to localStorage whenever filters change
-  useEffect(() => {
-    setSavedFilterData({
-      searchTerm,
-      statusFilter,
-      potentialFilter,
-      cityFilter,
-      countryFilter,
-      industryFilter
-    });
-  }, [searchTerm, statusFilter, potentialFilter, cityFilter, countryFilter, industryFilter, setSavedFilterData]);
-
+const LeadHunter = () => {
   const { leads, addLead, updateLeadStatus, deleteLead } = useLeadManagement();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [selectedPotential, setSelectedPotential] = useState('');
+  const [selectedIndustry, setSelectedIndustry] = useState('');
+  const [selectedCity, setSelectedCity] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState('');
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  // Extract unique values for filter options with proper null checks
-  const uniqueCities = [...new Set(leads.map(lead => {
-    const city = (lead.location || '').split(',')[0]?.trim() || 'Unknown';
-    return city;
-  }))].filter(city => city && city !== 'Unknown').sort();
-  
-  const uniqueCountries = [...new Set(leads.map(lead => {
-    const country = (lead.location || '').split(',')[1]?.trim() || 'Unknown';
-    return country;
-  }))].filter(country => country && country !== 'Unknown').sort();
-  
-  const uniqueIndustries = [...new Set(leads.map(lead => lead.industry).filter(Boolean))].sort();
+  const uniqueStatuses = useMemo(() => 
+    [...new Set(leads.map(lead => lead.status))], [leads]
+  );
 
-  const clearAllFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('all');
-    setPotentialFilter('all');
-    setCityFilter('all');
-    setCountryFilter('all');
-    setIndustryFilter('all');
-  };
+  const uniquePotentials = useMemo(() => 
+    [...new Set(leads.map(lead => lead.potential))], [leads]
+  );
 
-  const filteredLeads = leads.filter(lead => {
-    const matchesSearch = lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         (lead.location || '').toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || lead.status === statusFilter;
-    const matchesPotential = potentialFilter === 'all' || lead.potential === potentialFilter;
-    
-    const leadCity = (lead.location || '').split(',')[0]?.trim() || 'Unknown';
-    const leadCountry = (lead.location || '').split(',')[1]?.trim() || 'Unknown';
-    const matchesCity = cityFilter === 'all' || leadCity === cityFilter;
-    const matchesCountry = countryFilter === 'all' || leadCountry === countryFilter;
-    const matchesIndustry = industryFilter === 'all' || lead.industry === industryFilter;
-    
-    return matchesSearch && matchesStatus && matchesPotential && matchesCity && matchesCountry && matchesIndustry;
-  });
+  const uniqueIndustries = useMemo(() => 
+    [...new Set(leads.map(lead => lead.industry).filter(Boolean))], [leads]
+  );
+
+  const uniqueCities = useMemo(() => {
+    const cities = leads.map(lead => 
+      (lead.location || '').split(',')[0].trim() || 'Unknown'
+    ).filter(city => city && city !== 'Unknown');
+    return [...new Set(cities)];
+  }, [leads]);
+
+  const uniqueCountries = useMemo(() => {
+    const countries = leads.map(lead => 
+      (lead.location || '').split(',')[1]?.trim() || 'Unknown'
+    ).filter(country => country && country !== 'Unknown');
+    return [...new Set(countries)];
+  }, [leads]);
+
+  const filteredLeads = useMemo(() => {
+    return leads.filter(lead => {
+      const matchesSearch = searchTerm === '' || 
+        lead.company.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (lead.location || '').toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus = selectedStatus === '' || lead.status === selectedStatus;
+      const matchesPotential = selectedPotential === '' || lead.potential === selectedPotential;
+      const matchesIndustry = selectedIndustry === '' || lead.industry === selectedIndustry;
+      
+      const leadCity = (lead.location || '').split(',')[0].trim() || 'Unknown';
+      const leadCountry = (lead.location || '').split(',')[1]?.trim() || 'Unknown';
+      const matchesCity = selectedCity === '' || leadCity === selectedCity;
+      const matchesCountry = selectedCountry === '' || leadCountry === selectedCountry;
+
+      return matchesSearch && matchesStatus && matchesPotential && 
+             matchesIndustry && matchesCity && matchesCountry;
+    });
+  }, [leads, searchTerm, selectedStatus, selectedPotential, selectedIndustry, selectedCity, selectedCountry]);
+
+  const activeFiltersCount = [
+    selectedStatus, selectedPotential, selectedIndustry, 
+    selectedCity, selectedCountry
+  ].filter(Boolean).length;
 
   const handleEmailClick = (email: string, company: string) => {
-    if (onNavigateToEmailGenerator) {
-      onNavigateToEmailGenerator(email, company);
-    }
+    const subject = encodeURIComponent(`Prilika za suradnju - ${company}`);
+    const body = encodeURIComponent(`Poštovani,\n\nObraćam vam se u vezi s potencijalnom suradnjom...\n\nS poštovanjem`);
+    window.open(`mailto:${email}?subject=${subject}&body=${body}`, '_blank');
   };
 
-  const activeFiltersCount = [statusFilter, potentialFilter, cityFilter, countryFilter, industryFilter]
-    .filter(filter => filter !== 'all').length;
-
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900">Lead Hunter</h2>
-          <p className="text-slate-600">Pronađite i upravljajte potencijalnim klijentima</p>
-        </div>
-        <div className="flex space-x-2">
-          <ExportButton data={filteredLeads} filename="leads" type="leads" />
-          <AddLeadDialog onAddLead={addLead} />
+        <h2 className="text-2xl font-bold text-slate-900">Lead Hunter</h2>
+        <Button onClick={() => setIsAddDialogOpen(true)}>
+          <PlusCircle className="h-4 w-4 mr-2" />
+          Dodaj novi lead
+        </Button>
+      </div>
+
+      <div className="flex flex-col sm:flex-row gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+          <Input
+            placeholder="Pretraži po nazivu tvrtke, emailu ili lokaciji..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <LeadFilters
-            searchTerm={searchTerm}
-            setSearchTerm={setSearchTerm}
-            statusFilter={statusFilter}
-            setStatusFilter={setStatusFilter}
-            potentialFilter={potentialFilter}
-            setPotentialFilter={setPotentialFilter}
-            cityFilter={cityFilter}
-            setCityFilter={setCityFilter}
-            countryFilter={countryFilter}
-            setCountryFilter={setCountryFilter}
-            industryFilter={industryFilter}
-            setIndustryFilter={setIndustryFilter}
-            uniqueCities={uniqueCities}
-            uniqueCountries={uniqueCountries}
-            uniqueIndustries={uniqueIndustries}
-            activeFiltersCount={activeFiltersCount}
-            clearAllFilters={clearAllFilters}
-          />
-        </CardHeader>
-        <CardContent>
-          <LeadList
-            leads={filteredLeads}
-            onUpdateStatus={updateLeadStatus}
-            onDeleteLead={deleteLead}
-            onEmailClick={handleEmailClick}
-            activeFiltersCount={activeFiltersCount}
-          />
-        </CardContent>
-      </Card>
+      <LeadFilters
+        selectedStatus={selectedStatus}
+        setSelectedStatus={setSelectedStatus}
+        selectedPotential={selectedPotential}
+        setSelectedPotential={setSelectedPotential}
+        selectedIndustry={selectedIndustry}
+        setSelectedIndustry={setSelectedIndustry}
+        selectedCity={selectedCity}
+        setSelectedCity={setSelectedCity}
+        selectedCountry={selectedCountry}
+        setSelectedCountry={setSelectedCountry}
+        uniqueStatuses={uniqueStatuses}
+        uniquePotentials={uniquePotentials}
+        uniqueIndustries={uniqueIndustries}
+        uniqueCities={uniqueCities}
+        uniqueCountries={uniqueCountries}
+        activeFiltersCount={activeFiltersCount}
+      />
+
+      <div className="text-sm text-slate-600">
+        Prikazano {filteredLeads.length} od {leads.length} leadova
+        {activeFiltersCount > 0 && ` (${activeFiltersCount} aktivnih filtera)`}
+      </div>
+
+      <LeadList
+        leads={filteredLeads}
+        onUpdateStatus={updateLeadStatus}
+        onDeleteLead={deleteLead}
+        onEmailClick={handleEmailClick}
+        activeFiltersCount={activeFiltersCount}
+      />
+
+      <AddLeadDialog
+        open={isAddDialogOpen}
+        onOpenChange={setIsAddDialogOpen}
+        onAddLead={addLead}
+      />
     </div>
   );
 };
