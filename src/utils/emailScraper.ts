@@ -85,7 +85,6 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
               /postmaster/i,
               /newsletter/i,
               /marketing@/i,
-              /support@/i // Actually, support emails might be useful
             ];
             
             const isExcluded = excludePatterns.some(pattern => pattern.test(email));
@@ -122,47 +121,6 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     console.error(`Error scraping email from ${website}:`, error);
     return null;
   }
-};
-
-// New function to guess email patterns for companies without websites
-export const guessBusinessEmail = (companyName: string, website?: string): string[] => {
-  if (!companyName) return [];
-  
-  const guessedEmails: string[] = [];
-  
-  // Clean company name for email generation
-  const cleanName = companyName
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, '') // Remove special characters
-    .replace(/\s+/g, '') // Remove spaces
-    .substring(0, 15); // Limit length
-  
-  // If we have a website, extract domain
-  let domain = '';
-  if (website) {
-    try {
-      const url = website.startsWith('http') ? website : `https://${website}`;
-      domain = new URL(url).hostname.replace('www.', '');
-    } catch (error) {
-      // If website parsing fails, try to extract domain from website string
-      domain = website.replace(/^(https?:\/\/)?(www\.)?/, '').split('/')[0];
-    }
-  }
-  
-  // If no domain from website, guess common Croatian domains
-  const commonDomains = domain ? [domain] : [`${cleanName}.hr`, `${cleanName}.com`, `${cleanName}.eu`];
-  
-  // Common business email prefixes
-  const prefixes = ['info', 'contact', 'office', 'sales', 'hello', 'general', 'admin'];
-  
-  // Generate combinations
-  commonDomains.forEach(dom => {
-    prefixes.forEach(prefix => {
-      guessedEmails.push(`${prefix}@${dom}`);
-    });
-  });
-  
-  return guessedEmails;
 };
 
 // Function to validate if an email address potentially exists (basic check)

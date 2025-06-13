@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
@@ -6,7 +7,7 @@ import { Lead } from '@/types';
 import SearchForm, { industries, DiscoveredLead } from './lead-discovery/SearchForm';
 import LeadList from './lead-discovery/LeadList';
 import EmptyState from './lead-discovery/EmptyState';
-import { scrapeEmailFromWebsite, guessBusinessEmail } from '@/utils/emailScraper';
+import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
 import { useAISettings } from '@/hooks/useAISettings';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { AILeadAnalysisService, AnalyzedLead } from '@/services/aiLeadAnalysisService';
@@ -212,24 +213,13 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
             user_ratings_total: details.user_ratings_total || place.user_ratings_total
           };
           
-          // Enhanced email discovery strategy
+          // Only try to scrape email if website exists
           if (enhancedLead.website) {
             console.log(`Attempting to scrape email from website: ${enhancedLead.website}`);
             const scrapedEmail = await scrapeEmailFromWebsite(enhancedLead.website);
             if (scrapedEmail) {
               enhancedLead.email = scrapedEmail;
               enhancedLead.emailScraped = true;
-            }
-          }
-          
-          // If no email found from website, try guessing common business email patterns
-          if (!enhancedLead.email) {
-            const guessedEmails = guessBusinessEmail(enhancedLead.name, enhancedLead.website);
-            if (guessedEmails.length > 0) {
-              // Take the first guessed email (usually info@domain.com)
-              enhancedLead.email = guessedEmails[0];
-              enhancedLead.emailGuessed = true;
-              console.log(`Guessed email for ${enhancedLead.name}: ${enhancedLead.email}`);
             }
           }
           
@@ -249,13 +239,6 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
             user_ratings_total: place.user_ratings_total
           };
           
-          // Try guessing email for basic leads too
-          const guessedEmails = guessBusinessEmail(basicLead.name);
-          if (guessedEmails.length > 0) {
-            basicLead.email = guessedEmails[0];
-            basicLead.emailGuessed = true;
-          }
-          
           detailedLeads.push(basicLead);
         }
       }
@@ -263,12 +246,11 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       setDiscoveredLeads(detailedLeads);
       
       const emailsFound = detailedLeads.filter(lead => lead.email && lead.emailScraped).length;
-      const emailsGuessed = detailedLeads.filter(lead => lead.email && lead.emailGuessed).length;
-      const totalEmails = emailsFound + emailsGuessed;
+      const leadsWithoutEmail = detailedLeads.filter(lead => !lead.email).length;
       
       toast({
         title: "Pretraživanje završeno",
-        description: `Pronađeno ${detailedLeads.length} leadova. ${emailsFound} email adresa pronađeno na web stranicama, ${emailsGuessed} email adresa generirano na temelju naziva tvrtke. Ukupno: ${totalEmails} email adresa.`,
+        description: `Pronađeno ${detailedLeads.length} leadova. ${emailsFound} email adresa pronađeno na web stranicama. ${leadsWithoutEmail} leadova nema dostupnu email adresu.`,
       });
     } catch (error) {
       console.error('Search error:', error);
@@ -338,10 +320,10 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       location: discoveredLead.address,
       employees: '10-50', // Default estimate
       phone: discoveredLead.phone || '',
-      email: discoveredLead.email || '', // Now includes scraped and guessed emails
+      email: discoveredLead.email || '', // Only real scraped emails or empty
       status: 'Nova',
       potential: discoveredLead.aiAnalysis?.potential || 'Srednji',
-      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen' : ''}${discoveredLead.emailGuessed ? ', Email generiran na temelju naziva tvrtke' : ''}${discoveredLead.aiAnalysis ? `, AI Score: ${discoveredLead.aiAnalysis.score}/10, ${discoveredLead.aiAnalysis.reasoning}` : ''}`
+      notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen na web stranici' : ''}${!discoveredLead.email ? ', Email adresa nije pronađena' : ''}${discoveredLead.aiAnalysis ? `, AI Score: ${discoveredLead.aiAnalysis.score}/10, ${discoveredLead.aiAnalysis.reasoning}` : ''}`
     };
 
     onAddLead(newLead);
@@ -362,7 +344,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Lead Discovery</h2>
-          <p className="text-slate-600 text-sm sm:text-base">Pronađite nove leadove pomoću Google Maps i AI analize s poboljšanim pronalaženjem email adresa</p>
+          <p className="text-slate-600 text-sm sm:text-base">Pronađite nove leadove pomoću Google Maps i AI analize - email adrese se traže samo na web stranicama</p>
           {savedGoogleMapsApiKey && (
             <p className="text-xs text-green-600 mt-1">✓ Google Maps API ključ učitan iz AI postavki</p>
           )}
