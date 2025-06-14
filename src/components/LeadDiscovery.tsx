@@ -1,16 +1,13 @@
 
-import React, { useState, useEffect } from 'react';
-import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
+import React from 'react';
 import { Lead } from '@/types';
-import SearchForm, { industries, DiscoveredLead } from './lead-discovery/SearchForm';
+import SearchForm, { DiscoveredLead } from './lead-discovery/SearchForm';
 import LeadList from './lead-discovery/LeadList';
 import EmptyState from './lead-discovery/EmptyState';
-import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
-import { useAISettings } from '@/hooks/useAISettings';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { AILeadAnalysisService, AnalyzedLead } from '@/services/aiLeadAnalysisService';
+import StatusIndicators from './lead-discovery/StatusIndicators';
+import { useLeadDiscovery } from '@/hooks/useLeadDiscovery';
+import { performLeadSearch } from './lead-discovery/SearchOperations';
+import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
@@ -18,116 +15,27 @@ interface LeadDiscoveryProps {
 }
 
 const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryProps) => {
-  const { user } = useAuth();
-  
-  // Load saved form data from localStorage
-  const [savedFormData, setSavedFormData] = useLocalStorage('leadDiscoveryForm', {
-    searchQuery: '',
-    location: '',
-    industry: 'laundry',
-    tempApiKey: ''
-  });
-
-  const [searchQuery, setSearchQuery] = useState(savedFormData.searchQuery || '');
-  const [location, setLocation] = useState(savedFormData.location || '');
-  const [industry, setIndustry] = useState(savedFormData.industry || 'laundry');
-  const [isSearching, setIsSearching] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [discoveredLeads, setDiscoveredLeads] = useLocalStorage<AnalyzedLead[]>('discoveredLeads', []);
-  const [tempApiKey, setTempApiKey] = useState(savedFormData.tempApiKey || '');
-  const [savedGoogleMapsApiKey, setSavedGoogleMapsApiKey] = useState('');
-  const { toast } = useToast();
-  const { aiSettings, saveAISettings, isAIConfigured } = useAISettings();
-
-  // Save form data to localStorage whenever fields change
-  useEffect(() => {
-    setSavedFormData({
-      searchQuery,
-      location,
-      industry,
-      tempApiKey
-    });
-  }, [searchQuery, location, industry, tempApiKey, setSavedFormData]);
-
-  useEffect(() => {
-    if (user) {
-      loadGoogleMapsApiKey();
-    }
-  }, [user, aiSettings]);
-
-  const loadGoogleMapsApiKey = async () => {
-    try {
-      const { data: settings, error } = await supabase
-        .from('user_settings')
-        .select('ai_settings')
-        .eq('user_id', user?.id)
-        .maybeSingle();
-
-      if (error && error.code !== 'PGRST116') {
-        throw error;
-      }
-
-      if (settings?.ai_settings) {
-        const currentAiSettings = settings.ai_settings as any;
-        if (currentAiSettings.google_maps_api_key) {
-          setSavedGoogleMapsApiKey(currentAiSettings.google_maps_api_key);
-          setTempApiKey(currentAiSettings.google_maps_api_key);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading Google Maps API key:', error);
-    }
-  };
-
-  const saveGoogleMapsApiKey = async (apiKey: string) => {
-    if (!user || !aiSettings) return;
-
-    try {
-      const updatedSettings = {
-        ...aiSettings,
-        google_maps_api_key: apiKey
-      };
-
-      await saveAISettings(updatedSettings);
-      setSavedGoogleMapsApiKey(apiKey);
-      
-      toast({
-        title: "API ključ spremljen",
-        description: "Google Maps API ključ je uspješno spremljen u AI postavke.",
-      });
-    } catch (error) {
-      console.error('Error saving Google Maps API key:', error);
-      toast({
-        title: "Greška",
-        description: "Dogodila se greška prilikom spremanja API ključa.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const getPlaceDetails = async (placeId: string, apiKey: string) => {
-    try {
-      const proxyUrl = 'https://api.allorigins.win/raw?url=';
-      const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours&key=${apiKey}`;
-      
-      const response = await fetch(proxyUrl + encodeURIComponent(detailsUrl));
-      
-      if (!response.ok) {
-        throw new Error('Greška pri dohvaćanju detalja');
-      }
-      
-      const data = await response.json();
-      
-      if (data.status === 'OK') {
-        return data.result;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('Error fetching place details:', error);
-      return null;
-    }
-  };
+  const {
+    searchQuery,
+    setSearchQuery,
+    location,
+    setLocation,
+    industry,
+    setIndustry,
+    isSearching,
+    setIsSearching,
+    isAnalyzing,
+    discoveredLeads,
+    setDiscoveredLeads,
+    tempApiKey,
+    setTempApiKey,
+    savedGoogleMapsApiKey,
+    saveGoogleMapsApiKey,
+    getPlaceDetails,
+    analyzeWithAI,
+    toast,
+    isAIConfigured
+  } = useLeadDiscovery();
 
   const searchLeads = async () => {
     const currentApiKey = tempApiKey || savedGoogleMapsApiKey;
@@ -157,91 +65,13 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
 
     setIsSearching(true);
     try {
-      const selectedIndustry = industries.find(ind => ind.value === industry);
-      const query = searchQuery || selectedIndustry?.query || 'business';
-      
-      // Using a CORS proxy to avoid CORS issues with Google Maps API
-      const proxyUrl = 'https://api.allorigins.win/raw?url=';
-      const targetUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(query + ' in ' + location)}&key=${currentApiKey}`;
-      
-      console.log('Searching for:', query + ' in ' + location);
-      
-      const response = await fetch(proxyUrl + encodeURIComponent(targetUrl));
-      
-      if (!response.ok) {
-        throw new Error('Greška pri dohvaćanju podataka iz Google Maps API');
-      }
-      
-      const data = await response.json();
-      console.log('API Response:', data);
-      
-      if (data.status === 'REQUEST_DENIED') {
-        throw new Error('API ključ nije valjan ili nema dozvole za Places API');
-      }
-      
-      if (data.status !== 'OK') {
-        throw new Error(data.error_message || `API greška: ${data.status}`);
-      }
-      
-      if (!data.results || data.results.length === 0) {
-        toast({
-          title: "Nema rezultata",
-          description: "Nisu pronađeni leadovi za zadane parametre.",
-        });
-        setDiscoveredLeads([]);
-        return;
-      }
-      
-      // Fetch detailed information for each place
-      console.log('Fetching detailed information and emails for places...');
-      const detailedLeads = [];
-      
-      for (const place of data.results.slice(0, 10)) {
-        const details = await getPlaceDetails(place.place_id, currentApiKey);
-        
-        if (details) {
-          const enhancedLead: DiscoveredLead = {
-            name: details.name || place.name,
-            address: details.formatted_address || place.formatted_address,
-            phone: details.formatted_phone_number || '',
-            website: details.website || '',
-            rating: details.rating || place.rating,
-            types: details.types || place.types,
-            place_id: place.place_id,
-            geometry: place.geometry,
-            business_status: details.business_status || place.business_status,
-            user_ratings_total: details.user_ratings_total || place.user_ratings_total
-          };
-          
-          // Only try to scrape email if website exists
-          if (enhancedLead.website) {
-            console.log(`Attempting to scrape email from website: ${enhancedLead.website}`);
-            const scrapedEmail = await scrapeEmailFromWebsite(enhancedLead.website);
-            if (scrapedEmail) {
-              enhancedLead.email = scrapedEmail;
-              enhancedLead.emailScraped = true;
-            }
-          }
-          
-          detailedLeads.push(enhancedLead);
-        } else {
-          // Fallback to basic info if details fetch fails
-          const basicLead: DiscoveredLead = {
-            name: place.name,
-            address: place.formatted_address,
-            phone: '',
-            website: '',
-            rating: place.rating,
-            types: place.types,
-            place_id: place.place_id,
-            geometry: place.geometry,
-            business_status: place.business_status,
-            user_ratings_total: place.user_ratings_total
-          };
-          
-          detailedLeads.push(basicLead);
-        }
-      }
+      const detailedLeads = await performLeadSearch(
+        searchQuery,
+        location,
+        industry,
+        currentApiKey,
+        getPlaceDetails
+      );
       
       setDiscoveredLeads(detailedLeads);
       
@@ -262,55 +92,6 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       setDiscoveredLeads([]);
     } finally {
       setIsSearching(false);
-    }
-  };
-
-  const analyzeWithAI = async (leads: AnalyzedLead[]) => {
-    if (!isAIConfigured()) {
-      toast({
-        title: "AI nije konfiguriran",
-        description: "Molimo postavite AI ključ u Settings prije korištenja AI analize.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (!user) {
-      toast({
-        title: "Greška",
-        description: "Morate biti prijavljeni za AI analizu.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsAnalyzing(true);
-    try {
-      console.log('Starting AI analysis for leads...');
-      const analyzedLeads = await AILeadAnalysisService.analyzeLeads(leads, user.id);
-      
-      setDiscoveredLeads(analyzedLeads);
-      
-      const analyzedCount = analyzedLeads.filter(lead => lead.aiAnalysis).length;
-      const averageScore = analyzedCount > 0 
-        ? analyzedLeads
-            .filter(lead => lead.aiAnalysis)
-            .reduce((sum, lead) => sum + (lead.aiAnalysis?.score || 0), 0) / analyzedCount
-        : 0;
-
-      toast({
-        title: "AI analiza završena",
-        description: `Analizirano ${analyzedCount} leadova. Prosječni score: ${averageScore.toFixed(1)}/10`,
-      });
-    } catch (error) {
-      console.error('AI analysis error:', error);
-      toast({
-        title: "Greška AI analize",
-        description: error instanceof Error ? error.message : "Dogodila se greška prilikom AI analize.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsAnalyzing(false);
     }
   };
 
@@ -345,12 +126,10 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">Lead Discovery</h2>
           <p className="text-slate-600 text-sm sm:text-base">Pronađite nove leadove pomoću Google Maps i AI analize - email adrese se traže samo na web stranicama</p>
-          {savedGoogleMapsApiKey && (
-            <p className="text-xs text-green-600 mt-1">✓ Google Maps API ključ učitan iz AI postavki</p>
-          )}
-          {isAIConfigured() && (
-            <p className="text-xs text-purple-600 mt-1">✓ AI konfiguriran za naprednu analizu leadova</p>
-          )}
+          <StatusIndicators 
+            savedGoogleMapsApiKey={savedGoogleMapsApiKey}
+            isAIConfigured={isAIConfigured()}
+          />
         </div>
       </div>
 

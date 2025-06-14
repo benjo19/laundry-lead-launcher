@@ -1,503 +1,320 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, Play, Pause, Trash2, Edit3, CheckCircle } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { Textarea } from '@/components/ui/textarea';
+import { Calendar, Clock, Play, Pause, Trash2, Plus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { ContentPost } from '@/types';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { ContentPost } from '@/types/contentTypes';
 
 interface ScheduledPost extends ContentPost {
-  scheduledDateTime: string;
-  isActive: boolean;
-  nextRun?: string;
-  recurring?: {
-    frequency: 'daily' | 'weekly' | 'monthly';
-    daysOfWeek?: number[];
-    dayOfMonth?: number;
-  };
+  scheduledDate: string;
+  scheduledTime: string;
+  recurring?: 'daily' | 'weekly' | 'monthly';
+  isPaused?: boolean;
 }
 
 const ContentScheduler = () => {
-  const [scheduledPosts, setScheduledPosts] = useLocalStorage<ScheduledPost[]>('scheduledPosts', []);
-  const [posts] = useLocalStorage<ContentPost[]>('contentPosts', []);
-  const [selectedPost, setSelectedPost] = useState<string>('');
-  const [scheduledDate, setScheduledDate] = useState('');
-  const [scheduledTime, setScheduledTime] = useState('');
-  const [isRecurring, setIsRecurring] = useState(false);
-  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('weekly');
-  const [selectedDays, setSelectedDays] = useState<number[]>([]);
-  const [dayOfMonth, setDayOfMonth] = useState(1);
   const { toast } = useToast();
+  const [scheduledPosts, setScheduledPosts] = useLocalStorage<ScheduledPost[]>('scheduledPosts', []);
+  const [publishedPosts, setPublishedPosts] = useLocalStorage<ContentPost[]>('publishedPosts', []);
+  
+  const [newPost, setNewPost] = useState({
+    content: '',
+    platform: 'facebook' as const,
+    scheduledDate: '',
+    scheduledTime: '',
+    recurring: undefined as 'daily' | 'weekly' | 'monthly' | undefined
+  });
 
-  // Simulate scheduler checking for posts to publish
+  // Auto-publish scheduled posts
   useEffect(() => {
-    const interval = setInterval(() => {
-      checkAndPublishScheduledPosts();
-    }, 60000); // Check every minute
+    const checkScheduledPosts = () => {
+      const now = new Date();
+      const currentDateTime = now.toISOString();
 
+      scheduledPosts.forEach(post => {
+        if (post.isPaused) return;
+
+        const postDateTime = new Date(`${post.scheduledDate}T${post.scheduledTime}`).toISOString();
+        
+        if (postDateTime <= currentDateTime && post.status === 'Scheduled') {
+          publishScheduledPost(post);
+        }
+      });
+    };
+
+    const interval = setInterval(checkScheduledPosts, 60000); // Check every minute
     return () => clearInterval(interval);
   }, [scheduledPosts]);
 
-  const checkAndPublishScheduledPosts = () => {
-    const now = new Date();
-    const postsToPublish = scheduledPosts.filter(post => {
-      if (!post.isActive) return false;
+  const publishScheduledPost = (post: ScheduledPost) => {
+    // Create published post
+    const publishedPost: ContentPost = {
+      ...post,
+      status: 'Published' as const,
+      publishedAt: new Date().toISOString()
+    };
+
+    setPublishedPosts(prev => [...prev, publishedPost]);
+
+    // Handle recurring posts
+    if (post.recurring) {
+      const nextDate = getNextRecurringDate(post.scheduledDate, post.recurring);
+      const updatedPost: ScheduledPost = {
+        ...post,
+        id: Date.now(),
+        scheduledDate: nextDate,
+        createdAt: new Date().toISOString()
+      };
       
-      const scheduledDateTime = new Date(post.scheduledDateTime);
-      return scheduledDateTime <= now && post.status === 'Scheduled';
-    });
-
-    if (postsToPublish.length > 0) {
-      postsToPublish.forEach(post => {
-        publishScheduledPost(post.id);
-      });
+      setScheduledPosts(prev => 
+        prev.map(p => p.id === post.id ? updatedPost : p)
+      );
+    } else {
+      // Remove one-time posts
+      setScheduledPosts(prev => prev.filter(p => p.id !== post.id));
     }
-  };
-
-  const publishScheduledPost = (postId: number) => {
-    setScheduledPosts(prev => prev.map(post => {
-      if (post.id === postId) {
-        const updatedPost: ScheduledPost = { 
-          ...post, 
-          status: 'Published' as const
-        };
-        
-        // If recurring, schedule next occurrence
-        if (post.recurring) {
-          const nextDateTime = calculateNextOccurrence(post);
-          if (nextDateTime) {
-            updatedPost.scheduledDateTime = nextDateTime;
-            updatedPost.status = 'Scheduled' as const;
-            updatedPost.nextRun = nextDateTime;
-          }
-        } else {
-          updatedPost.isActive = false;
-        }
-        
-        return updatedPost;
-      }
-      return post;
-    }));
 
     toast({
       title: "Post objavljen",
-      description: "Zakazani post je uspješno objavljen!",
+      description: `Post je automatski objavljen na ${post.platform}.`,
     });
   };
 
-  const calculateNextOccurrence = (post: ScheduledPost): string | null => {
-    if (!post.recurring) return null;
-
-    const currentDate = new Date(post.scheduledDateTime);
-    const nextDate = new Date(currentDate);
-
-    switch (post.recurring.frequency) {
+  const getNextRecurringDate = (currentDate: string, recurring: 'daily' | 'weekly' | 'monthly'): string => {
+    const date = new Date(currentDate);
+    
+    switch (recurring) {
       case 'daily':
-        nextDate.setDate(nextDate.getDate() + 1);
+        date.setDate(date.getDate() + 1);
         break;
       case 'weekly':
-        nextDate.setDate(nextDate.getDate() + 7);
+        date.setDate(date.getDate() + 7);
         break;
       case 'monthly':
-        nextDate.setMonth(nextDate.getMonth() + 1);
-        if (post.recurring.dayOfMonth) {
-          nextDate.setDate(post.recurring.dayOfMonth);
-        }
+        date.setMonth(date.getMonth() + 1);
         break;
     }
-
-    return nextDate.toISOString();
+    
+    return date.toISOString().split('T')[0];
   };
 
   const schedulePost = () => {
-    if (!selectedPost || !scheduledDate || !scheduledTime) {
+    if (!newPost.content || !newPost.scheduledDate || !newPost.scheduledTime) {
       toast({
-        title: "Nedostaju podaci",
-        description: "Molimo odaberite post, datum i vrijeme.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    const post = posts.find(p => p.id.toString() === selectedPost);
-    if (!post) return;
-
-    const scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}`);
-    
-    if (scheduledDateTime <= new Date()) {
-      toast({
-        title: "Neispravno vrijeme",
-        description: "Zakazano vrijeme mora biti u budućnosti.",
+        title: "Greška",
+        description: "Molimo unesite sadržaj, datum i vrijeme objave.",
         variant: "destructive"
       });
       return;
     }
 
     const scheduledPost: ScheduledPost = {
-      ...post,
       id: Date.now(),
-      scheduledDateTime: scheduledDateTime.toISOString(),
-      isActive: true,
+      content: newPost.content,
+      platform: newPost.platform,
       status: 'Scheduled' as const,
-      recurring: isRecurring ? {
-        frequency,
-        daysOfWeek: frequency === 'weekly' ? selectedDays : undefined,
-        dayOfMonth: frequency === 'monthly' ? dayOfMonth : undefined
-      } : undefined
+      scheduledDate: newPost.scheduledDate,
+      scheduledTime: newPost.scheduledTime,
+      recurring: newPost.recurring,
+      createdAt: new Date().toISOString(),
+      isPaused: false
     };
 
-    setScheduledPosts([...scheduledPosts, scheduledPost]);
+    setScheduledPosts(prev => [...prev, scheduledPost]);
     
-    // Reset form
-    setSelectedPost('');
-    setScheduledDate('');
-    setScheduledTime('');
-    setIsRecurring(false);
-    setSelectedDays([]);
+    setNewPost({
+      content: '',
+      platform: 'facebook',
+      scheduledDate: '',
+      scheduledTime: '',
+      recurring: undefined
+    });
 
     toast({
       title: "Post zakazan",
-      description: `Post je zakazan za ${scheduledDateTime.toLocaleString('hr-HR')}.`,
+      description: `Post je zakazan za ${newPost.scheduledDate} u ${newPost.scheduledTime}.`,
     });
   };
 
-  const togglePostActive = (postId: number) => {
-    setScheduledPosts(prev => prev.map(post => 
-      post.id === postId ? { ...post, isActive: !post.isActive } : post
-    ));
+  const togglePausePost = (postId: number) => {
+    setScheduledPosts(prev =>
+      prev.map(post =>
+        post.id === postId ? { ...post, isPaused: !post.isPaused } : post
+      )
+    );
   };
 
   const deleteScheduledPost = (postId: number) => {
     setScheduledPosts(prev => prev.filter(post => post.id !== postId));
     toast({
-      title: "Raspored obrisan",
-      description: "Zakazani post je uspješno obrisan.",
+      title: "Post obrisan",
+      description: "Zakazani post je obrisan.",
     });
   };
 
-  const getUpcomingPosts = () => {
-    const now = new Date();
-    return scheduledPosts
-      .filter(post => post.isActive && new Date(post.scheduledDateTime) > now)
-      .sort((a, b) => new Date(a.scheduledDateTime).getTime() - new Date(b.scheduledDateTime).getTime())
-      .slice(0, 5);
-  };
+  const upcomingPosts = scheduledPosts.filter(post => {
+    const postDateTime = new Date(`${post.scheduledDate}T${post.scheduledTime}`);
+    return postDateTime > new Date();
+  });
 
-  const getRecentlyPublished = () => {
-    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-    return scheduledPosts
-      .filter(post => post.status === 'Published' && new Date(post.scheduledDateTime) > oneDayAgo)
-      .sort((a, b) => new Date(b.scheduledDateTime).getTime() - new Date(a.scheduledDateTime).getTime())
-      .slice(0, 3);
-  };
-
-  const weekDays = [
-    { value: 1, label: 'Pon' },
-    { value: 2, label: 'Uto' },
-    { value: 3, label: 'Sri' },
-    { value: 4, label: 'Čet' },
-    { value: 5, label: 'Pet' },
-    { value: 6, label: 'Sub' },
-    { value: 0, label: 'Ned' }
-  ];
+  const recentlyPublished = publishedPosts
+    .sort((a, b) => new Date(b.publishedAt || '').getTime() - new Date(a.publishedAt || '').getTime())
+    .slice(0, 5);
 
   return (
     <div className="space-y-6">
-      {/* Scheduling Form */}
+      {/* Schedule New Post */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center">
-            <Calendar className="h-5 w-5 mr-2 text-blue-600" />
-            Zakaži Objavu
+            <Plus className="h-5 w-5 mr-2" />
+            Zakaži novi post
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <Label htmlFor="content">Sadržaj posta</Label>
+            <Textarea
+              id="content"
+              placeholder="Unesite sadržaj vašeg posta..."
+              value={newPost.content}
+              onChange={(e) => setNewPost(prev => ({ ...prev, content: e.target.value }))}
+              rows={4}
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Odaberite post</label>
-              <Select value={selectedPost} onValueChange={setSelectedPost}>
+              <Label htmlFor="platform">Platforma</Label>
+              <Select value={newPost.platform} onValueChange={(value: any) => setNewPost(prev => ({ ...prev, platform: value }))}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Odaberite post za zakazivanje" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {posts.map(post => (
-                    <SelectItem key={post.id} value={post.id.toString()}>
-                      <div className="flex items-center">
-                        <Badge variant="outline" className="mr-2">
-                          {post.platform}
-                        </Badge>
-                        {post.content.substring(0, 40)}...
-                      </div>
-                    </SelectItem>
-                  ))}
+                  <SelectItem value="facebook">Facebook</SelectItem>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="linkedin">LinkedIn</SelectItem>
+                  <SelectItem value="twitter">Twitter</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="block text-sm font-medium mb-2">Datum</label>
-                <Input
-                  type="date"
-                  value={scheduledDate}
-                  onChange={(e) => setScheduledDate(e.target.value)}
-                  min={new Date().toISOString().split('T')[0]}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Vrijeme</label>
-                <Input
-                  type="time"
-                  value={scheduledTime}
-                  onChange={(e) => setScheduledTime(e.target.value)}
-                />
-              </div>
+            <div>
+              <Label htmlFor="scheduledDate">Datum objave</Label>
+              <Input
+                id="scheduledDate"
+                type="date"
+                value={newPost.scheduledDate}
+                onChange={(e) => setNewPost(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                min={new Date().toISOString().split('T')[0]}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="scheduledTime">Vrijeme objave</Label>
+              <Input
+                id="scheduledTime"
+                type="time"
+                value={newPost.scheduledTime}
+                onChange={(e) => setNewPost(prev => ({ ...prev, scheduledTime: e.target.value }))}
+              />
             </div>
           </div>
 
-          <div className="flex items-center space-x-2">
-            <input
-              type="checkbox"
-              id="recurring"
-              checked={isRecurring}
-              onChange={(e) => setIsRecurring(e.target.checked)}
-              className="rounded"
-            />
-            <label htmlFor="recurring" className="text-sm font-medium">
-              Ponavljajuća objava
-            </label>
+          <div>
+            <Label htmlFor="recurring">Ponavljanje (opcionalno)</Label>
+            <Select value={newPost.recurring || ''} onValueChange={(value: any) => setNewPost(prev => ({ ...prev, recurring: value || undefined }))}>
+              <SelectTrigger>
+                <SelectValue placeholder="Odaberite ponavljanje" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">Bez ponavljanja</SelectItem>
+                <SelectItem value="daily">Dnevno</SelectItem>
+                <SelectItem value="weekly">Tjedno</SelectItem>
+                <SelectItem value="monthly">Mjesečno</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-
-          {isRecurring && (
-            <div className="space-y-4 p-4 bg-gray-50 rounded-lg">
-              <div>
-                <label className="block text-sm font-medium mb-2">Frekvencija</label>
-                <Select value={frequency} onValueChange={(value: 'daily' | 'weekly' | 'monthly') => setFrequency(value)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="daily">Dnevno</SelectItem>
-                    <SelectItem value="weekly">Tjedno</SelectItem>
-                    <SelectItem value="monthly">Mjesečno</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {frequency === 'weekly' && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Dani u tjednu</label>
-                  <div className="flex gap-2">
-                    {weekDays.map(day => (
-                      <Button
-                        key={day.value}
-                        variant={selectedDays.includes(day.value) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => {
-                          if (selectedDays.includes(day.value)) {
-                            setSelectedDays(selectedDays.filter(d => d !== day.value));
-                          } else {
-                            setSelectedDays([...selectedDays, day.value]);
-                          }
-                        }}
-                      >
-                        {day.label}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {frequency === 'monthly' && (
-                <div>
-                  <label className="block text-sm font-medium mb-2">Dan u mjesecu</label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="31"
-                    value={dayOfMonth}
-                    onChange={(e) => setDayOfMonth(parseInt(e.target.value))}
-                  />
-                </div>
-              )}
-            </div>
-          )}
 
           <Button onClick={schedulePost} className="w-full">
             <Calendar className="h-4 w-4 mr-2" />
-            Zakaži Objavu
+            Zakaži post
           </Button>
         </CardContent>
       </Card>
 
       {/* Upcoming Posts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Clock className="h-5 w-5 mr-2 text-orange-600" />
-              Nadolazeće Objave ({getUpcomingPosts().length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {getUpcomingPosts().map(post => (
-                <div key={post.id} className="border rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline">{post.platform}</Badge>
-                      {post.recurring && (
-                        <Badge variant="secondary" className="text-xs">
-                          Ponavljajuće
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => togglePostActive(post.id)}
-                      >
-                        {post.isActive ? (
-                          <Pause className="h-4 w-4 text-orange-600" />
-                        ) : (
-                          <Play className="h-4 w-4 text-green-600" />
-                        )}
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => deleteScheduledPost(post.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {post.content.substring(0, 100)}...
-                  </p>
-                  <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>
-                      {new Date(post.scheduledDateTime).toLocaleString('hr-HR')}
-                    </span>
-                    <span className={post.isActive ? 'text-green-600' : 'text-gray-400'}>
-                      {post.isActive ? 'Aktivno' : 'Pauzirano'}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              {getUpcomingPosts().length === 0 && (
-                <p className="text-center text-gray-500 py-4">
-                  Nema zakazanih objava.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <CheckCircle className="h-5 w-5 mr-2 text-green-600" />
-              Nedavno Objavljeno
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {getRecentlyPublished().map(post => (
-                <div key={post.id} className="border rounded-lg p-3 bg-green-50">
-                  <div className="flex items-center justify-between mb-2">
-                    <Badge variant="outline">{post.platform}</Badge>
-                    <Badge className="bg-green-100 text-green-800">
-                      Objavljeno
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-gray-600 mb-2">
-                    {post.content.substring(0, 100)}...
-                  </p>
-                  <div className="text-xs text-gray-500">
-                    {new Date(post.scheduledDateTime).toLocaleString('hr-HR')}
-                  </div>
-                </div>
-              ))}
-              {getRecentlyPublished().length === 0 && (
-                <p className="text-center text-gray-500 py-4">
-                  Nema nedavno objavljenih postova.
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* All Scheduled Posts */}
       <Card>
         <CardHeader>
-          <CardTitle>Svi Zakazani Postovi ({scheduledPosts.length})</CardTitle>
+          <CardTitle className="flex items-center">
+            <Clock className="h-5 w-5 mr-2" />
+            Nadolazeći postovi ({upcomingPosts.length})
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {scheduledPosts.map(post => (
-              <div key={post.id} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline">{post.platform}</Badge>
-                    <Badge variant={post.status === 'Published' ? 'default' : 'secondary'}>
-                      {post.status}
-                    </Badge>
-                    {post.recurring && (
-                      <Badge variant="secondary" className="text-xs">
-                        Ponavljajuće ({post.recurring.frequency})
-                      </Badge>
-                    )}
+          {upcomingPosts.length === 0 ? (
+            <p className="text-gray-500 text-center py-4">Nema zakazanih postova</p>
+          ) : (
+            <div className="space-y-3">
+              {upcomingPosts.map((post) => (
+                <div key={post.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex-1">
+                    <p className="font-medium">{post.content.substring(0, 100)}...</p>
+                    <p className="text-sm text-gray-500">
+                      {post.platform} • {post.scheduledDate} u {post.scheduledTime}
+                      {post.recurring && ` • Ponavlja se ${post.recurring}`}
+                      {post.isPaused && ' • PAUZIRAN'}
+                    </p>
                   </div>
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center space-x-2">
                     <Button
-                      variant="ghost"
+                      variant="outline"
                       size="sm"
-                      onClick={() => togglePostActive(post.id)}
+                      onClick={() => togglePausePost(post.id)}
                     >
-                      {post.isActive ? (
-                        <Pause className="h-4 w-4 text-orange-600" />
-                      ) : (
-                        <Play className="h-4 w-4 text-green-600" />
-                      )}
+                      {post.isPaused ? <Play className="h-4 w-4" /> : <Pause className="h-4 w-4" />}
                     </Button>
                     <Button
-                      variant="ghost"
+                      variant="destructive"
                       size="sm"
                       onClick={() => deleteScheduledPost(post.id)}
-                      className="text-red-600"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
                 </div>
-                <p className="text-sm text-gray-700 mb-3">
-                  {post.content}
-                </p>
-                <div className="flex items-center justify-between text-xs text-gray-500">
-                  <span>
-                    Zakazano: {new Date(post.scheduledDateTime).toLocaleString('hr-HR')}
-                  </span>
-                  <span className={post.isActive ? 'text-green-600' : 'text-gray-400'}>
-                    {post.isActive ? 'Aktivno' : 'Pauzirano'}
-                  </span>
-                </div>
-              </div>
-            ))}
-            {scheduledPosts.length === 0 && (
-              <p className="text-center text-gray-500 py-8">
-                Nema zakazanih postova. Zakazujte svoje objave pomoću forme iznad.
-              </p>
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
+
+      {/* Recently Published */}
+      {recentlyPublished.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Nedavno objavljeno</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentlyPublished.map((post) => (
+                <div key={post.id} className="p-3 border rounded-lg">
+                  <p className="font-medium">{post.content.substring(0, 100)}...</p>
+                  <p className="text-sm text-gray-500">
+                    {post.platform} • Objavljeno: {new Date(post.publishedAt || '').toLocaleString()}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
