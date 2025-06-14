@@ -7,6 +7,8 @@ import ExportButton from './ExportButton';
 import ReminderFilters from './crm/ReminderFilters';
 import ReminderForm from './crm/ReminderForm';
 import ReminderList from './crm/ReminderList';
+import LoadingSpinner from '@/components/ui/loading-spinner';
+import ErrorMessage from '@/components/ui/error-message';
 
 interface NewReminderForm {
   title: string;
@@ -35,10 +37,13 @@ const CRMReminder = () => {
   const [leads] = useLocalStorage<Lead[]>('leads', []);
   const { 
     reminders, 
+    loading,
+    error,
     createReminder, 
     updateReminderStatus, 
     deleteReminder, 
-    postponeReminder 
+    postponeReminder,
+    refreshReminders
   } = useReminders();
 
   const filteredReminders = useMemo(() => {
@@ -49,8 +54,8 @@ const CRMReminder = () => {
     });
   }, [reminders, statusFilter, priorityFilter]);
 
-  const handleCreateReminder = () => {
-    const success = createReminder(newReminder);
+  const handleCreateReminder = async () => {
+    const success = await createReminder(newReminder);
     if (success) {
       setNewReminder({
         title: '',
@@ -66,6 +71,25 @@ const CRMReminder = () => {
 
   const activeReminders = reminders.filter(r => r.status === 'Aktivan');
   const completedReminders = reminders.filter(r => r.status === 'Završen');
+
+  if (loading) {
+    return (
+      <div className="p-6">
+        <LoadingSpinner size="lg" text="Učitavam podsjetnike..." className="py-12" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorMessage 
+          message={`Greška prilikom učitavanja podsjetnika: ${error}`}
+          onRetry={refreshReminders}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="p-6 space-y-6">

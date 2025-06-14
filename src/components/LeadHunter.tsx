@@ -4,9 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Users, Search, TrendingUp } from 'lucide-react';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { useDebounce } from '@/hooks/useDebounce';
 import LeadFilters from '@/components/lead-hunter/LeadFilters';
 import LeadList from '@/components/lead-hunter/LeadList';
 import AddLeadDialog from '@/components/AddLeadDialog';
+import LoadingSpinner from '@/components/ui/loading-spinner';
+import ErrorMessage from '@/components/ui/error-message';
+import { Input } from '@/components/ui/input';
 import { Lead } from '@/types';
 
 interface LeadHunterProps {
@@ -14,8 +18,10 @@ interface LeadHunterProps {
 }
 
 const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
-  const { leads, addLead, updateLeadStatus, deleteLead } = useLeadManagement();
+  const { leads, loading, error, addLead, updateLeadStatus, deleteLead, refreshLeads } = useLeadManagement();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearchQuery = useDebounce(searchQuery, 300);
   
   // Filter states - using 'all' instead of empty strings
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -47,9 +53,22 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
     return [...new Set(countries)];
   }, [leads]);
 
-  // Filter leads based on selected filters
+  // Filter leads based on selected filters and search query
   const filteredLeads = useMemo(() => {
     return leads.filter(lead => {
+      // Search filter
+      if (debouncedSearchQuery) {
+        const query = debouncedSearchQuery.toLowerCase();
+        const matchesSearch = 
+          lead.company.toLowerCase().includes(query) ||
+          lead.email.toLowerCase().includes(query) ||
+          lead.phone.includes(query) ||
+          (lead.location && lead.location.toLowerCase().includes(query)) ||
+          (lead.industry && lead.industry.toLowerCase().includes(query));
+        
+        if (!matchesSearch) return false;
+      }
+
       if (selectedStatus !== 'all' && lead.status !== selectedStatus) return false;
       if (selectedPotential !== 'all' && lead.potential !== selectedPotential) return false;
       if (selectedIndustry !== 'all' && lead.industry !== selectedIndustry) return false;
@@ -66,7 +85,7 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
       
       return true;
     });
-  }, [leads, selectedStatus, selectedPotential, selectedIndustry, selectedCity, selectedCountry]);
+  }, [leads, selectedStatus, selectedPotential, selectedIndustry, selectedCity, selectedCountry, debouncedSearchQuery]);
 
   // Count active filters
   const activeFiltersCount = [selectedStatus, selectedPotential, selectedIndustry, selectedCity, selectedCountry]
@@ -78,18 +97,45 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="p-6">
+        <LoadingSpinner size="lg" text="Učitavam leadove..." className="py-12" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="p-6">
+        <ErrorMessage 
+          message={`Greška prilikom učitavanja leadova: ${error}`}
+          onRetry={refreshLeads}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Lead Hunter</h1>
           <p className="text-slate-600">Upravljajte svojim potencijalnim klijentima</p>
         </div>
-        <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
-          <Plus className="h-4 w-4" />
-          Dodaj Lead
-        </Button>
+        <div className="flex items-center gap-2">
+          <Input
+            placeholder="Pretraži leadove..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-64"
+          />
+          <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Dodaj Lead
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
@@ -168,6 +214,15 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         uniqueCountries={uniqueCountries}
         activeFiltersCount={activeFiltersCount}
       />
+
+      {/* Search Results Info */}
+      {debouncedSearchQuery && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            Prikazano {filteredLeads.length} od {leads.length} leadova za pretraživanje "{debouncedSearchQuery}"
+          </p>
+        </div>
+      )}
 
       {/* Leads List */}
       <LeadList
