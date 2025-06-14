@@ -60,7 +60,7 @@ export const useSupabaseReminders = () => {
       setError(null);
       console.log('Fetching reminders from Supabase for user:', user.id);
 
-      const { data, error } = await supabase
+      const { data, error } = await (supabase as any)
         .from('reminders')
         .select('*')
         .eq('user_id', user.id)
@@ -73,7 +73,7 @@ export const useSupabaseReminders = () => {
       }
 
       console.log('Fetched reminders from Supabase:', data?.length || 0);
-      const mappedReminders = data?.map(mapSupabaseToReminder) || [];
+      const mappedReminders = (data as SupabaseReminder[])?.map(mapSupabaseToReminder) || [];
       setReminders(mappedReminders);
     } catch (err) {
       console.error('Exception fetching reminders:', err);
@@ -95,7 +95,7 @@ export const useSupabaseReminders = () => {
 
     try {
       console.log('Creating reminder in Supabase:', newReminder);
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('reminders')
         .insert({
           user_id: user.id,
@@ -142,7 +142,7 @@ export const useSupabaseReminders = () => {
       const reminderToUpdate = reminders.find(r => r.id === reminderId);
       if (!reminderToUpdate) return;
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('reminders')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('user_id', user.id)
@@ -181,7 +181,7 @@ export const useSupabaseReminders = () => {
       const reminderToDelete = reminders.find(r => r.id === reminderId);
       if (!reminderToDelete) return;
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('reminders')
         .delete()
         .eq('user_id', user.id)
@@ -224,7 +224,7 @@ export const useSupabaseReminders = () => {
       currentDate.setDate(currentDate.getDate() + 1);
       const newDate = currentDate.toISOString().split('T')[0];
 
-      const { error } = await supabase
+      const { error } = await (supabase as any)
         .from('reminders')
         .update({ 
           date: newDate, 
