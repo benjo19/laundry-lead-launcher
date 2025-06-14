@@ -5,8 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Plus, Users, Search, TrendingUp } from 'lucide-react';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useToast } from '@/hooks/use-toast';
 import LeadFilters from '@/components/lead-hunter/LeadFilters';
-import LeadList from '@/components/lead-hunter/LeadList';
+import SelectableLeadList from '@/components/lead-hunter/SelectableLeadList';
+import BulkOperations from '@/components/lead-hunter/BulkOperations';
 import AddLeadDialog from '@/components/AddLeadDialog';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import ErrorMessage from '@/components/ui/error-message';
@@ -22,6 +24,8 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
+  const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
+  const { toast } = useToast();
   
   // Filter states - using 'all' instead of empty strings
   const [selectedStatus, setSelectedStatus] = useState('all');
@@ -95,6 +99,50 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
     if (onNavigateToEmailGenerator) {
       onNavigateToEmailGenerator(email, company);
     }
+  };
+
+  const handleToggleSelect = (leadId: number) => {
+    setSelectedLeads(prev => 
+      prev.includes(leadId) 
+        ? prev.filter(id => id !== leadId)
+        : [...prev, leadId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    setSelectedLeads(filteredLeads.map(lead => lead.id));
+  };
+
+  const handleDeselectAll = () => {
+    setSelectedLeads([]);
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedLeads.length === 0) return;
+
+    for (const leadId of selectedLeads) {
+      await deleteLead(leadId);
+    }
+    
+    setSelectedLeads([]);
+    toast({
+      title: "Leadovi obrisani",
+      description: `${selectedLeads.length} leadova je uspješno obrisano.`,
+    });
+  };
+
+  const handleBulkStatusChange = async (newStatus: Lead['status']) => {
+    if (selectedLeads.length === 0) return;
+
+    for (const leadId of selectedLeads) {
+      await updateLeadStatus(leadId, newStatus);
+    }
+    
+    setSelectedLeads([]);
+    toast({
+      title: "Status ažuriran",
+      description: `Status je ažuriran za ${selectedLeads.length} leadova.`,
+    });
   };
 
   if (loading) {
@@ -215,6 +263,16 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         activeFiltersCount={activeFiltersCount}
       />
 
+      {/* Bulk Operations */}
+      <BulkOperations
+        selectedLeads={selectedLeads}
+        allLeads={filteredLeads}
+        onSelectAll={handleSelectAll}
+        onDeselectAll={handleDeselectAll}
+        onBulkDelete={handleBulkDelete}
+        onBulkStatusChange={handleBulkStatusChange}
+      />
+
       {/* Search Results Info */}
       {debouncedSearchQuery && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
@@ -225,8 +283,10 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
       )}
 
       {/* Leads List */}
-      <LeadList
+      <SelectableLeadList
         leads={filteredLeads}
+        selectedLeads={selectedLeads}
+        onToggleSelect={handleToggleSelect}
         onUpdateStatus={updateLeadStatus}
         onDeleteLead={deleteLead}
         onEmailClick={handleEmailClick}

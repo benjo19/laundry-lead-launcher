@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useIntegratedEmailService } from '@/hooks/useIntegratedEmailService';
 import { useAISettings } from '@/hooks/useAISettings';
 import { Link } from 'react-router-dom';
+import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
 
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
@@ -94,6 +95,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { toast } = useToast();
   const { generateEmail } = useIntegratedEmailService();
   const { aiSettings, isAIConfigured } = useAISettings();
+
+  const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
 
   const templates = [
     { value: 'intro', label: 'Uvodna prezentacija' },
@@ -360,12 +363,42 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
+  const handleTemplateSelect = (template: any) => {
+    // Apply template variables to content
+    let processedSubject = template.subject;
+    let processedContent = template.content;
+    
+    // Replace common variables with actual data if available
+    const replacements: Record<string, string> = {
+      '{{company_name}}': selectedCompany || '{{company_name}}',
+      '{{your_name}}': 'Vaše ime',
+      '{{your_company}}': 'Vaša tvrtka',
+      '{{date}}': new Date().toLocaleDateString('hr-HR'),
+    };
+
+    Object.entries(replacements).forEach(([variable, value]) => {
+      processedSubject = processedSubject.replace(new RegExp(variable.replace(/[{}]/g, '\\$&'), 'g'), value);
+      processedContent = processedContent.replace(new RegExp(variable.replace(/[{}]/g, '\\$&'), 'g'), value);
+    });
+
+    setSubject(processedSubject);
+    setEmailContent(processedContent);
+    setTemplate(template.category);
+    setShowTemplateBuilder(false);
+
+    toast({
+      title: "Predložak učitan",
+      description: `Predložak "${template.name}" je uspješno učitan.`,
+    });
+  };
+
   // Filter emails to show drafts and sent emails separately
   const draftEmails = emails.filter(email => email.status === 'Draft');
   const sentEmails = emails.filter(email => email.status === 'Sent');
 
   return (
     <div className="p-6 space-y-6">
+      {/* Header */}
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-3xl font-bold text-slate-900">Email Generator</h2>
@@ -387,6 +420,12 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               Otkaži uređivanje
             </Button>
           )}
+          <Button 
+            variant="outline" 
+            onClick={() => setShowTemplateBuilder(!showTemplateBuilder)}
+          >
+            {showTemplateBuilder ? 'Sakrij' : 'Upravljaj'} predlošcima
+          </Button>
           <Link to="/settings">
             <Button variant="outline">
               <Settings className="h-4 w-4 mr-2" />
@@ -396,7 +435,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         </div>
       </div>
 
+      {/* Template Builder */}
+      {showTemplateBuilder && (
+        <TemplateBuilder onTemplateSelect={handleTemplateSelect} />
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Email Settings Card */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -408,6 +453,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Recipient Selection */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Odaberite primatelja iz leadova
@@ -432,6 +478,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               </Select>
             </div>
 
+            {/* Manual Email Input */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Ili unesite email ručno
@@ -443,6 +490,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               />
             </div>
 
+            {/* Company Name */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Naziv tvrtke (za personalizaciju)
@@ -454,6 +502,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               />
             </div>
 
+            {/* Template Selection */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Predložak
@@ -472,6 +521,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               </Select>
             </div>
 
+            {/* Subject */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-2">
                 Naslov (generirat će se automatski)
@@ -483,6 +533,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               />
             </div>
 
+            {/* Generate Button */}
             <Button 
               onClick={generateEmailContent} 
               disabled={isGenerating || !isAIConfigured()}
@@ -494,6 +545,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
           </CardContent>
         </Card>
 
+        {/* Email Content Card */}
         <Card>
           <CardHeader>
             <CardTitle>Sadržaj Emaila</CardTitle>
