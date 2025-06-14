@@ -128,7 +128,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
           <p className="text-slate-600 text-sm sm:text-base">Pronađite nove leadove pomoću Google Maps i AI analize - email adrese se traže samo na web stranicama</p>
           <StatusIndicators 
             savedGoogleMapsApiKey={savedGoogleMapsApiKey}
-            isAIConfigured={isAIConfigured()}
+            isAIConfigured={Boolean(isAIConfigured())}
           />
         </div>
       </div>

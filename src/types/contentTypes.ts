@@ -11,3 +11,16 @@ export interface ContentGenerationParams {
 export interface GeneratedContent {
   content: string;
 }
+
+export interface ContentPost {
+  id: number;
+  platform: 'LinkedIn' | 'Facebook' | 'Instagram' | 'TikTok' | 'facebook' | 'instagram' | 'linkedin' | 'twitter';
+  content: string;
+  contentType?: 'tip' | 'case-study' | 'news' | 'promotional' | 'educational' | 'behind-scenes';
+  status: 'Draft' | 'Scheduled' | 'Published';
+  createdAt: string;
+  publishedAt?: string;
+  scheduledTime?: string;
+  scheduledDate?: string;
+  engagement?: string;
+}
