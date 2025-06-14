@@ -98,25 +98,44 @@ export const useLeadDiscovery = () => {
   };
 
   const getPlaceDetails = async (placeId: string, apiKey: string) => {
+    console.log(`Fetching details for place ID: ${placeId}`);
+    
     try {
-      const proxyUrl = 'https://api.allorigins.win/raw?url=';
-      const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours&key=${apiKey}`;
+      const fields = 'name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours';
+      const directUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${apiKey}`;
       
-      const response = await fetch(proxyUrl + encodeURIComponent(detailsUrl));
+      let response;
+      try {
+        // Try direct call first
+        response = await fetch(directUrl);
+        console.log(`Direct details API response status: ${response.status}`);
+      } catch (corsError) {
+        console.log('Direct details API failed, trying proxy...');
+        // Fallback to proxy
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const proxiedUrl = proxyUrl + encodeURIComponent(directUrl);
+        response = await fetch(proxiedUrl);
+        console.log(`Proxy details API response status: ${response.status}`);
+      }
       
       if (!response.ok) {
-        throw new Error('Greška pri dohvaćanju detalja');
+        console.error(`Details API error: ${response.status} ${response.statusText}`);
+        return null;
       }
       
       const data = await response.json();
+      console.log(`Details API status: ${data.status}`);
       
-      if (data.status === 'OK') {
+      if (data.status === 'OK' && data.result) {
+        console.log(`Successfully fetched details for: ${data.result.name}`);
         return data.result;
+      } else {
+        console.error(`Details API failed: ${data.status} - ${data.error_message || 'Unknown error'}`);
+        return null;
       }
       
-      return null;
     } catch (error) {
-      console.error('Error fetching place details:', error);
+      console.error(`Error fetching place details for ${placeId}:`, error);
       return null;
     }
   };
