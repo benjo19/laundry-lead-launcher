@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -61,14 +60,17 @@ const ContentScheduler = () => {
   const publishScheduledPost = (postId: number) => {
     setScheduledPosts(prev => prev.map(post => {
       if (post.id === postId) {
-        const updatedPost = { ...post, status: 'Published' as const };
+        const updatedPost: ScheduledPost = { 
+          ...post, 
+          status: 'Published' as const
+        };
         
         // If recurring, schedule next occurrence
         if (post.recurring) {
           const nextDateTime = calculateNextOccurrence(post);
           if (nextDateTime) {
             updatedPost.scheduledDateTime = nextDateTime;
-            updatedPost.status = 'Scheduled';
+            updatedPost.status = 'Scheduled' as const;
             updatedPost.nextRun = nextDateTime;
           }
         } else {
@@ -139,6 +141,7 @@ const ContentScheduler = () => {
       id: Date.now(),
       scheduledDateTime: scheduledDateTime.toISOString(),
       isActive: true,
+      status: 'Scheduled' as const,
       recurring: isRecurring ? {
         frequency,
         daysOfWeek: frequency === 'weekly' ? selectedDays : undefined,
