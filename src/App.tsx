@@ -6,10 +6,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./components/Settings";
 import ErrorBoundary from "./components/ErrorBoundary";
+import { AlertTriangle, Loader2 } from 'lucide-react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -22,10 +24,10 @@ const queryClient = new QueryClient({
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   console.log('ProtectedRoute: Rendering protected route');
-  const { user, loading } = useAuth();
+  const { user, loading, error } = useAuth();
   const { t } = useLanguage();
   
-  console.log('ProtectedRoute: User state:', { user: !!user, loading });
+  console.log('ProtectedRoute: User state:', { user: !!user, loading, error });
   
   if (loading) {
     console.log('ProtectedRoute: Showing loading state');
@@ -34,9 +36,22 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-blue-600 mx-auto"></div>
           <p className="text-sm sm:text-base text-gray-600">{t('loading')}</p>
+          {error && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg max-w-sm mx-auto">
+              <div className="flex items-center gap-2 text-red-800">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm">{error}</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
+  }
+  
+  if (error) {
+    console.log('ProtectedRoute: Auth error, redirecting to auth');
+    return <Navigate to="/auth" replace />;
   }
   
   if (!user) {
@@ -87,9 +102,11 @@ const AppContent: React.FC = () => {
 
 const App: React.FC = () => {
   return (
-    <LanguageProvider>
-      <AppContent />
-    </LanguageProvider>
+    <LanguageErrorBoundary>
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
+    </LanguageErrorBoundary>
   );
 };
 

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, User, ArrowRight, Loader2 } from 'lucide-react';
+import { Mail, Lock, User, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -17,23 +18,44 @@ const Auth: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { toast } = useToast();
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('Auth: Component mounted, checking user session');
+    
     const checkUser = async () => {
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Auth: Error checking session:', error);
+          setAuthError(`Session check failed: ${error.message}`);
+        } else if (session) {
+          console.log('Auth: User already authenticated, redirecting');
           navigate('/');
+        } else {
+          console.log('Auth: No active session, showing auth form');
         }
       } catch (error) {
-        console.error('Error checking auth session:', error);
+        console.error('Auth: Exception during auth check:', error);
+        setAuthError('Failed to check authentication status');
       } finally {
         setIsCheckingAuth(false);
       }
     };
-    checkUser();
+
+    // Add timeout to prevent infinite loading
+    const timeoutId = setTimeout(() => {
+      console.log('Auth: Timeout reached during auth check');
+      setIsCheckingAuth(false);
+      setAuthError('Authentication check timed out');
+    }, 8000);
+
+    checkUser().finally(() => clearTimeout(timeoutId));
+
+    return () => clearTimeout(timeoutId);
   }, [navigate]);
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -168,6 +190,25 @@ const Auth: React.FC = () => {
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin mb-4" />
             <p className="text-slate-600">Provjera prijave...</p>
+            {authError && (
+              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                <div className="flex items-center gap-2 text-red-800">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="text-sm">{authError}</span>
+                </div>
+                <Button
+                  onClick={() => {
+                    setAuthError(null);
+                    setIsCheckingAuth(false);
+                  }}
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-full"
+                >
+                  Nastavi bez provjere
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -184,6 +225,14 @@ const Auth: React.FC = () => {
           <p className="text-sm sm:text-base text-slate-600">
             Vaš AI asistent za marketing
           </p>
+          {authError && (
+            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <div className="flex items-center gap-2 text-yellow-800">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm">{authError}</span>
+              </div>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
           <div className="space-y-4 mb-6">
