@@ -33,6 +33,8 @@ export const useLeadDiscovery = () => {
 
   // Save form data to localStorage whenever fields change
   useEffect(() => {
+    console.log('=== FORM DATA CHANGE ===');
+    console.log('Saving form data:', { searchQuery, location, industry, tempApiKey: tempApiKey ? 'SET' : 'NOT SET' });
     setSavedFormData({
       searchQuery,
       location,
@@ -98,36 +100,55 @@ export const useLeadDiscovery = () => {
   };
 
   const getPlaceDetails = async (placeId: string, apiKey: string) => {
-    console.log(`Fetching details for place ID: ${placeId}`);
+    console.log(`\n=== FETCHING PLACE DETAILS ===`);
+    console.log(`Place ID: ${placeId}`);
+    console.log(`API Key provided: ${apiKey ? 'YES' : 'NO'}`);
     
     try {
       const fields = 'name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours';
       const directUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${apiKey}`;
       
+      console.log(`Details API URL: ${directUrl}`);
+      
       let response;
+      let method = 'direct';
+      
       try {
         // Try direct call first
+        console.log('Trying direct details API call...');
         response = await fetch(directUrl);
         console.log(`Direct details API response status: ${response.status}`);
       } catch (corsError) {
         console.log('Direct details API failed, trying proxy...');
+        method = 'proxy';
         // Fallback to proxy
         const proxyUrl = 'https://api.allorigins.win/raw?url=';
         const proxiedUrl = proxyUrl + encodeURIComponent(directUrl);
+        console.log(`Proxy details URL: ${proxiedUrl}`);
         response = await fetch(proxiedUrl);
         console.log(`Proxy details API response status: ${response.status}`);
       }
       
       if (!response.ok) {
         console.error(`Details API error: ${response.status} ${response.statusText}`);
+        const errorText = await response.text();
+        console.error(`Details error body: ${errorText}`);
         return null;
       }
       
       const data = await response.json();
+      console.log(`Details API method: ${method}`);
       console.log(`Details API status: ${data.status}`);
+      console.log(`Details API error_message: ${data.error_message || 'none'}`);
       
       if (data.status === 'OK' && data.result) {
         console.log(`Successfully fetched details for: ${data.result.name}`);
+        console.log(`Details include:`, {
+          name: data.result.name,
+          website: data.result.website || 'none',
+          phone: data.result.formatted_phone_number || 'none',
+          rating: data.result.rating || 'none'
+        });
         return data.result;
       } else {
         console.error(`Details API failed: ${data.status} - ${data.error_message || 'Unknown error'}`);
