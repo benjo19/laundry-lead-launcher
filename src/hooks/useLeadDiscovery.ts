@@ -33,8 +33,8 @@ export const useLeadDiscovery = () => {
 
   // Save form data to localStorage whenever fields change
   useEffect(() => {
-    console.log('=== FORM DATA CHANGE ===');
-    console.log('Saving form data:', { searchQuery, location, industry, tempApiKey: tempApiKey ? 'SET' : 'NOT SET' });
+    console.log('=== SAVING FORM DATA ===');
+    console.log('Form data:', { searchQuery, location, industry, hasApiKey: !!tempApiKey });
     setSavedFormData({
       searchQuery,
       location,
@@ -100,63 +100,46 @@ export const useLeadDiscovery = () => {
   };
 
   const getPlaceDetails = async (placeId: string, apiKey: string) => {
-    console.log(`\n=== FETCHING PLACE DETAILS ===`);
+    console.log(`\n=== GETTING PLACE DETAILS ===`);
     console.log(`Place ID: ${placeId}`);
-    console.log(`API Key provided: ${apiKey ? 'YES' : 'NO'}`);
     
     try {
       const fields = 'name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours';
-      const directUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${apiKey}`;
+      const detailsUrl = `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=${fields}&key=${apiKey}`;
       
-      console.log(`Details API URL: ${directUrl}`);
+      console.log(`Details API URL: ${detailsUrl}`);
       
       let response;
-      let method = 'direct';
       
       try {
-        // Try direct call first
-        console.log('Trying direct details API call...');
-        response = await fetch(directUrl);
-        console.log(`Direct details API response status: ${response.status}`);
+        console.log('Trying direct details API...');
+        response = await fetch(detailsUrl);
+        console.log(`Direct details response: ${response.status}`);
       } catch (corsError) {
-        console.log('Direct details API failed, trying proxy...');
-        method = 'proxy';
-        // Fallback to proxy
+        console.log('Direct failed, using proxy...');
         const proxyUrl = 'https://api.allorigins.win/raw?url=';
-        const proxiedUrl = proxyUrl + encodeURIComponent(directUrl);
-        console.log(`Proxy details URL: ${proxiedUrl}`);
-        response = await fetch(proxiedUrl);
-        console.log(`Proxy details API response status: ${response.status}`);
+        response = await fetch(proxyUrl + encodeURIComponent(detailsUrl));
+        console.log(`Proxy details response: ${response.status}`);
       }
       
       if (!response.ok) {
-        console.error(`Details API error: ${response.status} ${response.statusText}`);
-        const errorText = await response.text();
-        console.error(`Details error body: ${errorText}`);
+        console.error(`Details API error: ${response.status}`);
         return null;
       }
       
       const data = await response.json();
-      console.log(`Details API method: ${method}`);
-      console.log(`Details API status: ${data.status}`);
-      console.log(`Details API error_message: ${data.error_message || 'none'}`);
+      console.log(`Details status: ${data.status}`);
       
       if (data.status === 'OK' && data.result) {
-        console.log(`Successfully fetched details for: ${data.result.name}`);
-        console.log(`Details include:`, {
-          name: data.result.name,
-          website: data.result.website || 'none',
-          phone: data.result.formatted_phone_number || 'none',
-          rating: data.result.rating || 'none'
-        });
+        console.log(`Got details for: ${data.result.name}`);
         return data.result;
       } else {
-        console.error(`Details API failed: ${data.status} - ${data.error_message || 'Unknown error'}`);
+        console.error(`Details failed: ${data.status} - ${data.error_message}`);
         return null;
       }
       
     } catch (error) {
-      console.error(`Error fetching place details for ${placeId}:`, error);
+      console.error(`Error getting details for ${placeId}:`, error);
       return null;
     }
   };
