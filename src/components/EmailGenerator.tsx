@@ -397,37 +397,38 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const sentEmails = emails.filter(email => email.status === 'Sent');
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-hidden">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-3xl font-bold text-slate-900">Email Generator</h2>
-          <p className="text-slate-600">Stvorite personalizirane emailove za Vaše klijente pomoću integrirane AI</p>
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center space-y-3 sm:space-y-0">
+        <div className="min-w-0 flex-1">
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 truncate">Email Generator</h2>
+          <p className="text-sm sm:text-base text-slate-600 mt-1">Stvorite personalizirane emailove za Vaše klijente pomoću integrirane AI</p>
           {!isAIConfigured() && (
-            <p className="text-sm text-orange-600 mt-1">
+            <p className="text-xs sm:text-sm text-orange-600 mt-1">
               ⚠️ AI nije konfiguriran - idite u Postavke da postavite API ključ
             </p>
           )}
           {editingDraftId && (
-            <p className="text-sm text-blue-600 mt-1">
+            <p className="text-xs sm:text-sm text-blue-600 mt-1">
               ✏️ Uređujete draft email - možete ga ažurirati ili poslati
             </p>
           )}
         </div>
-        <div className="flex space-x-2">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
           {editingDraftId && (
-            <Button variant="outline" onClick={cancelEdit}>
+            <Button variant="outline" onClick={cancelEdit} className="w-full sm:w-auto text-sm">
               Otkaži uređivanje
             </Button>
           )}
           <Button 
             variant="outline" 
             onClick={() => setShowTemplateBuilder(!showTemplateBuilder)}
+            className="w-full sm:w-auto text-sm"
           >
             {showTemplateBuilder ? 'Sakrij' : 'Upravljaj'} predlošcima
           </Button>
-          <Link to="/settings">
-            <Button variant="outline">
+          <Link to="/settings" className="w-full sm:w-auto">
+            <Button variant="outline" className="w-full sm:w-auto text-sm">
               <Settings className="h-4 w-4 mr-2" />
               AI Postavke
             </Button>
@@ -440,36 +441,37 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         <TemplateBuilder onTemplateSelect={handleTemplateSelect} />
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-6">
         {/* Email Settings Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Mail className="h-5 w-5 mr-2 text-blue-600" />
-              Email Postavke
+        <Card className="w-full">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <Mail className="h-5 w-5 mr-2 text-blue-600 shrink-0" />
+              <span className="truncate">Email Postavke</span>
               {editingDraftId && (
-                <span className="ml-2 text-sm text-blue-600">(Uređivanje draft-a)</span>
+                <span className="ml-2 text-xs sm:text-sm text-blue-600 hidden sm:inline">(Uređivanje draft-a)</span>
               )}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {/* Recipient Selection */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">
                 Odaberite primatelja iz leadova
               </label>
               <Select value={recipient} onValueChange={handleRecipientSelect}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Odaberite iz postojećih leadova" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none">
                   {getAllEmailAddresses().map((contact, index) => (
-                    <SelectItem key={index} value={contact.email}>
-                      <div className="flex items-center">
-                        <Users className="h-4 w-4 mr-2 text-slate-500" />
-                        <div>
-                          <div className="font-medium">{contact.company}</div>
-                          <div className="text-xs text-slate-500">{contact.email} • {contact.source}</div>
+                    <SelectItem key={index} value={contact.email} className="max-w-full">
+                      <div className="flex items-start w-full min-w-0">
+                        <Users className="h-4 w-4 mr-2 text-slate-500 shrink-0 mt-0.5" />
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium truncate text-sm">{contact.company}</div>
+                          <div className="text-xs text-slate-500 truncate">{contact.email}</div>
+                          <div className="text-xs text-slate-400">{contact.source}</div>
                         </div>
                       </div>
                     </SelectItem>
@@ -479,36 +481,38 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             </div>
 
             {/* Manual Email Input */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">
                 Ili unesite email ručno
               </label>
               <Input
                 placeholder="email@tvrtka.hr"
                 value={recipient}
                 onChange={(e) => setRecipient(e.target.value)}
+                className="w-full"
               />
             </div>
 
             {/* Company Name */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">
                 Naziv tvrtke (za personalizaciju)
               </label>
               <Input
                 placeholder="Naziv tvrtke"
                 value={selectedCompany}
                 onChange={(e) => setSelectedCompany(e.target.value)}
+                className="w-full"
               />
             </div>
 
             {/* Template Selection */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">
                 Predložak
               </label>
               <Select value={template} onValueChange={setTemplate}>
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Odaberite predložak" />
                 </SelectTrigger>
                 <SelectContent>
@@ -522,14 +526,15 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             </div>
 
             {/* Subject */}
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-2">
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-slate-700">
                 Naslov (generirat će se automatski)
               </label>
               <Input
                 placeholder="Naslov će biti generiran pomoću AI-a"
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
+                className="w-full"
               />
             </div>
 
@@ -537,7 +542,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             <Button 
               onClick={generateEmailContent} 
               disabled={isGenerating || !isAIConfigured()}
-              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50"
+              className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-sm"
             >
               <Sparkles className="h-4 w-4 mr-2" />
               {isGenerating ? 'Generiranje AI sadržaja...' : 'Generiraj Personalizirani AI Email'}
@@ -546,24 +551,24 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         </Card>
 
         {/* Email Content Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Sadržaj Emaila</CardTitle>
+        <Card className="w-full">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base sm:text-lg">Sadržaj Emaila</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
               placeholder="Vaš personalizirani email sadržaj će se pojaviti ovdje..."
               value={emailContent}
               onChange={(e) => setEmailContent(e.target.value)}
-              className="min-h-64"
+              className="min-h-48 sm:min-h-64 w-full resize-none"
             />
             
-            <div className="flex space-x-2">
-              <Button onClick={sendEmail} className="flex-1 bg-green-600 hover:bg-green-700">
+            <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
+              <Button onClick={sendEmail} className="flex-1 bg-green-600 hover:bg-green-700 text-sm">
                 <Send className="h-4 w-4 mr-2" />
                 {editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email'}
               </Button>
-              <Button onClick={saveDraft} variant="outline">
+              <Button onClick={saveDraft} variant="outline" className="flex-1 text-sm">
                 {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
               </Button>
             </div>
@@ -573,39 +578,39 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
       {/* Draft Emails Section */}
       {draftEmails.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Edit3 className="h-5 w-5 mr-2 text-orange-600" />
-              Draft Emailovi ({draftEmails.length})
+        <Card className="w-full">
+          <CardHeader className="pb-4">
+            <CardTitle className="flex items-center text-base sm:text-lg">
+              <Edit3 className="h-5 w-5 mr-2 text-orange-600 shrink-0" />
+              <span>Draft Emailovi ({draftEmails.length})</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
               {draftEmails.map((email) => (
-                <div key={email.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0 bg-orange-50 rounded-lg px-4">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-1">
-                      <p className="font-medium text-slate-900">{email.subject}</p>
-                      <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                <div key={email.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 border-b border-slate-100 last:border-0 bg-orange-50 rounded-lg px-4 space-y-3 sm:space-y-0">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                      <p className="font-medium text-slate-900 text-sm truncate">{email.subject}</p>
+                      <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800 shrink-0">
                         Draft
                       </span>
                       {editingDraftId === email.id && (
-                        <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                        <span className="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800 shrink-0">
                           Uređuje se
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-slate-600">{email.to}</p>
+                    <p className="text-sm text-slate-600 truncate">{email.to}</p>
                     <p className="text-xs text-slate-500">Stvoren: {email.dateSent}</p>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-2 shrink-0">
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => editDraft(email)}
                       disabled={editingDraftId === email.id}
-                      className="text-blue-600 hover:text-blue-700"
+                      className="text-blue-600 hover:text-blue-700 text-xs"
                     >
                       <Edit3 className="h-4 w-4" />
                     </Button>
@@ -613,7 +618,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                       variant="outline"
                       size="sm"
                       onClick={() => deleteEmail(email.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 text-xs"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -626,35 +631,35 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       )}
 
       {/* Sent Emails Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Poslani Emailovi ({sentEmails.length})</CardTitle>
+      <Card className="w-full">
+        <CardHeader className="pb-4">
+          <CardTitle className="text-base sm:text-lg">Poslani Emailovi ({sentEmails.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
             {sentEmails.map((email) => (
-              <div key={email.id} className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-1">
-                    <p className="font-medium text-slate-900">{email.subject}</p>
-                    <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
+              <div key={email.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between py-3 border-b border-slate-100 last:border-0 space-y-3 sm:space-y-0">
+                <div className="flex-1 min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 mb-1">
+                    <p className="font-medium text-slate-900 text-sm truncate">{email.subject}</p>
+                    <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800 shrink-0">
                       Sent
                     </span>
                   </div>
-                  <p className="text-sm text-slate-600">{email.to}</p>
+                  <p className="text-sm text-slate-600 truncate">{email.to}</p>
                   {email.openRate && (
                     <p className="text-xs text-slate-500">
                       Open rate: {email.openRate} | Click rate: {email.clickRate}
                     </p>
                   )}
                 </div>
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 shrink-0">
                   <span className="text-xs text-slate-500">{email.dateSent}</span>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => deleteEmail(email.id)}
-                    className="text-red-600 hover:text-red-700"
+                    className="text-red-600 hover:text-red-700 text-xs"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
