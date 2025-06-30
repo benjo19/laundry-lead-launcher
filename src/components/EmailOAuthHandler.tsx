@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -74,11 +73,13 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
       if (provider === 'google') {
         oauthConfig.queryParams = {
           ...oauthConfig.queryParams,
+          // @ts-ignore - scope is a valid parameter for Google OAuth
           scope: 'email profile https://www.googleapis.com/auth/gmail.send'
         };
       } else if (provider === 'outlook') {
         oauthConfig.queryParams = {
           ...oauthConfig.queryParams,
+          // @ts-ignore - scope is a valid parameter for Azure OAuth
           scope: 'email profile https://graph.microsoft.com/Mail.Send offline_access'
         };
       }

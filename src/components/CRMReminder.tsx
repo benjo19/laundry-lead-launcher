@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead, Reminder } from '@/types';
@@ -60,8 +59,9 @@ const CRMReminder = () => {
 
   const handleCreateReminder = async () => {
     console.log('Creating reminder:', newReminder);
-    const success = await createReminder(newReminder);
-    if (success) {
+    try {
+      await createReminder(newReminder);
+      
       // Trigger Make.com webhook
       await triggerWebhook('reminder_created', {
         title: newReminder.title,
@@ -80,22 +80,28 @@ const CRMReminder = () => {
         company: '',
         companyInputMode: 'select'
       });
+    } catch (error) {
+      console.error('Error creating reminder:', error);
     }
   };
 
   const handleUpdateReminderStatus = async (id: number, status: Reminder['status']) => {
     console.log('Updating reminder status:', id, status);
-    const success = await updateReminderStatus(id, status);
-    if (success && status === 'Završen') {
-      const reminder = reminders.find(r => r.id === id);
-      if (reminder) {
-        await triggerWebhook('reminder_completed', {
-          id: reminder.id,
-          title: reminder.title,
-          company: reminder.company,
-          completed_at: new Date().toISOString()
-        });
+    try {
+      await updateReminderStatus(id, status);
+      if (status === 'Završen') {
+        const reminder = reminders.find(r => r.id === id);
+        if (reminder) {
+          await triggerWebhook('reminder_completed', {
+            id: reminder.id,
+            title: reminder.title,
+            company: reminder.company,
+            completed_at: new Date().toISOString()
+          });
+        }
       }
+    } catch (error) {
+      console.error('Error updating reminder status:', error);
     }
   };
 

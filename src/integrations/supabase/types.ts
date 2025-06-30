@@ -140,6 +140,7 @@ export type Database = {
           email_provider: string | null
           email_settings: Json | null
           id: string
+          make_settings: Json | null
           social_platforms: Json | null
           updated_at: string | null
           user_id: string
@@ -151,6 +152,7 @@ export type Database = {
           email_provider?: string | null
           email_settings?: Json | null
           id?: string
+          make_settings?: Json | null
           social_platforms?: Json | null
           updated_at?: string | null
           user_id: string
@@ -162,6 +164,7 @@ export type Database = {
           email_provider?: string | null
           email_settings?: Json | null
           id?: string
+          make_settings?: Json | null
           social_platforms?: Json | null
           updated_at?: string | null
           user_id?: string
