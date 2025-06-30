@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Chrome, Globe, Check, AlertCircle, Loader2 } from 'lucide-react';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 interface EmailOAuthHandlerProps {
   provider: 'google' | 'outlook';
@@ -19,6 +20,7 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
 }) => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'checking'>('checking');
 
@@ -33,7 +35,6 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
     }
 
     try {
-      // Check if user has OAuth tokens stored
       const { data, error } = await supabase
         .from('user_settings')
         .select('email_settings')
@@ -59,20 +60,32 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
     setIsConnecting(true);
 
     try {
-      const scopes = provider === 'google' 
-        ? 'email profile https://www.googleapis.com/auth/gmail.send'
-        : 'email profile https://graph.microsoft.com/Mail.Send';
+      const redirectTo = `${window.location.origin}/settings?oauth_callback=${provider}`;
+      
+      // Different OAuth configurations for different providers
+      const oauthConfig = {
+        redirectTo,
+        queryParams: {
+          access_type: 'offline',
+          prompt: 'consent',
+        }
+      };
+
+      if (provider === 'google') {
+        oauthConfig.queryParams = {
+          ...oauthConfig.queryParams,
+          scope: 'email profile https://www.googleapis.com/auth/gmail.send'
+        };
+      } else if (provider === 'outlook') {
+        oauthConfig.queryParams = {
+          ...oauthConfig.queryParams,
+          scope: 'email profile https://graph.microsoft.com/Mail.Send offline_access'
+        };
+      }
 
       const { error } = await supabase.auth.signInWithOAuth({
         provider: provider === 'google' ? 'google' : 'azure',
-        options: {
-          scopes,
-          redirectTo: `${window.location.origin}/settings?oauth_callback=${provider}`,
-          queryParams: provider === 'google' ? {
-            access_type: 'offline',
-            prompt: 'consent',
-          } : undefined,
-        }
+        options: oauthConfig
       });
 
       if (error) throw error;
@@ -95,7 +108,6 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
 
   const handleDisconnect = async () => {
     try {
-      // Remove OAuth tokens from user settings
       const { data: existingSettings } = await supabase
         .from('user_settings')
         .select('email_settings')

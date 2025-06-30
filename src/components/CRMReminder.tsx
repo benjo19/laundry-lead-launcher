@@ -3,6 +3,8 @@ import React, { useState, useMemo } from 'react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead, Reminder } from '@/types';
 import { useReminders } from '@/hooks/useReminders';
+import { useMakeIntegration } from '@/hooks/useMakeIntegration';
+import { useLanguage } from '@/contexts/LanguageContext';
 import ExportButton from './ExportButton';
 import ReminderFilters from './crm/ReminderFilters';
 import ReminderForm from './crm/ReminderForm';
@@ -21,8 +23,10 @@ interface NewReminderForm {
 }
 
 const CRMReminder = () => {
+  const { t } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
+  const { triggerWebhook } = useMakeIntegration();
   
   const [newReminder, setNewReminder] = useState<NewReminderForm>({
     title: '',
@@ -55,8 +59,18 @@ const CRMReminder = () => {
   }, [reminders, statusFilter, priorityFilter]);
 
   const handleCreateReminder = async () => {
+    console.log('Creating reminder:', newReminder);
     const success = await createReminder(newReminder);
     if (success) {
+      // Trigger Make.com webhook
+      await triggerWebhook('reminder_created', {
+        title: newReminder.title,
+        company: newReminder.company,
+        priority: newReminder.priority,
+        date: newReminder.date,
+        time: newReminder.time
+      });
+
       setNewReminder({
         title: '',
         description: '',
@@ -69,13 +83,29 @@ const CRMReminder = () => {
     }
   };
 
+  const handleUpdateReminderStatus = async (id: number, status: Reminder['status']) => {
+    console.log('Updating reminder status:', id, status);
+    const success = await updateReminderStatus(id, status);
+    if (success && status === 'Završen') {
+      const reminder = reminders.find(r => r.id === id);
+      if (reminder) {
+        await triggerWebhook('reminder_completed', {
+          id: reminder.id,
+          title: reminder.title,
+          company: reminder.company,
+          completed_at: new Date().toISOString()
+        });
+      }
+    }
+  };
+
   const activeReminders = reminders.filter(r => r.status === 'Aktivan');
   const completedReminders = reminders.filter(r => r.status === 'Završen');
 
   if (loading) {
     return (
       <div className="p-6">
-        <LoadingSpinner size="lg" text="Učitavam podsjetnike..." className="py-12" />
+        <LoadingSpinner size="lg" text={`${t('loading')} ${t('crm_reminder').toLowerCase()}...`} className="py-12" />
       </div>
     );
   }
@@ -84,7 +114,7 @@ const CRMReminder = () => {
     return (
       <div className="p-6">
         <ErrorMessage 
-          message={`Greška prilikom učitavanja podsjetnika: ${error}`}
+          message={`${t('error_occurred')}: ${error}`}
           onRetry={refreshReminders}
         />
       </div>
@@ -95,7 +125,7 @@ const CRMReminder = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900">CRM Podsjetnik</h2>
+          <h2 className="text-3xl font-bold text-slate-900">{t('crm_reminder')}</h2>
           <p className="text-slate-600">Upravljajte terminima i komunikacijom s klijentima</p>
         </div>
         <div className="flex items-center space-x-4">
@@ -123,7 +153,7 @@ const CRMReminder = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <ReminderList
           reminders={filteredReminders}
-          onUpdateStatus={updateReminderStatus}
+          onUpdateStatus={handleUpdateReminderStatus}
           onPostpone={postponeReminder}
           onDelete={deleteReminder}
         />

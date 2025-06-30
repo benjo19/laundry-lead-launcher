@@ -1,0 +1,77 @@
+
+import { useState, useCallback } from 'react';
+import { useAuth } from './useAuth';
+import { supabase } from '@/integrations/supabase/client';
+
+interface MakeWebhookData {
+  event_type: string;
+  timestamp: string;
+  user_id?: string;
+  data: any;
+}
+
+export const useMakeIntegration = () => {
+  const { user } = useAuth();
+  const [isLoading, setIsLoading] = useState(false);
+
+  const getMakeSettings = useCallback(async () => {
+    if (!user) return null;
+
+    try {
+      const { data, error } = await supabase
+        .from('user_settings')
+        .select('make_settings')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+      return data?.make_settings || null;
+    } catch (error) {
+      console.error('Error getting Make.com settings:', error);
+      return null;
+    }
+  }, [user]);
+
+  const triggerWebhook = useCallback(async (eventType: string, data: any) => {
+    if (!user) return false;
+
+    setIsLoading(true);
+    try {
+      const settings = await getMakeSettings();
+      
+      if (!settings?.webhook_url || !settings?.auto_trigger) {
+        return false;
+      }
+
+      const webhookData: MakeWebhookData = {
+        event_type: eventType,
+        timestamp: new Date().toISOString(),
+        user_id: user.id,
+        data: data
+      };
+
+      const response = await fetch(settings.webhook_url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify(webhookData),
+      });
+
+      console.log(`Make.com webhook triggered for event: ${eventType}`);
+      return true;
+    } catch (error) {
+      console.error('Error triggering Make.com webhook:', error);
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [user, getMakeSettings]);
+
+  return {
+    triggerWebhook,
+    getMakeSettings,
+    isLoading
+  };
+};

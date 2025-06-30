@@ -10,6 +10,8 @@ import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIntegratedEmailService } from '@/hooks/useIntegratedEmailService';
 import { useAISettings } from '@/hooks/useAISettings';
+import { useMakeIntegration } from '@/hooks/useMakeIntegration';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
 
@@ -19,6 +21,9 @@ interface EmailGeneratorProps {
 }
 
 const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGeneratorProps) => {
+  const { t } = useLanguage();
+  const { triggerWebhook } = useMakeIntegration();
+
   // Load saved form data from localStorage
   const [savedFormData, setSavedFormData] = useLocalStorage('emailGeneratorForm', {
     recipient: '',
@@ -186,7 +191,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
-  const sendEmail = () => {
+  const sendEmail = async () => {
     if (!recipient || !subject || !emailContent) {
       toast({
         title: "Nedostaju podaci",
@@ -195,6 +200,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       });
       return;
     }
+
+    const emailData = {
+      to: recipient,
+      subject,
+      content: emailContent,
+      template: template || 'custom',
+      company: selectedCompany
+    };
+
+    // Trigger Make.com webhook before sending
+    await triggerWebhook('email_sent', emailData);
 
     if (editingDraftId) {
       // Update existing draft to sent

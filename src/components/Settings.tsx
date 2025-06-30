@@ -1,86 +1,100 @@
 
 import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Settings2, User, Brain, Mail, Share2, ArrowLeft, Zap } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { ArrowLeft, Settings as SettingsIcon, User, Mail, Share2, Bot, Zap } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import BusinessProfileSettings from './BusinessProfileSettings';
 import AISettings from './AISettings';
 import EmailSettings from './EmailSettings';
 import SocialSettings from './SocialSettings';
-import ZapierIntegration from './ZapierIntegration';
+import MakeIntegration from './MakeIntegration';
+import { useLanguage } from '@/contexts/LanguageContext';
 
 const Settings = () => {
-  const navigate = useNavigate();
   const { t } = useLanguage();
 
-  const handleBackToDashboard = () => {
-    navigate('/');
-  };
-
   return (
-    <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-900">{t('settings')}</h2>
-          <p className="text-sm sm:text-base text-slate-600 mt-1">{t('manage_settings')}</p>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6">
+      <div className="max-w-6xl mx-auto">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-4">
+            <Link to="/">
+              <Button variant="ghost" size="sm">
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                {t('back_to_dashboard')}
+              </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900">{t('settings')}</h1>
+              <p className="text-slate-600">{t('manage_settings')}</p>
+            </div>
+          </div>
         </div>
-        <Button 
-          variant="outline" 
-          onClick={handleBackToDashboard}
-          className="flex items-center gap-2 shrink-0"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          <span className="hidden sm:inline">{t('back_to_dashboard')}</span>
-          <span className="sm:hidden">Back</span>
-        </Button>
+
+        {/* Settings Tabs */}
+        <Card className="shadow-xl">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <SettingsIcon className="h-5 w-5 mr-2" />
+              {t('settings')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="business" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-6">
+                <TabsTrigger value="business" className="flex items-center space-x-2">
+                  <User className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('business_profile')}</span>
+                  <span className="sm:hidden">Profil</span>
+                </TabsTrigger>
+                <TabsTrigger value="ai" className="flex items-center space-x-2">
+                  <Bot className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('ai_settings')}</span>
+                  <span className="sm:hidden">AI</span>
+                </TabsTrigger>
+                <TabsTrigger value="email" className="flex items-center space-x-2">
+                  <Mail className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('email')}</span>
+                  <span className="sm:hidden">Email</span>
+                </TabsTrigger>
+                <TabsTrigger value="social" className="flex items-center space-x-2">
+                  <Share2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">{t('social_networks')}</span>
+                  <span className="sm:hidden">Social</span>
+                </TabsTrigger>
+                <TabsTrigger value="make" className="flex items-center space-x-2">
+                  <Zap className="h-4 w-4" />
+                  <span className="hidden sm:inline">Make.com</span>
+                  <span className="sm:hidden">Make</span>
+                </TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="business">
+                <BusinessProfileSettings />
+              </TabsContent>
+
+              <TabsContent value="ai">
+                <AISettings />
+              </TabsContent>
+
+              <TabsContent value="email">
+                <EmailSettings />
+              </TabsContent>
+
+              <TabsContent value="social">
+                <SocialSettings />
+              </TabsContent>
+
+              <TabsContent value="make">
+                <MakeIntegration />
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
-
-      <Tabs defaultValue="business" className="space-y-4 sm:space-y-6">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto">
-          <TabsTrigger value="business" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3">
-            <User className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">{t('business_profile')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="ai" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3">
-            <Brain className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">{t('ai_settings')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="email" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3">
-            <Mail className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">{t('email')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="social" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3">
-            <Share2 className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">{t('social_networks')}</span>
-          </TabsTrigger>
-          <TabsTrigger value="zapier" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 p-2 sm:p-3">
-            <Zap className="h-4 w-4" />
-            <span className="text-xs sm:text-sm">Zapier</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="business">
-          <BusinessProfileSettings />
-        </TabsContent>
-
-        <TabsContent value="ai">
-          <AISettings />
-        </TabsContent>
-
-        <TabsContent value="email">
-          <EmailSettings />
-        </TabsContent>
-
-        <TabsContent value="social">
-          <SocialSettings />
-        </TabsContent>
-
-        <TabsContent value="zapier">
-          <ZapierIntegration />
-        </TabsContent>
-      </Tabs>
     </div>
   );
 };
