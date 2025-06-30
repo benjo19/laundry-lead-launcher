@@ -38,7 +38,7 @@ export const useSupabaseReminders = () => {
   const [error, setError] = useState<string | null>(null);
 
   const mapSupabaseToReminder = (supabaseReminder: SupabaseReminder): Reminder => ({
-    id: parseInt(supabaseReminder.id.replace(/-/g, ''), 16), // Convert UUID to number for compatibility
+    id: supabaseReminder.id.hashCode(), // Convert UUID to consistent number
     title: supabaseReminder.title,
     description: supabaseReminder.description || '',
     date: supabaseReminder.date,
@@ -46,7 +46,7 @@ export const useSupabaseReminders = () => {
     priority: supabaseReminder.priority as Reminder['priority'],
     status: supabaseReminder.status as Reminder['status'],
     company: supabaseReminder.company,
-    leadId: supabaseReminder.lead_id ? parseInt(supabaseReminder.lead_id.replace(/-/g, ''), 16) : undefined
+    leadId: supabaseReminder.lead_id ? supabaseReminder.lead_id.hashCode() : undefined
   });
 
   const fetchReminders = async () => {
@@ -60,7 +60,7 @@ export const useSupabaseReminders = () => {
       setError(null);
       console.log('Fetching reminders from Supabase for user:', user.id);
 
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('reminders')
         .select('*')
         .eq('user_id', user.id)
@@ -95,7 +95,7 @@ export const useSupabaseReminders = () => {
 
     try {
       console.log('Creating reminder in Supabase:', newReminder);
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('reminders')
         .insert({
           user_id: user.id,
@@ -135,6 +135,28 @@ export const useSupabaseReminders = () => {
     }
   };
 
+  const findReminderById = (reminderId: number): SupabaseReminder | null => {
+    const reminder = reminders.find(r => r.id === reminderId);
+    if (!reminder) return null;
+    
+    // We need to find the original Supabase reminder by matching title and company
+    // since we don't store the original UUID
+    return {
+      id: '', // We'll use title + company for updates
+      user_id: user?.id || '',
+      title: reminder.title,
+      description: reminder.description,
+      date: reminder.date,
+      time: reminder.time,
+      priority: reminder.priority,
+      status: reminder.status,
+      company: reminder.company,
+      lead_id: null,
+      created_at: '',
+      updated_at: ''
+    };
+  };
+
   const updateReminderStatus = async (reminderId: number, newStatus: Reminder['status']) => {
     if (!user) return;
 
@@ -142,7 +164,7 @@ export const useSupabaseReminders = () => {
       const reminderToUpdate = reminders.find(r => r.id === reminderId);
       if (!reminderToUpdate) return;
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('reminders')
         .update({ status: newStatus, updated_at: new Date().toISOString() })
         .eq('user_id', user.id)
@@ -181,7 +203,7 @@ export const useSupabaseReminders = () => {
       const reminderToDelete = reminders.find(r => r.id === reminderId);
       if (!reminderToDelete) return;
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('reminders')
         .delete()
         .eq('user_id', user.id)
@@ -224,7 +246,7 @@ export const useSupabaseReminders = () => {
       currentDate.setDate(currentDate.getDate() + 1);
       const newDate = currentDate.toISOString().split('T')[0];
 
-      const { error } = await (supabase as any)
+      const { error } = await supabase
         .from('reminders')
         .update({ 
           date: newDate, 
@@ -274,4 +296,22 @@ export const useSupabaseReminders = () => {
     postponeReminder,
     refreshReminders: fetchReminders
   };
+};
+
+// Helper extension to convert string to consistent hash number
+declare global {
+  interface String {
+    hashCode(): number;
+  }
+}
+
+String.prototype.hashCode = function() {
+  let hash = 0;
+  if (this.length === 0) return hash;
+  for (let i = 0; i < this.length; i++) {
+    const char = this.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32bit integer
+  }
+  return Math.abs(hash);
 };

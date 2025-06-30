@@ -132,6 +132,51 @@ export type Database = {
         }
         Relationships: []
       }
+      reminders: {
+        Row: {
+          company: string
+          created_at: string | null
+          date: string
+          description: string | null
+          id: string
+          lead_id: string | null
+          priority: string
+          status: string
+          time: string
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          company: string
+          created_at?: string | null
+          date: string
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          priority?: string
+          status?: string
+          time: string
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          company?: string
+          created_at?: string | null
+          date?: string
+          description?: string | null
+          id?: string
+          lead_id?: string | null
+          priority?: string
+          status?: string
+          time?: string
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           ai_settings: Json | null
