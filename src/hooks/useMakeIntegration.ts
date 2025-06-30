@@ -10,11 +10,16 @@ interface MakeWebhookData {
   data: any;
 }
 
+interface MakeSettings {
+  webhook_url?: string;
+  auto_trigger?: boolean;
+}
+
 export const useMakeIntegration = () => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(false);
 
-  const getMakeSettings = useCallback(async () => {
+  const getMakeSettings = useCallback(async (): Promise<MakeSettings | null> => {
     if (!user) return null;
 
     try {
@@ -25,14 +30,19 @@ export const useMakeIntegration = () => {
         .maybeSingle();
 
       if (error) throw error;
-      return data?.make_settings || null;
+      
+      if (data?.make_settings && typeof data.make_settings === 'object') {
+        return data.make_settings as MakeSettings;
+      }
+      
+      return null;
     } catch (error) {
       console.error('Error getting Make.com settings:', error);
       return null;
     }
   }, [user]);
 
-  const triggerWebhook = useCallback(async (eventType: string, data: any) => {
+  const triggerWebhook = useCallback(async (eventType: string, data: any): Promise<boolean> => {
     if (!user) return false;
 
     setIsLoading(true);

@@ -55,7 +55,8 @@ const MakeIntegration = () => {
       if (error) throw error;
 
       if (data?.make_settings) {
-        setSettings(prev => ({ ...prev, ...data.make_settings }));
+        const makeSettings = data.make_settings as Record<string, any>;
+        setSettings(prev => ({ ...prev, ...makeSettings }));
       }
     } catch (error) {
       console.error('Error loading Make.com settings:', error);
@@ -80,7 +81,7 @@ const MakeIntegration = () => {
         result = await supabase
           .from('user_settings')
           .update({
-            make_settings: settings,
+            make_settings: settings as any,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
@@ -89,7 +90,7 @@ const MakeIntegration = () => {
           .from('user_settings')
           .insert({
             user_id: user.id,
-            make_settings: settings,
+            make_settings: settings as any,
             updated_at: new Date().toISOString()
           });
       }
