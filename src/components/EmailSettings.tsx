@@ -8,8 +8,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { useOAuthCallback } from '@/hooks/useOAuthCallback';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Save, Loader2, Chrome, Globe, ExternalLink, Check } from 'lucide-react';
+import { Mail, Save, Loader2, Chrome, Globe, ExternalLink } from 'lucide-react';
+import EmailOAuthHandler from './EmailOAuthHandler';
 
 interface EmailSettings {
   smtp_server: string;
@@ -22,8 +24,20 @@ interface EmailSettings {
   auto_signature: boolean;
   signature_template: string;
   provider_type?: 'manual' | 'gmail' | 'outlook';
-  oauth_token?: string;
-  oauth_refresh_token?: string;
+  oauth_providers?: {
+    google?: {
+      email?: string;
+      access_token?: string;
+      refresh_token?: string;
+      connected_at?: string;
+    };
+    outlook?: {
+      email?: string;
+      access_token?: string;
+      refresh_token?: string;
+      connected_at?: string;
+    };
+  };
 }
 
 const EmailSettings = () => {
@@ -31,7 +45,6 @@ const EmailSettings = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isConnecting, setIsConnecting] = useState<'google' | 'outlook' | null>(null);
   const [connectedAccounts, setConnectedAccounts] = useState<{
     google?: string;
     outlook?: string;
@@ -47,8 +60,12 @@ const EmailSettings = () => {
     use_tls: true,
     auto_signature: true,
     signature_template: '',
-    provider_type: 'manual'
+    provider_type: 'manual',
+    oauth_providers: {}
   });
+
+  // Handle OAuth callbacks
+  useOAuthCallback();
 
   useEffect(() => {
     if (user) {
@@ -69,6 +86,14 @@ const EmailSettings = () => {
       if (data?.email_settings && typeof data.email_settings === 'object' && data.email_settings !== null) {
         const emailSettings = data.email_settings as Record<string, any>;
         setSettings(prev => ({ ...prev, ...emailSettings }));
+        
+        // Update connected accounts state
+        if (emailSettings.oauth_providers) {
+          setConnectedAccounts({
+            google: emailSettings.oauth_providers.google?.email,
+            outlook: emailSettings.oauth_providers.outlook?.email
+          });
+        }
       }
     } catch (error) {
       console.error('Error loading email settings:', error);
@@ -97,123 +122,16 @@ const EmailSettings = () => {
     }
   };
 
-  const handleGoogleOAuth = async () => {
-    setIsConnecting('google');
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'email profile https://www.googleapis.com/auth/gmail.send',
-          redirectTo: `${window.location.origin}/settings`,
-          queryParams: {
-            access_type: 'offline',
-            prompt: 'consent',
-          },
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Google autentikacija",
-        description: "Preusmjeravanje na Google za autentikaciju...",
-      });
-    } catch (error) {
-      console.error('Google OAuth error:', error);
-      toast({
-        title: "Greška",
-        description: "Dogodila se greška pri povezivanju s Google računom.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnecting(null);
+  const handleOAuthConnectionChange = (provider: 'google' | 'outlook', email?: string) => {
+    setConnectedAccounts(prev => ({
+      ...prev,
+      [provider]: email
+    }));
+    
+    // Reload settings to get the latest OAuth data
+    if (email) {
+      loadSettings();
     }
-  };
-
-  const handleOutlookOAuth = async () => {
-    setIsConnecting('outlook');
-    try {
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'azure',
-        options: {
-          scopes: 'email profile https://graph.microsoft.com/Mail.Send',
-          redirectTo: `${window.location.origin}/settings`,
-        }
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: "Outlook autentikacija",
-        description: "Preusmjeravanje na Microsoft za autentikaciju...",
-      });
-    } catch (error) {
-      console.error('Outlook OAuth error:', error);
-      toast({
-        title: "Greška",
-        description: "Dogodila se greška pri povezivanju s Outlook računom.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsConnecting(null);
-    }
-  };
-
-  const disconnectAccount = async (provider: 'google' | 'outlook') => {
-    try {
-      // Remove OAuth tokens from settings
-      const updatedSettings = {
-        ...settings,
-        oauth_token: undefined,
-        oauth_refresh_token: undefined,
-      };
-
-      if (provider === 'google') {
-        setConnectedAccounts(prev => ({ ...prev, google: undefined }));
-        if (settings.provider_type === 'gmail') {
-          updatedSettings.provider_type = 'manual';
-          updatedSettings.smtp_server = '';
-          updatedSettings.smtp_username = '';
-        }
-      } else {
-        setConnectedAccounts(prev => ({ ...prev, outlook: undefined }));
-        if (settings.provider_type === 'outlook') {
-          updatedSettings.provider_type = 'manual';
-          updatedSettings.smtp_server = '';
-          updatedSettings.smtp_username = '';
-        }
-      }
-
-      setSettings(updatedSettings);
-
-      toast({
-        title: "Račun odspjen",
-        description: `${provider === 'google' ? 'Google' : 'Outlook'} račun je uspješno odspjen.`,
-      });
-    } catch (error) {
-      console.error('Error disconnecting account:', error);
-      toast({
-        title: "Greška",
-        description: "Dogodila se greška pri odspajanju računa.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleGoogleSignIn = () => {
-    window.open('https://accounts.google.com/signin', '_blank');
-    toast({
-      title: "Google Sign In",
-      description: "Otvorena je nova kartica za Google prijavu. Nakon prijave, kopirajte vaš email i stvorite App Password.",
-    });
-  };
-
-  const handleOutlookSignIn = () => {
-    window.open('https://outlook.live.com/owa/', '_blank');
-    toast({
-      title: "Outlook Sign In",
-      description: "Otvorena je nova kartica za Outlook prijavu. Nakon prijave, kopirajte vaš email i lozinku.",
-    });
   };
 
   const saveSettings = async () => {
@@ -287,107 +205,16 @@ const EmailSettings = () => {
         <div className="space-y-4">
           <Label className="text-base font-medium">OAuth Autentikacija</Label>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {/* Google OAuth */}
-            <div className="border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Chrome className="h-5 w-5" />
-                  <span className="font-medium">Google</span>
-                </div>
-                {connectedAccounts.google && (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Check className="h-4 w-4" />
-                    <span className="text-sm">Povezano</span>
-                  </div>
-                )}
-              </div>
-              
-              {connectedAccounts.google ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-slate-600">{connectedAccounts.google}</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => disconnectAccount('google')}
-                    className="w-full"
-                  >
-                    Odspoji račun
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleGoogleOAuth}
-                  disabled={isConnecting === 'google'}
-                  className="w-full"
-                >
-                  {isConnecting === 'google' ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Povezivanje...
-                    </>
-                  ) : (
-                    <>
-                      <Chrome className="h-4 w-4 mr-2" />
-                      Poveži s Google
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
-
-            {/* Outlook OAuth */}
-            <div className="border border-slate-200 rounded-lg p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Globe className="h-5 w-5" />
-                  <span className="font-medium">Outlook</span>
-                </div>
-                {connectedAccounts.outlook && (
-                  <div className="flex items-center gap-1 text-green-600">
-                    <Check className="h-4 w-4" />
-                    <span className="text-sm">Povezano</span>
-                  </div>
-                )}
-              </div>
-              
-              {connectedAccounts.outlook ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-slate-600">{connectedAccounts.outlook}</p>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => disconnectAccount('outlook')}
-                    className="w-full"
-                  >
-                    Odspoji račun
-                  </Button>
-                </div>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleOutlookOAuth}
-                  disabled={isConnecting === 'outlook'}
-                  className="w-full"
-                >
-                  {isConnecting === 'outlook' ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Povezivanje...
-                    </>
-                  ) : (
-                    <>
-                      <Globe className="h-4 w-4 mr-2" />
-                      Poveži s Outlook
-                    </>
-                  )}
-                </Button>
-              )}
-            </div>
+            <EmailOAuthHandler
+              provider="google"
+              onConnectionChange={handleOAuthConnectionChange}
+              connectedEmail={connectedAccounts.google}
+            />
+            <EmailOAuthHandler
+              provider="outlook"
+              onConnectionChange={handleOAuthConnectionChange}
+              connectedEmail={connectedAccounts.outlook}
+            />
           </div>
           <p className="text-sm text-slate-600">
             Povežite vaše email račune kroz OAuth za sigurnu autentikaciju bez potrebe za unošenjem lozinki.
@@ -403,22 +230,18 @@ const EmailSettings = () => {
               variant={settings.provider_type === 'gmail' ? 'default' : 'outline'}
               onClick={() => handleProviderSelect('gmail')}
               className="flex items-center gap-2 h-12"
-              disabled={!connectedAccounts.google && settings.provider_type !== 'gmail'}
             >
               <Chrome className="h-5 w-5" />
               Gmail
-              {connectedAccounts.google && <Check className="h-4 w-4 ml-auto text-green-600" />}
             </Button>
             <Button
               type="button"
               variant={settings.provider_type === 'outlook' ? 'default' : 'outline'}
               onClick={() => handleProviderSelect('outlook')}
               className="flex items-center gap-2 h-12"
-              disabled={!connectedAccounts.outlook && settings.provider_type !== 'outlook'}
             >
               <Globe className="h-5 w-5" />
               Outlook
-              {connectedAccounts.outlook && <Check className="h-4 w-4 ml-auto text-green-600" />}
             </Button>
             <Button
               type="button"
@@ -445,10 +268,9 @@ const EmailSettings = () => {
                 </>
               ) : (
                 <>
-                  <li>• Koristite vaš Gmail email kao username</li>
-                  <li>• Za lozinku koristite App Password, ne običnu lozinku</li>
-                  <li>• App Password možete kreirati u Google Account postavkama</li>
-                  <li>• Ili povežite račun kroz OAuth iznad za lakše korištenje</li>
+                  <li>• Kliknite "Poveži s Google" iznad za OAuth integraciju</li>
+                  <li>• Ili ručno unesite Gmail podatke ispod</li>
+                  <li>• Za ručno podešavanje trebate App Password</li>
                 </>
               )}
             </ul>
@@ -467,19 +289,19 @@ const EmailSettings = () => {
                 </>
               ) : (
                 <>
-                  <li>• Koristite vaš Outlook/Hotmail email kao username</li>
-                  <li>• Koristite običnu lozinku vašeg Microsoft računa</li>
-                  <li>• Provjerite da je SMTP omogućen u Outlook postavkama</li>
-                  <li>• Ili povežite račun kroz OAuth iznad za lakše korištenje</li>
+                  <li>• Kliknite "Poveži s Outlook" iznad za OAuth integraciju</li>
+                  <li>• Ili ručno unesite Outlook podatke ispod</li>
+                  <li>• Za ručno podešavanje koristite običnu lozinku</li>
                 </>
               )}
             </ul>
           </div>
         )}
 
-        {/* SMTP Configuration - only show if not using OAuth */}
-        {(!connectedAccounts.google || settings.provider_type !== 'gmail') && 
-         (!connectedAccounts.outlook || settings.provider_type !== 'outlook') && (
+        {/* SMTP Configuration - show if not using OAuth or manual selected */}
+        {(settings.provider_type === 'manual' || 
+          (settings.provider_type === 'gmail' && !connectedAccounts.google) ||
+          (settings.provider_type === 'outlook' && !connectedAccounts.outlook)) && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
