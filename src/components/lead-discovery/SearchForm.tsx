@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Loader2, Brain, Key } from 'lucide-react';
-import IndustrySelector from './IndustrySelector';
+import IndustrySelector, { industries } from './IndustrySelector';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 
 export interface DiscoveredLead {
@@ -23,18 +23,8 @@ export interface DiscoveredLead {
   user_ratings_total?: number;
 }
 
-export const industries = [
-  { value: 'laundry', label: 'Praonice rublja', query: 'laundry dry cleaning' },
-  { value: 'restaurant', label: 'Restorani', query: 'restaurant cafe food' },
-  { value: 'beauty', label: 'Kozmetički saloni', query: 'beauty salon spa' },
-  { value: 'fitness', label: 'Fitness centri', query: 'gym fitness center' },
-  { value: 'retail', label: 'Maloprodaja', query: 'retail store shop' },
-  { value: 'services', label: 'Usluge', query: 'services business' },
-  { value: 'healthcare', label: 'Zdravstvo', query: 'clinic doctor healthcare' },
-  { value: 'automotive', label: 'Autoindustrija', query: 'auto repair car service' },
-  { value: 'construction', label: 'Građevinarstvo', query: 'construction contractor builder' },
-  { value: 'real-estate', label: 'Nekretnine', query: 'real estate agency' }
-];
+// Export industries from IndustrySelector for consistency
+export { industries };
 
 interface SearchFormProps {
   searchQuery: string;
@@ -81,6 +71,9 @@ const SearchForm = ({
           <Search className="h-5 w-5 mr-2 text-blue-600" />
           Pretraži Leadove
         </CardTitle>
+        <p className="text-sm text-slate-600">
+          Poboljšane kategorije za preciznije rezultate - svaka kategorija koristi specifične Google Maps upite
+        </p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -101,7 +94,7 @@ const SearchForm = ({
             
             <div>
               <label htmlFor="industry" className="block text-sm font-medium text-slate-700 mb-1">
-                Industrija
+                Industrija (poboljšane kategorije)
               </label>
               <IndustrySelector 
                 value={industry} 
@@ -121,6 +114,9 @@ const SearchForm = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            <p className="text-xs text-slate-500 mt-1">
+              Tip: Ostavite prazno za najbolje rezultate s odabranom kategorijom
+            </p>
           </div>
 
           {showApiKeyInput && (

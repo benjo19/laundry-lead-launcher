@@ -9,39 +9,85 @@ export interface Industry {
 }
 
 export const industries: Industry[] = [
-  { value: 'hotel', label: 'Hoteli', query: 'hotel accommodation lodging' },
-  { value: 'hostel', label: 'Hosteli', query: 'hostel budget accommodation backpacker' },
-  { value: 'apartment', label: 'Apartmani', query: 'apartment rental vacation rental' },
-  { value: 'laundry', label: 'Praonice', query: 'laundry cleaning dry cleaning' },
-  { value: 'restaurant', label: 'Restorani', query: 'restaurant food dining' },
-  { value: 'retail', label: 'Trgovina', query: 'shop store retail clothing' },
-  { value: 'beauty', label: 'Ljepota i wellness', query: 'beauty salon spa wellness' },
-  { value: 'fitness', label: 'Fitness centri', query: 'gym fitness center workout' },
-  { value: 'healthcare', label: 'Zdravstvo', query: 'clinic doctor medical health' },
-  { value: 'automotive', label: 'Autoindustrija', query: 'car repair auto service garage' },
-  { value: 'real-estate', label: 'Nekretnine', query: 'real estate property agency' },
-  { value: 'education', label: 'Edukacija', query: 'school education training course' },
-  { value: 'legal', label: 'Pravni servisi', query: 'lawyer law legal attorney' },
-  { value: 'accounting', label: 'Računovodstvo', query: 'accounting bookkeeping tax' },
-  { value: 'construction', label: 'Građevina', query: 'construction building contractor' },
-  { value: 'plumbing', label: 'Vodoinstalaterstvo', query: 'plumber plumbing water repair' },
-  { value: 'electrical', label: 'Elektro usluge', query: 'electrician electrical repair' },
-  { value: 'cleaning', label: 'Čišćenje', query: 'cleaning service housekeeping' },
-  { value: 'photography', label: 'Fotografija', query: 'photographer photography studio' },
-  { value: 'catering', label: 'Catering', query: 'catering event food service' },
-  { value: 'travel', label: 'Putovanje i turizam', query: 'travel agency tourism hotel' },
-  { value: 'insurance', label: 'Osiguranje', query: 'insurance agency broker' },
-  { value: 'consulting', label: 'Konsalting', query: 'consulting advisor business' },
-  { value: 'marketing', label: 'Marketing agencije', query: 'marketing agency advertising' },
-  { value: 'it-services', label: 'IT usluge', query: 'computer repair IT support tech' },
-  { value: 'veterinary', label: 'Veterinarske usluge', query: 'veterinarian animal clinic' },
-  { value: 'dental', label: 'Stomatologija', query: 'dentist dental clinic' },
-  { value: 'optometry', label: 'Optika', query: 'optometrist glasses vision' },
-  { value: 'pet-services', label: 'Usluge za kućne ljubimce', query: 'pet grooming daycare' },
-  { value: 'florist', label: 'Cvjećarnice', query: 'florist flowers wedding' },
-  { value: 'bakery', label: 'Pekare', query: 'bakery bread pastry' },
-  { value: 'pharmacy', label: 'Apoteke', query: 'pharmacy drugstore medicine' },
-  { value: 'jewelry', label: 'Zlatarnice', query: 'jewelry gold silver repair' }
+  // Turizam i smještaj - precizniji upiti
+  { value: 'hotel', label: 'Hoteli', query: 'hotel "accommodation" "lodging" -apartment -hostel' },
+  { value: 'hostel', label: 'Hosteli', query: 'hostel "backpacker" "budget accommodation" -hotel -apartment' },
+  { value: 'apartment', label: 'Apartmani za iznajmljivanje', query: '"vacation rental" "apartment rental" "holiday apartment" -hotel' },
+  { value: 'motel', label: 'Moteli', query: 'motel "roadside accommodation" -hotel -hostel' },
+  
+  // Usluge čišćenja - vrlo specifični
+  { value: 'laundry', label: 'Praonice rublja', query: '"laundry service" "dry cleaning" "wash and fold" -self-service' },
+  { value: 'dry-cleaning', label: 'Kemijske čistionice', query: '"dry cleaning" "professional cleaning" -laundromat' },
+  { value: 'industrial-laundry', label: 'Industrijske praonice', query: '"industrial laundry" "commercial washing" "linen service"' },
+  
+  // Ugostiteljstvo - razdvojeno po tipovima
+  { value: 'restaurant', label: 'Restorani', query: 'restaurant "fine dining" "casual dining" -fast -cafe -bar' },
+  { value: 'fast-food', label: 'Brza hrana', query: '"fast food" "quick service" "takeaway" -restaurant' },
+  { value: 'cafe', label: 'Kafići', query: 'cafe "coffee shop" "espresso bar" -restaurant -bar' },
+  { value: 'bar', label: 'Barovi i klubovi', query: 'bar "cocktail bar" "nightclub" "pub" -cafe -restaurant' },
+  { value: 'catering', label: 'Catering servisi', query: '"catering service" "event catering" "wedding catering"' },
+  
+  // Trgovina - specifične kategorije
+  { value: 'clothing', label: 'Trgovine odjeće', query: '"clothing store" "fashion boutique" "apparel shop" -grocery -supermarket' },
+  { value: 'grocery', label: 'Trgovine mješovitom robom', query: '"grocery store" "supermarket" "convenience store" -clothing -pharmacy' },
+  { value: 'pharmacy', label: 'Ljekarne', query: 'pharmacy "drugstore" "chemist" -grocery -supermarket' },
+  { value: 'electronics', label: 'Trgovine elektronike', query: '"electronics store" "computer shop" "mobile phone store"' },
+  
+  // Ljepota i wellness - detaljnije
+  { value: 'beauty-salon', label: 'Kozmetički saloni', query: '"beauty salon" "nail salon" "hair salon" -spa -massage' },
+  { value: 'spa', label: 'Spa i wellness centri', query: 'spa "wellness center" "day spa" "beauty spa" -salon' },
+  { value: 'barbershop', label: 'Brijačnice', query: 'barbershop "barber shop" "men\'s grooming" -salon' },
+  { value: 'massage', label: 'Masažni saloni', query: '"massage therapy" "massage salon" "therapeutic massage"' },
+  
+  // Fitness i sport
+  { value: 'gym', label: 'Teretane', query: 'gym "fitness center" "weight training" -spa -yoga' },
+  { value: 'yoga', label: 'Yoga studiji', query: '"yoga studio" "pilates studio" "meditation center" -gym' },
+  { value: 'sports-club', label: 'Sportski klubovi', query: '"sports club" "athletic club" "tennis club" "golf club"' },
+  
+  // Zdravstvo - razdvojeno po specijalizacijama
+  { value: 'general-practice', label: 'Opća medicina', query: '"general practitioner" "family doctor" "medical clinic" -dental -veterinary' },
+  { value: 'dental', label: 'Stomatološke ordinacije', query: 'dentist "dental clinic" "orthodontist" -medical -veterinary' },
+  { value: 'veterinary', label: 'Veterinarske ambulante', query: 'veterinarian "animal clinic" "pet hospital" -dental -medical' },
+  { value: 'optometry', label: 'Optike', query: 'optometrist "eye clinic" "glasses shop" "vision center"' },
+  
+  // Autoindustrija - specifični servisi
+  { value: 'auto-repair', label: 'Auto servisi', query: '"auto repair" "car service" "mechanic shop" -dealership -rental' },
+  { value: 'car-dealership', label: 'Auto saloni', query: '"car dealership" "auto dealer" "car sales" -repair -rental' },
+  { value: 'car-rental', label: 'Rent-a-car', query: '"car rental" "vehicle rental" "auto rental" -dealership -repair' },
+  { value: 'car-wash', label: 'Autopraone', query: '"car wash" "auto detailing" "vehicle cleaning" -repair' },
+  
+  // Nekretnine
+  { value: 'real-estate', label: 'Agencije za nekretnine', query: '"real estate agency" "property agency" "realtor office"' },
+  { value: 'property-management', label: 'Upravljanje nekretninama', query: '"property management" "building management" "facility management"' },
+  
+  // Edukacija - po razinama
+  { value: 'kindergarten', label: 'Vrtići', query: 'kindergarten "preschool" "daycare center" -school' },
+  { value: 'primary-school', label: 'Osnovne škole', query: '"primary school" "elementary school" -kindergarten -high' },
+  { value: 'language-school', label: 'Jezične škole', query: '"language school" "language center" "English school"' },
+  { value: 'tutoring', label: 'Instrukcije', query: 'tutoring "private lessons" "academic support"' },
+  
+  // Poslovne usluge - detaljnije
+  { value: 'accounting', label: 'Računovodstvene usluge', query: '"accounting service" "bookkeeping" "tax preparation" -legal' },
+  { value: 'legal', label: 'Pravni servisi', query: '"law firm" "legal services" "attorney office" -accounting' },
+  { value: 'consulting', label: 'Poslovni konsalting', query: '"business consulting" "management consulting" "advisory services"' },
+  { value: 'marketing-agency', label: 'Marketing agencije', query: '"marketing agency" "advertising agency" "digital marketing"' },
+  
+  // Tehničke usluge - specijalizirano
+  { value: 'plumbing', label: 'Vodoinstalaterstvo', query: 'plumber "plumbing service" "water repair" -electrical -construction' },
+  { value: 'electrical', label: 'Elektroinstalaterstvo', query: 'electrician "electrical service" "wiring repair" -plumbing -construction' },
+  { value: 'hvac', label: 'Klimatizacija i grijanje', query: '"HVAC service" "air conditioning" "heating repair" "climate control"' },
+  { value: 'construction', label: 'Građevinske tvrtke', query: '"construction company" "building contractor" "renovation service"' },
+  
+  // Ostale specifične usluge
+  { value: 'cleaning-service', label: 'Usluge čišćenja', query: '"cleaning service" "housekeeping" "office cleaning" -laundry' },
+  { value: 'photography', label: 'Foto studiji', query: '"photography studio" "wedding photographer" "portrait photography"' },
+  { value: 'florist', label: 'Cvjećarnice', query: 'florist "flower shop" "wedding flowers" "floral design"' },
+  { value: 'bakery', label: 'Pekare', query: 'bakery "bread shop" "pastry shop" "cake shop" -restaurant' },
+  { value: 'pet-services', label: 'Usluge za kućne ljubimce', query: '"pet grooming" "dog daycare" "pet sitting" -veterinary' },
+  { value: 'jewelry', label: 'Zlatarnice', query: '"jewelry store" "jeweler" "watch repair" "gold shop"' },
+  { value: 'insurance', label: 'Osiguravajuće agencije', query: '"insurance agency" "insurance broker" "insurance office"' },
+  { value: 'travel-agency', label: 'Turističke agencije', query: '"travel agency" "tour operator" "vacation planning"' },
+  { value: 'it-services', label: 'IT usluge', query: '"computer repair" "IT support" "tech support" "software development"' }
 ];
 
 interface IndustrySelectorProps {
@@ -55,7 +101,7 @@ const IndustrySelector = ({ value, onChange }: IndustrySelectorProps) => {
       <SelectTrigger className="bg-white border-2 border-gray-200 hover:border-blue-300 transition-colors">
         <SelectValue placeholder="Odaberite industriju" />
       </SelectTrigger>
-      <SelectContent className="bg-white border-2 border-gray-200 shadow-lg">
+      <SelectContent className="bg-white border-2 border-gray-200 shadow-lg max-h-80 overflow-y-auto">
         {industries.map((industry) => (
           <SelectItem 
             key={industry.value} 
