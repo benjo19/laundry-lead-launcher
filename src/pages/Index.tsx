@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/components/Dashboard';
@@ -29,13 +28,19 @@ const Index = () => {
     company?: string;
   }>({});
 
-  const addLead = (newLeadData: Omit<Lead, 'id' | 'dateAdded'>) => {
-    const newLead: Lead = {
-      ...newLeadData,
-      id: Date.now(),
-      dateAdded: new Date().toISOString().split('T')[0]
-    };
-    setLeads([...leads, newLead]);
+  const addLead = async (newLeadData: Omit<Lead, 'id' | 'dateAdded'>): Promise<boolean> => {
+    try {
+      const newLead: Lead = {
+        ...newLeadData,
+        id: Date.now(),
+        dateAdded: new Date().toISOString().split('T')[0]
+      };
+      setLeads([...leads, newLead]);
+      return true;
+    } catch (error) {
+      console.error('Error adding lead:', error);
+      return false;
+    }
   };
 
   const handleNavigateToEmailGenerator = (email: string, company: string) => {
