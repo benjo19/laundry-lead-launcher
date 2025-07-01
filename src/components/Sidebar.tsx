@@ -34,7 +34,7 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
     { id: 'lead-hunter', label: t('lead_hunter'), icon: Search },
     { id: 'lead-discovery', label: t('lead_discovery'), icon: Compass },
     { id: 'email-generator', label: t('email_generator'), icon: Mail },
-    { id: 'crm-reminder', label: t('crm_reminder'), icon: Calendar },
+    { id: 'crm-reminder', label: 'CRM Datoteke', icon: Calendar },
     { id: 'content-booster', label: t('content_booster'), icon: TrendingUp },
     { id: 'analytics', label: t('analytics'), icon: BarChart3 },
   ];

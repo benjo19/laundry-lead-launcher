@@ -153,22 +153,6 @@ const SearchForm = ({
               {isSearching ? 'Pretraživanje...' : 'Pretraži Leadove'}
             </Button>
 
-            {discoveredLeads.length > 0 && (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => onAnalyzeWithAI(discoveredLeads)}
-                disabled={isSearching || isAnalyzing}
-                className="flex-1 sm:flex-none"
-              >
-                {isAnalyzing ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <Brain className="h-4 w-4 mr-2" />
-                )}
-                {isAnalyzing ? 'AI Analiza...' : 'AI Analiza'}
-              </Button>
-            )}
           </div>
         </form>
       </CardContent>

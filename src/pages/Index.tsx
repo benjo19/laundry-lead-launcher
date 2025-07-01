@@ -15,6 +15,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { useOAuthCallback } from '@/hooks/useOAuthCallback';
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -22,6 +23,9 @@ const Index = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const { t } = useLanguage();
+  
+  // Handle OAuth callbacks
+  useOAuthCallback();
   
   // State for passing email data to EmailGenerator
   const [emailGeneratorData, setEmailGeneratorData] = useState<{
@@ -52,7 +56,7 @@ const Index = () => {
       case 'lead-hunter': return t('lead_hunter');
       case 'lead-discovery': return t('lead_discovery');
       case 'email-generator': return t('email_generator');
-      case 'crm-reminder': return t('crm_reminder');
+      case 'crm-reminder': return 'CRM Datoteke';
       case 'content-booster': return t('content_booster');
       case 'analytics': return t('analytics');
       case 'settings': return t('settings');

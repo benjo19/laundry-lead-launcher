@@ -44,31 +44,26 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 md:grid-cols-5 mb-6">
-                <TabsTrigger value="business" className="flex items-center space-x-2">
-                  <User className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('business_profile')}</span>
-                  <span className="sm:hidden">Profil</span>
+              <TabsList className="grid w-full grid-cols-5 gap-1 p-1 mb-6 h-auto">
+                <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <User className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">Profil</span>
                 </TabsTrigger>
-                <TabsTrigger value="ai" className="flex items-center space-x-2">
-                  <Bot className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('ai_settings')}</span>
-                  <span className="sm:hidden">AI</span>
+                <TabsTrigger value="ai" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <Bot className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">AI</span>
                 </TabsTrigger>
-                <TabsTrigger value="email" className="flex items-center space-x-2">
-                  <Mail className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('email')}</span>
-                  <span className="sm:hidden">Email</span>
+                <TabsTrigger value="email" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <Mail className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">Email</span>
                 </TabsTrigger>
-                <TabsTrigger value="social" className="flex items-center space-x-2">
-                  <Share2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">{t('social_networks')}</span>
-                  <span className="sm:hidden">Social</span>
+                <TabsTrigger value="social" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <Share2 className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">Social</span>
                 </TabsTrigger>
-                <TabsTrigger value="make" className="flex items-center space-x-2">
-                  <Zap className="h-4 w-4" />
-                  <span className="hidden sm:inline">Make.com</span>
-                  <span className="sm:hidden">Make</span>
+                <TabsTrigger value="make" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <Zap className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">Make</span>
                 </TabsTrigger>
               </TabsList>
 

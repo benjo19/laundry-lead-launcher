@@ -131,8 +131,8 @@ const CRMReminder = () => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900">{t('crm_reminder')}</h2>
-          <p className="text-slate-600">Upravljajte terminima i komunikacijom s klijentima</p>
+          <h2 className="text-3xl font-bold text-slate-900">CRM Datoteke</h2>
+          <p className="text-slate-600">Upravljajte podacima koje možete izvoziti u tablice</p>
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex space-x-4 text-sm text-slate-600">
@@ -145,7 +145,7 @@ const CRMReminder = () => {
               Završeno: {completedReminders.length}
             </span>
           </div>
-          <ExportButton data={filteredReminders} filename="crm-podsjetnici" type="reminders" />
+          <ExportButton data={filteredReminders} filename="crm-datoteke" type="reminders" />
         </div>
       </div>
 

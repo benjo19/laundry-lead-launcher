@@ -479,16 +479,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Odaberite iz postojećih leadova" />
                 </SelectTrigger>
-                <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none">
+                <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none max-h-60 overflow-y-auto">
                   {getAllEmailAddresses().map((contact, index) => (
-                    <SelectItem key={index} value={contact.email} className="max-w-full">
-                      <div className="flex items-start w-full min-w-0">
-                        <Users className="h-4 w-4 mr-2 text-slate-500 shrink-0 mt-0.5" />
-                        <div className="min-w-0 flex-1">
-                          <div className="font-medium truncate text-sm">{contact.company}</div>
-                          <div className="text-xs text-slate-500 truncate">{contact.email}</div>
-                          <div className="text-xs text-slate-400">{contact.source}</div>
-                        </div>
+                    <SelectItem key={index} value={contact.email} className="max-w-full p-3">
+                      <div className="flex flex-col w-full min-w-0">
+                        <div className="font-medium text-sm mb-1">{contact.company}</div>
+                        <div className="text-xs text-slate-500 mb-1">{contact.email}</div>
+                        <div className="text-xs text-slate-400">{contact.source}</div>
                       </div>
                     </SelectItem>
                   ))}

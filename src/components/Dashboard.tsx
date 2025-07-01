@@ -114,10 +114,6 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
           <h2 className="text-3xl font-bold text-slate-900">Dashboard</h2>
           <p className="text-slate-600">Pregled aktivnosti Marketing Agent sustava</p>
         </div>
-        <Button className="bg-blue-600 hover:bg-blue-700">
-          <Target className="h-4 w-4 mr-2" />
-          Nova Kampanja
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

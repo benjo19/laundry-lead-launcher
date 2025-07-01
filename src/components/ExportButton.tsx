@@ -212,14 +212,6 @@ const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={autoExportToSheets}>
-          <ExternalLink className="h-4 w-4 mr-2" />
-          Auto Google Sheets
-        </DropdownMenuItem>
-        <DropdownMenuItem onClick={exportToGoogleSheets}>
-          <FileText className="h-4 w-4 mr-2" />
-          Ručno Google Sheets
-        </DropdownMenuItem>
         <DropdownMenuItem onClick={exportToCSV}>
           <FileSpreadsheet className="h-4 w-4 mr-2" />
           Preuzmi CSV

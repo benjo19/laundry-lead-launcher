@@ -64,10 +64,11 @@ export const useOAuthCallback = () => {
           description: `${oauthCallback === 'google' ? 'Google' : 'Outlook'} račun je uspješno povezan.`,
         });
 
-        // Clean up URL parameters
+        // Clean up URL parameters and redirect to settings
         const newUrl = new URL(window.location.href);
         newUrl.searchParams.delete('oauth_callback');
-        window.history.replaceState({}, '', newUrl.toString());
+        newUrl.pathname = '/settings';
+        window.location.href = newUrl.toString();
 
       } catch (error) {
         console.error('OAuth callback error:', error);
