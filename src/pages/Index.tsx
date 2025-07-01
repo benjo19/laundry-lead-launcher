@@ -14,10 +14,11 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { useLeadManagement } from '@/hooks/useLeadManagement';
 
 const Index = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
-  const [leads, setLeads] = useLocalStorage<Lead[]>('leads', []);
+  const { addLead } = useLeadManagement();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const { t } = useLanguage();
@@ -28,20 +29,6 @@ const Index = () => {
     company?: string;
   }>({});
 
-  const addLead = async (newLeadData: Omit<Lead, 'id' | 'dateAdded'>): Promise<boolean> => {
-    try {
-      const newLead: Lead = {
-        ...newLeadData,
-        id: Date.now(),
-        dateAdded: new Date().toISOString().split('T')[0]
-      };
-      setLeads([...leads, newLead]);
-      return true;
-    } catch (error) {
-      console.error('Error adding lead:', error);
-      return false;
-    }
-  };
 
   const handleNavigateToEmailGenerator = (email: string, company: string) => {
     setEmailGeneratorData({ email, company });
