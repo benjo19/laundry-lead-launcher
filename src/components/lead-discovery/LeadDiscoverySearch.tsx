@@ -1,27 +1,17 @@
 
-import React from 'react';
-import { useLeadDiscovery } from '@/hooks/useLeadDiscovery';
-import { performLeadSearch } from './SearchOperations';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
+import { performLeadSearch } from './SearchOperations';
 
 interface LeadDiscoverySearchProps {
   searchQuery: string;
-  setSearchQuery: (query: string) => void;
   location: string;
-  setLocation: (location: string) => void;
   industry: string;
-  setIndustry: (industry: string) => void;
-  isSearching: boolean;
-  setIsSearching: (searching: boolean) => void;
-  isAnalyzing: boolean;
-  discoveredLeads: AnalyzedLead[];
-  setDiscoveredLeads: (leads: AnalyzedLead[]) => void;
   tempApiKey: string;
-  setTempApiKey: (key: string) => void;
   savedGoogleMapsApiKey: string;
   saveGoogleMapsApiKey: (key: string) => Promise<void>;
   getPlaceDetails: (placeId: string, apiKey: string) => Promise<any>;
-  analyzeWithAI: (leads: AnalyzedLead[]) => Promise<void>;
+  setIsSearching: (searching: boolean) => void;
+  setDiscoveredLeads: (leads: AnalyzedLead[]) => void;
   toast: any;
 }
 

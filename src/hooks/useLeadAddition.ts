@@ -5,7 +5,7 @@ import { Lead } from '@/types';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 
 interface UseLeadAdditionProps {
-  onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
+  onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => Promise<boolean>;
   setDiscoveredLeads: (updater: (prevLeads: AnalyzedLead[]) => AnalyzedLead[]) => void;
 }
 
@@ -40,18 +40,26 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads }: UseLeadAdditi
 
     try {
       console.log('Attempting to add lead through onAddLead prop...');
-      onAddLead(newLead);
-      console.log('onAddLead called successfully');
+      const success = await onAddLead(newLead);
+      console.log('onAddLead result:', success);
       
-      // Remove from discovered leads after calling onAddLead
-      setDiscoveredLeads(prevLeads => 
-        prevLeads.filter(lead => lead.place_id !== discoveredLead.place_id)
-      );
+      if (success) {
+        // Remove from discovered leads after successful addition
+        setDiscoveredLeads(prevLeads => 
+          prevLeads.filter(lead => lead.place_id !== discoveredLead.place_id)
+        );
 
-      toast({
-        title: "Lead uspješno dodan",
-        description: `${discoveredLead.name} je dodan u Lead Hunter.`,
-      });
+        toast({
+          title: "Lead uspješno dodan",
+          description: `${discoveredLead.name} je dodan u Lead Hunter.`,
+        });
+      } else {
+        toast({
+          title: "Greška pri dodavanju",
+          description: "Dogodila se greška pri dodavanju lead-a. Molimo pokušajte ponovno.",
+          variant: "destructive",
+        });
+      }
     } catch (error) {
       console.error('Error adding lead:', error);
       toast({

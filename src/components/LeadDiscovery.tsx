@@ -11,7 +11,7 @@ import { useLeadDiscoverySearch } from './lead-discovery/LeadDiscoverySearch';
 import { useAuth } from '@/hooks/useAuth';
 
 interface LeadDiscoveryProps {
-  onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
+  onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => Promise<boolean>;
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
 }
 
@@ -43,22 +43,14 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
 
   const { searchLeads } = useLeadDiscoverySearch({
     searchQuery,
-    setSearchQuery,
     location,
-    setLocation,
     industry,
-    setIndustry,
-    isSearching,
-    setIsSearching,
-    isAnalyzing,
-    discoveredLeads,
-    setDiscoveredLeads,
     tempApiKey,
-    setTempApiKey,
     savedGoogleMapsApiKey,
     saveGoogleMapsApiKey,
     getPlaceDetails,
-    analyzeWithAI,
+    setIsSearching,
+    setDiscoveredLeads,
     toast
   });
 
