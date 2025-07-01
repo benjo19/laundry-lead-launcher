@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Lead } from '@/types';
 import SearchForm, { DiscoveredLead } from './lead-discovery/SearchForm';
@@ -124,26 +123,18 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
 
     try {
       console.log('Attempting to add lead through onAddLead prop...');
-      const success = await onAddLead(newLead);
-      console.log('onAddLead result:', success);
+      onAddLead(newLead);
+      console.log('onAddLead called successfully');
       
-      if (success !== false) {
-        // Remove from discovered leads only if successfully added
-        setDiscoveredLeads(prevLeads => 
-          prevLeads.filter(lead => lead.place_id !== discoveredLead.place_id)
-        );
+      // Remove from discovered leads after calling onAddLead
+      setDiscoveredLeads(prevLeads => 
+        prevLeads.filter(lead => lead.place_id !== discoveredLead.place_id)
+      );
 
-        toast({
-          title: "Lead uspješno dodan",
-          description: `${discoveredLead.name} je dodan u Lead Hunter.`,
-        });
-      } else {
-        toast({
-          title: "Greška pri dodavanju",
-          description: "Lead nije mogao biti dodan. Molimo pokušajte ponovno.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Lead uspješno dodan",
+        description: `${discoveredLead.name} je dodan u Lead Hunter.`,
+      });
     } catch (error) {
       console.error('Error adding lead:', error);
       toast({
