@@ -8,6 +8,7 @@ import StatusIndicators from './lead-discovery/StatusIndicators';
 import { useLeadDiscovery } from '@/hooks/useLeadDiscovery';
 import { performLeadSearch } from './lead-discovery/SearchOperations';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
+import { useAuth } from '@/hooks/useAuth';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
@@ -15,6 +16,7 @@ interface LeadDiscoveryProps {
 }
 
 const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryProps) => {
+  const { user } = useAuth();
   const {
     searchQuery,
     setSearchQuery,
@@ -95,7 +97,20 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     }
   };
 
-  const addDiscoveredLead = (discoveredLead: AnalyzedLead) => {
+  const addDiscoveredLead = async (discoveredLead: AnalyzedLead) => {
+    // Check if user is logged in
+    if (!user) {
+      toast({
+        title: "Prijava potrebna",
+        description: "Morate se prijaviti da biste mogli spremiti leadove. Idite na Settings za prijavu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    console.log('Adding discovered lead:', discoveredLead.name);
+    console.log('User is logged in:', !!user);
+
     const newLead: Omit<Lead, 'id' | 'dateAdded'> = {
       company: discoveredLead.name,
       location: discoveredLead.address,
@@ -107,17 +122,36 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen na web stranici' : ''}${!discoveredLead.email ? ', Email adresa nije pronađena' : ''}${discoveredLead.aiAnalysis ? `, AI Score: ${discoveredLead.aiAnalysis.score}/10, ${discoveredLead.aiAnalysis.reasoning}` : ''}`
     };
 
-    onAddLead(newLead);
-    
-    // Remove from discovered leads
-    setDiscoveredLeads(prevLeads => 
-      prevLeads.filter(lead => lead.place_id !== discoveredLead.place_id)
-    );
+    try {
+      console.log('Attempting to add lead through onAddLead prop...');
+      const success = await onAddLead(newLead);
+      console.log('onAddLead result:', success);
+      
+      if (success !== false) {
+        // Remove from discovered leads only if successfully added
+        setDiscoveredLeads(prevLeads => 
+          prevLeads.filter(lead => lead.place_id !== discoveredLead.place_id)
+        );
 
-    toast({
-      title: "Lead dodan",
-      description: `${discoveredLead.name} je dodan u Lead Hunter.`,
-    });
+        toast({
+          title: "Lead uspješno dodan",
+          description: `${discoveredLead.name} je dodan u Lead Hunter.`,
+        });
+      } else {
+        toast({
+          title: "Greška pri dodavanju",
+          description: "Lead nije mogao biti dodan. Molimo pokušajte ponovno.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error adding lead:', error);
+      toast({
+        title: "Greška pri dodavanju",
+        description: "Dogodila se greška pri dodavanju lead-a. Molimo pokušajte ponovno.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
@@ -130,6 +164,13 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
             savedGoogleMapsApiKey={savedGoogleMapsApiKey}
             isAIConfigured={Boolean(isAIConfigured())}
           />
+          {!user && (
+            <div className="mt-2 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+              <p className="text-sm text-orange-800">
+                ⚠️ Niste prijavljeni - leadovi se neće spremiti u bazu. Idite na Settings za prijavu.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
