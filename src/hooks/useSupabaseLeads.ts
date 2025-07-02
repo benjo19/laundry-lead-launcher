@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useMakeIntegration } from '@/hooks/useMakeIntegration';
 import { Lead } from '@/types';
 
 interface SupabaseLead {
@@ -26,6 +27,7 @@ interface SupabaseLead {
 export const useSupabaseLeads = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { triggerWebhook } = useMakeIntegration();
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -118,6 +120,22 @@ export const useSupabaseLeads = () => {
       }
 
       await fetchLeads(); // Refresh the list
+      
+      // Trigger Make.com webhook for Google Sheets
+      await triggerWebhook('lead_added', {
+        company: newLeadData.company,
+        location: newLeadData.location || '',
+        employees: newLeadData.employees || '',
+        phone: newLeadData.phone || '',
+        email: newLeadData.email || '',
+        status: newLeadData.status || 'Nova',
+        potential: newLeadData.potential || 'Srednji',
+        industry: newLeadData.industry || '',
+        notes: newLeadData.notes || '',
+        dateAdded: new Date().toISOString().split('T')[0],
+        action: 'ADDED'
+      });
+      
       toast({
         title: "Lead dodan",
         description: `${newLeadData.company} je uspješno dodan u sustav.`,
@@ -159,6 +177,24 @@ export const useSupabaseLeads = () => {
       }
 
       await fetchLeads(); // Refresh the list
+      
+      // Trigger Make.com webhook for Google Sheets
+      await triggerWebhook('lead_updated', {
+        company: leadToUpdate.company,
+        location: leadToUpdate.location,
+        employees: leadToUpdate.employees,
+        phone: leadToUpdate.phone,
+        email: leadToUpdate.email,
+        status: newStatus,
+        potential: leadToUpdate.potential,
+        industry: leadToUpdate.industry,
+        notes: leadToUpdate.notes,
+        dateAdded: leadToUpdate.dateAdded,
+        action: 'STATUS_UPDATED',
+        oldStatus: leadToUpdate.status,
+        newStatus: newStatus
+      });
+      
       toast({
         title: "Status ažuriran",
         description: "Status lead-a je uspješno ažuriran.",
@@ -198,6 +234,22 @@ export const useSupabaseLeads = () => {
       }
 
       await fetchLeads(); // Refresh the list
+      
+      // Trigger Make.com webhook for Google Sheets
+      await triggerWebhook('lead_deleted', {
+        company: leadToDelete.company,
+        location: leadToDelete.location,
+        employees: leadToDelete.employees,
+        phone: leadToDelete.phone,
+        email: leadToDelete.email,
+        status: leadToDelete.status,
+        potential: leadToDelete.potential,
+        industry: leadToDelete.industry,
+        notes: leadToDelete.notes,
+        dateAdded: leadToDelete.dateAdded,
+        action: 'DELETED'
+      });
+      
       toast({
         title: "Lead obrisan",
         description: `${leadToDelete.company} je obrisan iz sustava.`,
