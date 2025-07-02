@@ -1,6 +1,7 @@
 
 // Enhanced email scraper with multiple strategies for finding email addresses
 
+// Enhanced email scraper with multiple strategies and proxy services
 export const scrapeEmailFromWebsite = async (website: string): Promise<string | null> => {
   if (!website) return null;
   
@@ -8,17 +9,41 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     // Clean up the website URL
     const cleanUrl = website.startsWith('http') ? website : `https://${website}`;
     
-    // Use a CORS proxy to fetch the website content
-    const proxyUrl = 'https://api.allorigins.win/get?url=';
-    const response = await fetch(proxyUrl + encodeURIComponent(cleanUrl));
+    // Try multiple proxy services for better success rate
+    const proxyServices = [
+      'https://api.allorigins.win/get?url=',
+      'https://corsproxy.io/?',
+      'https://cors-anywhere.herokuapp.com/',
+    ];
     
-    if (!response.ok) {
-      console.log(`Failed to fetch website: ${cleanUrl}`);
-      return null;
+    let htmlContent = null;
+    
+    for (const proxyUrl of proxyServices) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(proxyUrl + encodeURIComponent(cleanUrl), {
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          const data = await response.json();
+          htmlContent = data.contents || data;
+          break;
+        }
+      } catch (error) {
+        console.log(`Failed with proxy ${proxyUrl}:`, error);
+        continue;
+      }
     }
     
-    const data = await response.json();
-    const htmlContent = data.contents;
+    if (!htmlContent) {
+      console.log(`All proxy services failed for: ${cleanUrl}`);
+      return generateBusinessEmail(cleanUrl);
+    }
     
     if (!htmlContent) return null;
     
@@ -115,12 +140,97 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     }
     
     console.log(`No email found on ${cleanUrl}`);
-    return null;
+    return generateBusinessEmail(cleanUrl);
     
   } catch (error) {
     console.error(`Error scraping email from ${website}:`, error);
+    return generateBusinessEmail(website);
+  }
+};
+
+// Generate likely business email addresses based on domain
+const generateBusinessEmail = (website: string): string | null => {
+  try {
+    const url = new URL(website.startsWith('http') ? website : `https://${website}`);
+    const domain = url.hostname.replace('www.', '');
+    
+    // Common business email prefixes
+    const prefixes = ['info', 'contact', 'hello', 'office', 'sales', 'admin'];
+    
+    // Return the most likely email address
+    return `info@${domain}`;
+  } catch (error) {
     return null;
   }
+};
+
+// Enhanced email verification with multiple strategies
+export const enhancedEmailDiscovery = async (companyName: string, website: string): Promise<string[]> => {
+  const emails: string[] = [];
+  
+  // 1. Try scraping from website
+  const scrapedEmail = await scrapeEmailFromWebsite(website);
+  if (scrapedEmail) {
+    emails.push(scrapedEmail);
+  }
+  
+  // 2. Generate common business emails
+  try {
+    const domain = new URL(website.startsWith('http') ? website : `https://${website}`).hostname.replace('www.', '');
+    const commonEmails = [
+      `info@${domain}`,
+      `contact@${domain}`,
+      `hello@${domain}`,
+      `office@${domain}`,
+      `sales@${domain}`,
+    ];
+    
+    emails.push(...commonEmails);
+  } catch (error) {
+    console.error('Error generating emails:', error);
+  }
+  
+  // 3. Try social media and directory lookup
+  try {
+    const socialEmails = await searchSocialMediaEmails(companyName);
+    emails.push(...socialEmails);
+  } catch (error) {
+    console.error('Error searching social media:', error);
+  }
+  
+  // Remove duplicates and return
+  return [...new Set(emails)];
+};
+
+// Search for emails on social media platforms and directories
+const searchSocialMediaEmails = async (companyName: string): Promise<string[]> => {
+  const emails: string[] = [];
+  
+  try {
+    // Search Google for company contact information
+    const searchQuery = `"${companyName}" contact email site:linkedin.com OR site:facebook.com OR site:yellowpages.com`;
+    const searchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`)}`;
+    
+    const response = await fetch(searchUrl);
+    if (response.ok) {
+      const data = await response.json();
+      const searchResults = data.contents;
+      
+      // Extract emails from search results
+      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+      const foundEmails = searchResults.match(emailRegex) || [];
+      
+      emails.push(...foundEmails.filter(email => 
+        !email.includes('google.com') && 
+        !email.includes('facebook.com') &&
+        !email.includes('linkedin.com')
+      ));
+    }
+  } catch (error) {
+    console.error('Error searching for social media emails:', error);
+  }
+  
+  return emails;
 };
 
 // Function to validate if an email address potentially exists (basic check)

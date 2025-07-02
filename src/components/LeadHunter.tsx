@@ -52,7 +52,8 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
     const countries = leads.map(lead => {
       if (!lead.location) return null;
       const parts = lead.location.split(',');
-      return parts[1]?.trim();
+      // Take the last part as country (usually format: "Street, City, Country")
+      return parts.length > 1 ? parts[parts.length - 1]?.trim() : parts[0]?.trim();
     }).filter(Boolean);
     return [...new Set(countries)];
   }, [leads]);
@@ -77,14 +78,18 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
       if (selectedPotential !== 'all' && lead.potential !== selectedPotential) return false;
       if (selectedIndustry !== 'all' && lead.industry !== selectedIndustry) return false;
       
-      if (selectedCity !== 'all') {
-        const leadCity = lead.location?.split(',')[0]?.trim();
-        if (leadCity !== selectedCity) return false;
+      if (selectedCountry !== 'all') {
+        const parts = lead.location?.split(',');
+        const leadCountry = parts && parts.length > 1 ? parts[parts.length - 1]?.trim() : parts?.[0]?.trim();
+        if (leadCountry !== selectedCountry) return false;
       }
       
-      if (selectedCountry !== 'all') {
-        const leadCountry = lead.location?.split(',')[1]?.trim();
-        if (leadCountry !== selectedCountry) return false;
+      if (selectedCity !== 'all') {
+        const parts = lead.location?.split(',');
+        // For cities, take the second-to-last part if available, otherwise first part
+        const leadCity = parts && parts.length > 2 ? parts[parts.length - 2]?.trim() : 
+                         parts && parts.length > 1 ? parts[0]?.trim() : parts?.[0]?.trim();
+        if (leadCity !== selectedCity) return false;
       }
       
       return true;

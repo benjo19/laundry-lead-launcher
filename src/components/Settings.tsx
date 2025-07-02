@@ -3,13 +3,14 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Settings as SettingsIcon, User, Mail, Share2, Bot, Zap } from 'lucide-react';
+import { ArrowLeft, Settings as SettingsIcon, User, Mail, Share2, Bot, Zap, Calendar } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BusinessProfileSettings from './BusinessProfileSettings';
 import AISettings from './AISettings';
 import EmailSettings from './EmailSettings';
 import SocialSettings from './SocialSettings';
 import MakeIntegration from './MakeIntegration';
+import GoogleCalendarIntegration from './GoogleCalendarIntegration';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const Settings = () => {
@@ -44,7 +45,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-5 gap-1 p-1 mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-6 gap-1 p-1 mb-6 h-auto">
                 <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <User className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Profil</span>
@@ -64,6 +65,10 @@ const Settings = () => {
                 <TabsTrigger value="make" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <Zap className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Make</span>
+                </TabsTrigger>
+                <TabsTrigger value="calendar" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <Calendar className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">Kalendar</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -85,6 +90,10 @@ const Settings = () => {
 
               <TabsContent value="make">
                 <MakeIntegration />
+              </TabsContent>
+
+              <TabsContent value="calendar">
+                <GoogleCalendarIntegration />
               </TabsContent>
             </Tabs>
           </CardContent>

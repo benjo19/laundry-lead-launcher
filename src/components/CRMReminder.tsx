@@ -3,6 +3,7 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead, Reminder } from '@/types';
 import { useReminders } from '@/hooks/useReminders';
 import { useMakeIntegration } from '@/hooks/useMakeIntegration';
+import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ExportButton from './ExportButton';
 import ReminderFilters from './crm/ReminderFilters';
@@ -26,6 +27,7 @@ const CRMReminder = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const { triggerWebhook } = useMakeIntegration();
+  const { createCalendarEvent } = useGoogleCalendar();
   
   const [newReminder, setNewReminder] = useState<NewReminderForm>({
     title: '',
@@ -60,26 +62,43 @@ const CRMReminder = () => {
   const handleCreateReminder = async () => {
     console.log('Creating reminder:', newReminder);
     try {
-      await createReminder(newReminder);
+      const success = await createReminder(newReminder);
       
-      // Trigger Make.com webhook
-      await triggerWebhook('reminder_created', {
-        title: newReminder.title,
-        company: newReminder.company,
-        priority: newReminder.priority,
-        date: newReminder.date,
-        time: newReminder.time
-      });
+      if (success) {
+        // Create reminder object for calendar
+        const reminderForCalendar = {
+          id: Date.now(), // Temporary ID
+          title: newReminder.title,
+          description: newReminder.description,
+          date: newReminder.date,
+          time: newReminder.time,
+          priority: newReminder.priority,
+          company: newReminder.company,
+          status: 'Aktivan' as const
+        };
 
-      setNewReminder({
-        title: '',
-        description: '',
-        date: '',
-        time: '',
-        priority: 'Srednji',
-        company: '',
-        companyInputMode: 'select'
-      });
+        // Add to Google Calendar
+        await createCalendarEvent(reminderForCalendar);
+        
+        // Trigger Make.com webhook
+        await triggerWebhook('reminder_created', {
+          title: newReminder.title,
+          company: newReminder.company,
+          priority: newReminder.priority,
+          date: newReminder.date,
+          time: newReminder.time
+        });
+
+        setNewReminder({
+          title: '',
+          description: '',
+          date: '',
+          time: '',
+          priority: 'Srednji',
+          company: '',
+          companyInputMode: 'select'
+        });
+      }
     } catch (error) {
       console.error('Error creating reminder:', error);
     }

@@ -83,18 +83,6 @@ const LeadFilters = ({
           </SelectContent>
         </Select>
         
-        <Select value={selectedCity} onValueChange={setSelectedCity}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Grad" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">Svi gradovi</SelectItem>
-            {uniqueCities.map((city) => (
-              <SelectItem key={city} value={city}>{city}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        
         <Select value={selectedCountry} onValueChange={setSelectedCountry}>
           <SelectTrigger className="w-36">
             <SelectValue placeholder="Država" />
@@ -103,6 +91,18 @@ const LeadFilters = ({
             <SelectItem value="all">Sve države</SelectItem>
             {uniqueCountries.map((country) => (
               <SelectItem key={country} value={country}>{country}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        
+        <Select value={selectedCity} onValueChange={setSelectedCity}>
+          <SelectTrigger className="w-36">
+            <SelectValue placeholder="Grad" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Svi gradovi</SelectItem>
+            {uniqueCities.map((city) => (
+              <SelectItem key={city} value={city}>{city}</SelectItem>
             ))}
           </SelectContent>
         </Select>
