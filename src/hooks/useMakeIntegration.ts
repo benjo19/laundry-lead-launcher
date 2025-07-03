@@ -8,6 +8,7 @@ interface MakeWebhookData {
   timestamp: string;
   user_id?: string;
   data: any;
+  schema?: Record<string, string>;
 }
 
 interface MakeSettings {
@@ -57,7 +58,20 @@ export const useMakeIntegration = () => {
         event_type: eventType,
         timestamp: new Date().toISOString(),
         user_id: user.id,
-        data: data
+        data: data,
+        schema: {
+          company: 'Tvrtka',
+          location: 'Lokacija', 
+          employees: 'Broj zaposlenika',
+          phone: 'Telefon',
+          email: 'Email',
+          status: 'Status',
+          potential: 'Potencijal',
+          industry: 'Industrija',
+          notes: 'Napomene',
+          dateAdded: 'Datum dodavanja',
+          action: 'Akcija'
+        }
       };
 
       const response = await fetch(settings.webhook_url, {
