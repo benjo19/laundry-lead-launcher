@@ -15,17 +15,12 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
-import { useOAuthCallback } from '@/hooks/useOAuthCallback';
-
 const Index = () => {
   const [activeModule, setActiveModule] = useState('dashboard');
   const { addLead } = useLeadManagement();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
   const { t } = useLanguage();
-  
-  // Handle OAuth callbacks
-  useOAuthCallback();
   
   // State for passing email data to EmailGenerator
   const [emailGeneratorData, setEmailGeneratorData] = useState<{
