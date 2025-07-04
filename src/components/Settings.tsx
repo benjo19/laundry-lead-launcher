@@ -10,6 +10,7 @@ import AISettings from './AISettings';
 import EmailSettings from './EmailSettings';
 import SocialSettings from './SocialSettings';
 import MakeIntegration from './MakeIntegration';
+import ZapierIntegration from './ZapierIntegration';
 import GoogleCalendarIntegration from './GoogleCalendarIntegration';
 import { useLanguage } from '@/contexts/LanguageContext';
 
@@ -45,7 +46,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-6 gap-1 p-1 mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-7 gap-1 p-1 mb-6 h-auto">
                 <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <User className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Profil</span>
@@ -65,6 +66,10 @@ const Settings = () => {
                 <TabsTrigger value="make" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <Zap className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Make</span>
+                </TabsTrigger>
+                <TabsTrigger value="zapier" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <Zap className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">Zapier</span>
                 </TabsTrigger>
                 <TabsTrigger value="calendar" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <Calendar className="h-4 w-4 mb-1" />
@@ -90,6 +95,10 @@ const Settings = () => {
 
               <TabsContent value="make">
                 <MakeIntegration />
+              </TabsContent>
+
+              <TabsContent value="zapier">
+                <ZapierIntegration />
               </TabsContent>
 
               <TabsContent value="calendar">
