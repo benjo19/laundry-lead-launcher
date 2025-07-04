@@ -152,24 +152,31 @@ const Auth: React.FC = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    console.log('Google sign-in clicked');
     setGoogleLoading(true);
     
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      console.log('Attempting Google OAuth with Supabase...');
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google'
       });
 
+      console.log('OAuth response:', { data, error });
+
       if (error) {
+        console.error('OAuth error:', error);
         toast({
           title: "Greška pri Google prijavi",
           description: error.message,
           variant: "destructive",
         });
         setGoogleLoading(false);
+      } else {
+        console.log('OAuth successful, redirecting...');
       }
       // If successful, user will be redirected, so we don't set loading to false
     } catch (error) {
-      console.error('Google signin error:', error);
+      console.error('Google signin exception:', error);
       toast({
         title: "Greška",
         description: "Dogodila se greška pri Google prijavi.",
