@@ -122,7 +122,8 @@ export const useSupabaseLeads = () => {
       await fetchLeads(); // Refresh the list
       
       // Trigger Make.com webhook for Google Sheets
-      await triggerWebhook('lead_added', {
+      console.log('About to trigger Make.com webhook...');
+      const webhookResult = await triggerWebhook('lead_added', {
         company: newLeadData.company,
         location: newLeadData.location || '',
         employees: newLeadData.employees || '',
@@ -135,6 +136,8 @@ export const useSupabaseLeads = () => {
         dateAdded: new Date().toISOString().split('T')[0],
         action: 'ADDED'
       });
+      
+      console.log('Make.com webhook result:', webhookResult);
       
       toast({
         title: "Lead dodan",
