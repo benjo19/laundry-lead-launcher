@@ -44,13 +44,23 @@ export const useMakeIntegration = () => {
   }, [user]);
 
   const triggerWebhook = useCallback(async (eventType: string, data: any): Promise<boolean> => {
-    if (!user) return false;
+    if (!user) {
+      console.log('Make.com: User not logged in');
+      return false;
+    }
 
     setIsLoading(true);
     try {
       const settings = await getMakeSettings();
+      console.log('Make.com settings:', settings);
       
-      if (!settings?.webhook_url || !settings?.auto_trigger) {
+      if (!settings?.webhook_url) {
+        console.log('Make.com: Webhook URL not configured');
+        return false;
+      }
+      
+      if (!settings?.auto_trigger) {
+        console.log('Make.com: Auto trigger disabled');
         return false;
       }
 
