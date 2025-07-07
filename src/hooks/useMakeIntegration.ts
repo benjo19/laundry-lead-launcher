@@ -64,23 +64,15 @@ export const useMakeIntegration = () => {
         return false;
       }
 
-      // Send data in flat structure for easier Google Sheets mapping
+      // Send only essential lead data for Google Sheets
       const webhookData = {
-        event_type: eventType,
-        timestamp: new Date().toISOString(),
-        user_id: user.id,
-        // Flatten lead data for direct column mapping
         company: data.company || '',
         email: data.email || '',
         phone: data.phone || '',
         location: data.location || '',
-        employees: data.employees || '',
         status: data.status || '',
         potential: data.potential || '',
-        industry: data.industry || '',
-        notes: data.notes || '',
-        dateAdded: data.dateAdded || '',
-        action: data.action || ''
+        dateAdded: data.dateAdded || ''
       };
 
       const response = await fetch(settings.webhook_url, {
