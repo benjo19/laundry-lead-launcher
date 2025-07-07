@@ -64,24 +64,23 @@ export const useMakeIntegration = () => {
         return false;
       }
 
-      const webhookData: MakeWebhookData = {
+      // Send data in flat structure for easier Google Sheets mapping
+      const webhookData = {
         event_type: eventType,
         timestamp: new Date().toISOString(),
         user_id: user.id,
-        data: data,
-        schema: {
-          company: 'Tvrtka',
-          location: 'Lokacija', 
-          employees: 'Broj zaposlenika',
-          phone: 'Telefon',
-          email: 'Email',
-          status: 'Status',
-          potential: 'Potencijal',
-          industry: 'Industrija',
-          notes: 'Napomene',
-          dateAdded: 'Datum dodavanja',
-          action: 'Akcija'
-        }
+        // Flatten lead data for direct column mapping
+        company: data.company || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        location: data.location || '',
+        employees: data.employees || '',
+        status: data.status || '',
+        potential: data.potential || '',
+        industry: data.industry || '',
+        notes: data.notes || '',
+        dateAdded: data.dateAdded || '',
+        action: data.action || ''
       };
 
       const response = await fetch(settings.webhook_url, {
