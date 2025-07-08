@@ -89,15 +89,17 @@ const Index = () => {
 
   if (isMobile) {
     return (
-      <div className="flex min-h-screen bg-gray-50 w-full">
+      <div className="flex min-h-screen bg-background w-full">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <div className="flex-1 flex flex-col min-w-0">
             <MobileHeader 
               onMenuClick={() => setSidebarOpen(true)}
               title={getModuleTitle()}
             />
-            <main className="flex-1 overflow-auto p-3 sm:p-4">
-              {renderActiveModule()}
+            <main className="flex-1 overflow-auto p-3 sm:p-4 bg-gradient-to-br from-background to-muted/30">
+              <div className="animate-fade-in">
+                {renderActiveModule()}
+              </div>
             </main>
           </div>
           <SheetContent side="left" className="w-64 sm:w-72 p-0">
@@ -109,10 +111,12 @@ const Index = () => {
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 w-full">
+    <div className="flex min-h-screen bg-background w-full">
       <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
-      <main className="flex-1 overflow-auto min-w-0">
-        {renderActiveModule()}
+      <main className="flex-1 overflow-auto min-w-0 bg-gradient-to-br from-background to-muted/30">
+        <div className="animate-fade-in">
+          {renderActiveModule()}
+        </div>
       </main>
     </div>
   );

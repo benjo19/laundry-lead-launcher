@@ -48,12 +48,12 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
   };
 
   return (
-    <div className="w-64 bg-white border-r border-slate-200 flex flex-col h-full">
-      <div className="p-4 sm:p-6 border-b border-slate-200">
+    <div className="w-64 bg-card border-r border-border flex flex-col h-full shadow-elegant">
+      <div className="p-4 sm:p-6 border-b border-border bg-gradient-primary">
         <div className="flex items-center justify-between">
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-bold text-slate-900 truncate">{t('marketing_agent')}</h1>
-            <p className="text-xs sm:text-sm text-slate-600 mt-1 truncate">{t('ai_assistant')}</p>
+            <h1 className="text-lg sm:text-xl font-bold text-primary-foreground truncate">{t('marketing_agent')}</h1>
+            <p className="text-xs sm:text-sm text-primary-foreground/80 mt-1 truncate">{t('ai_assistant')}</p>
           </div>
           <div className="ml-2 shrink-0">
             <LanguageToggle />
@@ -61,38 +61,39 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
         </div>
       </div>
       
-      <nav className="flex-1 p-3 sm:p-4 space-y-1 sm:space-y-2 overflow-y-auto">
+      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
         {menuItems.map((item) => {
           const Icon = item.icon;
+          const isActive = activeModule === item.id;
           return (
             <Button
               key={item.id}
-              variant={activeModule === item.id ? "default" : "ghost"}
+              variant={isActive ? "premium" : "ghost"}
               className={cn(
-                "w-full justify-start text-sm sm:text-base p-2 sm:p-3 h-auto",
-                activeModule === item.id 
-                  ? "bg-blue-600 text-white hover:bg-blue-700" 
-                  : "text-slate-700 hover:bg-slate-100"
+                "w-full justify-start text-sm font-medium p-3 h-12 rounded-lg transition-all duration-200",
+                isActive 
+                  ? "shadow-elegant scale-105" 
+                  : "text-muted-foreground hover:text-foreground hover:bg-accent-hover hover:scale-102"
               )}
               onClick={() => onModuleChange(item.id)}
             >
-              <Icon className="h-4 w-4 mr-2 sm:mr-3 shrink-0" />
+              <Icon className="h-5 w-5 mr-3 shrink-0" />
               <span className="truncate">{item.label}</span>
             </Button>
           );
         })}
       </nav>
 
-      <div className="p-3 sm:p-4 border-t border-slate-200 space-y-2">
-        <div className="flex items-center space-x-2 sm:space-x-3 p-2 min-w-0">
-          <div className="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center shrink-0">
-            <User className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
+      <div className="p-4 border-t border-border space-y-3 bg-muted/30">
+        <div className="flex items-center space-x-3 p-3 rounded-lg bg-card shadow-sm">
+          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
+            <User className="h-5 w-5 text-primary-foreground" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs sm:text-sm font-medium text-slate-900 truncate">
+            <p className="text-sm font-medium text-foreground truncate">
               {user?.user_metadata?.full_name || user?.email}
             </p>
-            <p className="text-xs text-slate-500 truncate">
+            <p className="text-xs text-muted-foreground truncate">
               {user?.email}
             </p>
           </div>
@@ -100,19 +101,19 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
         
         <Button
           variant="ghost"
-          className="w-full justify-start text-slate-700 hover:bg-slate-100 text-sm p-2 sm:p-3 h-auto"
+          className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent-hover text-sm p-3 h-11 rounded-lg transition-all duration-200"
           onClick={handleSettingsClick}
         >
-          <Settings className="h-4 w-4 mr-2 sm:mr-3 shrink-0" />
+          <Settings className="h-4 w-4 mr-3 shrink-0" />
           <span className="truncate">{t('settings')}</span>
         </Button>
         
         <Button
           variant="ghost"
-          className="w-full justify-start text-red-600 hover:bg-red-50 text-sm p-2 sm:p-3 h-auto"
+          className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 text-sm p-3 h-11 rounded-lg transition-all duration-200"
           onClick={handleSignOut}
         >
-          <LogOut className="h-4 w-4 mr-2 sm:mr-3 shrink-0" />
+          <LogOut className="h-4 w-4 mr-3 shrink-0" />
           <span className="truncate">{t('logout')}</span>
         </Button>
       </div>
