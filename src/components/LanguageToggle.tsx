@@ -25,18 +25,23 @@ const LanguageToggle = () => {
 
   return (
     <Select value={language} onValueChange={(value) => setLanguage(value as any)}>
-      <SelectTrigger className="flex items-center gap-2 text-white hover:bg-white/20 border border-white/30 backdrop-blur-sm px-3 py-1 rounded-full transition-all duration-200 hover:scale-105 w-auto">
+      <SelectTrigger className="flex items-center gap-2 bg-primary-foreground/10 hover:bg-primary-foreground/20 border border-primary-foreground/30 text-primary-foreground px-3 py-2 rounded-lg transition-all duration-200 hover:scale-105 w-auto h-auto shadow-sm">
         <Globe className="h-4 w-4" />
-        <span className="text-xs font-bold tracking-wider">
+        <span className="text-sm font-medium">
           {currentLanguage?.flag} {currentLanguage?.code.toUpperCase()}
         </span>
+        <ChevronDown className="h-3 w-3 opacity-70" />
       </SelectTrigger>
-      <SelectContent className="min-w-48">
+      <SelectContent className="min-w-48 border-2 shadow-elegant">
         {languages.map((lang) => (
-          <SelectItem key={lang.code} value={lang.code}>
-            <div className="flex items-center gap-2">
-              <span>{lang.flag}</span>
-              <span>{lang.name}</span>
+          <SelectItem 
+            key={lang.code} 
+            value={lang.code}
+            className="cursor-pointer hover:bg-accent focus:bg-accent"
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-lg">{lang.flag}</span>
+              <span className="font-medium">{lang.name}</span>
             </div>
           </SelectItem>
         ))}
