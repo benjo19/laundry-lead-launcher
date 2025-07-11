@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Settings, TestTube, Loader2, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
+import { Calendar, Settings, TestTube, Loader2, ExternalLink, CheckCircle, AlertCircle, Wifi, WifiOff } from 'lucide-react';
 
 const GoogleCalendarIntegration = () => {
   const { toast } = useToast();
@@ -116,9 +117,31 @@ const GoogleCalendarIntegration = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Google Calendar Integracija
+        <CardTitle className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Google Calendar Integracija
+          </div>
+          <Badge 
+            variant={isConnected ? "default" : "secondary"} 
+            className={`flex items-center gap-1 ${
+              isConnected 
+                ? "bg-green-100 text-green-800 border-green-200" 
+                : "bg-gray-100 text-gray-600 border-gray-200"
+            }`}
+          >
+            {isConnected ? (
+              <>
+                <Wifi className="h-3 w-3" />
+                Povezan
+              </>
+            ) : (
+              <>
+                <WifiOff className="h-3 w-3" />
+                Nije povezan
+              </>
+            )}
+          </Badge>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
