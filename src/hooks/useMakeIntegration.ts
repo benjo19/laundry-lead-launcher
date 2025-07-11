@@ -72,6 +72,7 @@ export const useMakeIntegration = () => {
         location: data.location || '',
         status: data.status || '',
         potential: data.potential || '',
+        industry: data.industry || '',
         dateAdded: data.dateAdded || ''
       };
 
