@@ -7,9 +7,10 @@ import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 interface UseLeadAdditionProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => Promise<boolean>;
   setDiscoveredLeads: (updater: (prevLeads: AnalyzedLead[]) => AnalyzedLead[]) => void;
+  industry?: string;
 }
 
-export const useLeadAddition = ({ onAddLead, setDiscoveredLeads }: UseLeadAdditionProps) => {
+export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry }: UseLeadAdditionProps) => {
   const { user } = useAuth();
   const { toast } = useToast();
 
@@ -35,6 +36,7 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads }: UseLeadAdditi
       email: discoveredLead.email || '', // Only real scraped emails or empty
       status: 'Nova',
       potential: discoveredLead.aiAnalysis?.potential || 'Srednji',
+      industry: industry || '',
       notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen na web stranici' : ''}${!discoveredLead.email ? ', Email adresa nije pronađena' : ''}${discoveredLead.aiAnalysis ? `, AI Score: ${discoveredLead.aiAnalysis.score}/10, ${discoveredLead.aiAnalysis.reasoning}` : ''}`
     };
 

@@ -39,7 +39,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     isAIConfigured
   } = useLeadDiscovery();
 
-  const { addDiscoveredLead } = useLeadAddition({ onAddLead, setDiscoveredLeads });
+  const { addDiscoveredLead } = useLeadAddition({ onAddLead, setDiscoveredLeads, industry });
 
   const { searchLeads } = useLeadDiscoverySearch({
     searchQuery,
