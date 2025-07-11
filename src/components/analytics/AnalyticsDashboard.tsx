@@ -3,15 +3,27 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
-import { TrendingUp, TrendingDown, Users, Mail, Calendar, Target, Activity, DollarSign } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, Mail, Calendar, Target, Activity, DollarSign, Globe, Zap } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useSupabaseLeads } from '@/hooks/useSupabaseLeads';
+import { useSupabaseReminders } from '@/hooks/useSupabaseReminders';
+import { useZapierIntegration } from '@/hooks/useZapierIntegration';
 import { Lead, Email, Reminder, ContentPost } from '@/types';
 
 const AnalyticsDashboard = () => {
-  const [leads] = useLocalStorage<Lead[]>('leads', []);
+  // Prioritize Supabase data, fallback to localStorage
+  const { leads: supabaseLeads, loading: leadsLoading } = useSupabaseLeads();
+  const { reminders: supabaseReminders, loading: remindersLoading } = useSupabaseReminders();
+  const { isConfigured: zapierConfigured } = useZapierIntegration();
+  
+  const [localLeads] = useLocalStorage<Lead[]>('leads', []);
   const [emails] = useLocalStorage<Email[]>('emails', []);
-  const [reminders] = useLocalStorage<Reminder[]>('reminders', []);
+  const [localReminders] = useLocalStorage<Reminder[]>('reminders', []);
   const [posts] = useLocalStorage<ContentPost[]>('contentPosts', []);
+  
+  // Use Supabase data if available, otherwise fallback to localStorage
+  const leads = supabaseLeads.length > 0 ? supabaseLeads : localLeads;
+  const reminders = supabaseReminders.length > 0 ? supabaseReminders : localReminders;
 
   // Generate monthly performance data
   const generatePerformanceData = () => {
@@ -106,11 +118,29 @@ const AnalyticsDashboard = () => {
   const emailPerformanceData = getEmailPerformanceData();
   const contentEngagementData = getContentEngagementData();
 
-  // Calculate KPIs
+  // Calculate enhanced KPIs
   const totalLeads = leads.length;
   const conversionRate = totalLeads > 0 ? ((leads.filter(l => l.status === 'Zatvoren').length / totalLeads) * 100).toFixed(1) : '0.0';
   const emailOpenRate = emails.length > 0 ? ((emails.filter(e => e.status === 'Sent').length / emails.length) * 28.4).toFixed(1) : '0.0';
   const avgRevenuePerLead = totalLeads > 0 ? (performanceData.reduce((sum, d) => sum + d.revenue, 0) / totalLeads).toFixed(0) : '0';
+  
+  // Integration status metrics
+  const activeIntegrations = [
+    leadsLoading || supabaseLeads.length > 0 ? 'Supabase Leads' : null,
+    remindersLoading || supabaseReminders.length > 0 ? 'Supabase Reminders' : null,
+    zapierConfigured ? 'Zapier' : null,
+    emails.length > 0 ? 'Email System' : null,
+    posts.length > 0 ? 'Content Booster' : null
+  ].filter(Boolean);
+  
+  const dataSourceMetrics = {
+    leadSources: [
+      { name: 'Supabase', count: supabaseLeads.length, active: supabaseLeads.length > 0 },
+      { name: 'Local Storage', count: localLeads.length, active: localLeads.length > 0 },
+      { name: 'Zapier Integration', count: zapierConfigured ? 1 : 0, active: zapierConfigured }
+    ],
+    totalDataPoints: leads.length + emails.length + reminders.length + posts.length
+  };
 
   const chartConfig = {
     leads: { label: "Leadovi", color: "#3b82f6" },
@@ -175,14 +205,14 @@ const AnalyticsDashboard = () => {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-orange-600 text-sm font-medium">Avg. Revenue/Lead</p>
-                <p className="text-3xl font-bold text-orange-900">€{avgRevenuePerLead}</p>
+                <p className="text-orange-600 text-sm font-medium">Aktivne Integracije</p>
+                <p className="text-3xl font-bold text-orange-900">{activeIntegrations.length}</p>
                 <p className="text-orange-600 text-sm flex items-center mt-1">
-                  <TrendingUp className="h-4 w-4 mr-1" />
-                  +5.2% growth
+                  <Zap className="h-4 w-4 mr-1" />
+                  {dataSourceMetrics.totalDataPoints} data points
                 </p>
               </div>
-              <DollarSign className="h-12 w-12 text-orange-600" />
+              <Globe className="h-12 w-12 text-orange-600" />
             </div>
           </CardContent>
         </Card>
@@ -294,6 +324,60 @@ const AnalyticsDashboard = () => {
                 </LineChart>
               </ResponsiveContainer>
             </ChartContainer>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Data Sources and Integration Status */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Globe className="h-5 w-5 mr-2 text-blue-600" />
+              Data Sources Status
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {dataSourceMetrics.leadSources.map((source, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div className="flex items-center">
+                    <div className={`w-3 h-3 rounded-full mr-3 ${source.active ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                    <span className="font-medium">{source.name}</span>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm text-gray-600">{source.count} records</span>
+                    <div className={`text-xs ${source.active ? 'text-green-600' : 'text-gray-400'}`}>
+                      {source.active ? 'Active' : 'Inactive'}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              <Zap className="h-5 w-5 mr-2 text-purple-600" />
+              Active Integrations
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {activeIntegrations.map((integration, index) => (
+                <div key={index} className="flex items-center p-3 bg-green-50 border-l-4 border-green-500 rounded">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mr-3"></div>
+                  <span className="font-medium text-green-800">{integration}</span>
+                </div>
+              ))}
+              {activeIntegrations.length === 0 && (
+                <div className="text-center text-gray-500 py-4">
+                  Nema aktivnih integracija
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>
