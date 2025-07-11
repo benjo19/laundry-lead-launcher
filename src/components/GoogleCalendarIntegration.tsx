@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Settings, TestTube, Loader2, ExternalLink, CheckCircle, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Calendar, Settings, TestTube, Loader2, ExternalLink, CheckCircle, AlertCircle, Wifi, WifiOff, Copy, Plus } from 'lucide-react';
 
 const GoogleCalendarIntegration = () => {
   const { toast } = useToast();
@@ -171,6 +171,32 @@ const GoogleCalendarIntegration = () => {
     });
   };
 
+  // Funkcija za kreiranje Google Calendar link-a
+  const createGoogleCalendarLink = () => {
+    const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+    const title = encodeURIComponent('CRM Podsjetnik - {{naziv}}');
+    const details = encodeURIComponent('Kreiran iz Marketing Agent CRM-a\\n\\nTvrtka: {{tvrtka}}\\nPrioritet: {{prioritet}}\\nOpis: {{opis}}');
+    const dates = '{{datum}}T{{vrijeme}}/{{datum}}T{{vrijeme_kraj}}';
+    
+    const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
+    
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      toast({
+        title: "Link kopiran",
+        description: "Google Calendar template link je kopiran u clipboard. Zamijenite {{placeholders}} s vašim podacima.",
+      });
+    });
+  };
+
+  const handleSimpleConnect = () => {
+    setIsConnected(true);
+    localStorage.setItem('googleCalendarConnected', 'true');
+    toast({
+      title: "Jednostavna integracija aktivirana",
+      description: "Koristit ćete manuelne Google Calendar linkove za podsjetnike.",
+    });
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -202,8 +228,25 @@ const GoogleCalendarIntegration = () => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Jednostavna opcija bez API konfiguracije */}
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+          <h4 className="font-medium text-green-900 mb-2 flex items-center gap-2">
+            <Plus className="h-4 w-4" />
+            Brza opcija - Bez API konfiguracije
+          </h4>
+          <p className="text-sm text-green-800 mb-3">
+            Aktivirajte osnovnu integraciju koja će generirati Google Calendar linkove za vaše podsjetnike.
+          </p>
+          {!isConnected && (
+            <Button onClick={handleSimpleConnect} variant="outline" className="w-full border-green-300 text-green-800 hover:bg-green-100">
+              <Calendar className="h-4 w-4 mr-2" />
+              Aktiviraj jednostavnu integraciju
+            </Button>
+          )}
+        </div>
+
         <div className="bg-blue-50 p-4 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Kako postaviti Google Calendar integraciju</h4>
+          <h4 className="font-medium text-blue-900 mb-2">Napredna opcija - API integracija</h4>
           <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
             <li>Idite na <a href="https://console.cloud.google.com" target="_blank" rel="noopener noreferrer" className="underline">Google Cloud Console</a></li>
             <li>Kreirajte novi projekt ili odaberite postojeći</li>
