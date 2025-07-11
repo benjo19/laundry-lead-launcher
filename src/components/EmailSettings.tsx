@@ -10,7 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { useOAuthCallback } from '@/hooks/useOAuthCallback';
 import { supabase } from '@/integrations/supabase/client';
-import { Mail, Save, Loader2, Chrome, Globe, ExternalLink } from 'lucide-react';
+import { Mail, Save, Loader2, Chrome, Globe, ExternalLink, Zap } from 'lucide-react';
 import EmailOAuthHandler from './EmailOAuthHandler';
 
 interface EmailSettings {
@@ -23,7 +23,7 @@ interface EmailSettings {
   use_tls: boolean;
   auto_signature: boolean;
   signature_template: string;
-  provider_type?: 'manual' | 'gmail' | 'outlook';
+  provider_type?: 'manual' | 'gmail' | 'outlook' | 'resend';
   oauth_providers?: {
     google?: {
       email?: string;
@@ -224,7 +224,16 @@ const EmailSettings = () => {
         {/* Provider Selection */}
         <div className="space-y-4">
           <Label className="text-base font-medium">Odaberite email pružatelja</Label>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <Button
+              type="button"
+              variant={settings.provider_type === 'resend' ? 'default' : 'outline'}
+              onClick={() => setSettings({ ...settings, provider_type: 'resend' })}
+              className="flex items-center gap-2 h-12 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white border-0"
+            >
+              <Zap className="h-5 w-5" />
+              Resend
+            </Button>
             <Button
               type="button"
               variant={settings.provider_type === 'gmail' ? 'default' : 'outline'}
@@ -254,6 +263,42 @@ const EmailSettings = () => {
             </Button>
           </div>
         </div>
+
+        {/* Resend Instructions */}
+        {settings.provider_type === 'resend' && (
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-4 rounded-lg border border-blue-200">
+            <h4 className="font-medium text-blue-900 mb-2 flex items-center gap-2">
+              <Zap className="h-4 w-4" />
+              Resend - Profesionalno slanje emailova
+            </h4>
+            <ul className="text-sm text-blue-800 space-y-1 mb-3">
+              <li>• ✅ Najbolje za aplikacije - pouzdano slanje</li>
+              <li>• ✅ Besplatan do 100 emailova dnevno</li>
+              <li>• ✅ Nema OAuth probleme</li>
+              <li>• ✅ Bolje delivery rate</li>
+            </ul>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" asChild variant="outline">
+                <a href="https://resend.com" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Registracija
+                </a>
+              </Button>
+              <Button size="sm" asChild variant="outline">
+                <a href="https://resend.com/domains" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  Verifikacija domene
+                </a>
+              </Button>
+              <Button size="sm" asChild variant="outline">
+                <a href="https://resend.com/api-keys" target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-3 w-3 mr-1" />
+                  API ključevi
+                </a>
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Provider-specific instructions */}
         {settings.provider_type === 'gmail' && (

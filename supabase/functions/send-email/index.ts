@@ -1,6 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { Resend } from "npm:resend@2.0.0";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,9 +48,24 @@ serve(async (req) => {
     });
 
     let emailSent = false;
+    let sendMethod = '';
 
-    // Try OAuth first if available
-    if (emailSettings.oauth_providers) {
+    // Try Resend first if API key is available
+    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    if (resendApiKey && emailSettings.provider_type === 'resend') {
+      console.log('Attempting Resend email send...');
+      emailSent = await sendViaResend(resendApiKey, {
+        to: to_email,
+        subject,
+        content,
+        from: emailSettings.from_email || 'noreply@yourdomain.com',
+        fromName: emailSettings.from_name || 'Marketing Agent'
+      });
+      if (emailSent) sendMethod = 'resend';
+    }
+
+    // Try OAuth if Resend failed or not configured
+    if (!emailSent && emailSettings.oauth_providers) {
       const oauthProvider = emailSettings.provider_type === 'gmail' 
         ? emailSettings.oauth_providers.google
         : emailSettings.provider_type === 'outlook'
@@ -68,10 +84,11 @@ serve(async (req) => {
             from: emailSettings.from_email || oauthProvider.email
           }
         );
+        if (emailSent) sendMethod = 'oauth';
       }
     }
 
-    // Fallback to SMTP if OAuth failed or not available
+    // Fallback to SMTP if everything else failed
     if (!emailSent) {
       console.log('Using SMTP fallback...');
       await sendEmailViaSMTP(emailSettings, {
@@ -79,6 +96,7 @@ serve(async (req) => {
         subject,
         content
       });
+      sendMethod = 'smtp';
     }
 
     // Save email record to database
@@ -102,7 +120,7 @@ serve(async (req) => {
       JSON.stringify({ 
         success: true, 
         message: 'Email sent successfully',
-        method: emailSent ? 'oauth' : 'smtp'
+        method: sendMethod || 'smtp'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -203,6 +221,28 @@ async function sendViaOutlook(accessToken: string, emailData: any): Promise<bool
   }
 
   return true;
+}
+
+async function sendViaResend(
+  apiKey: string,
+  emailData: { to: string; subject: string; content: string; from: string; fromName: string }
+): Promise<boolean> {
+  try {
+    const resend = new Resend(apiKey);
+    
+    const response = await resend.emails.send({
+      from: `${emailData.fromName} <${emailData.from}>`,
+      to: [emailData.to],
+      subject: emailData.subject,
+      html: emailData.content,
+    });
+
+    console.log('Resend email sent successfully:', response);
+    return true;
+  } catch (error) {
+    console.error('Resend email send failed:', error);
+    return false;
+  }
 }
 
 async function sendEmailViaSMTP(emailSettings: any, emailData: any) {
