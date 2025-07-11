@@ -96,13 +96,13 @@ const Index = () => {
               onMenuClick={() => setSidebarOpen(true)}
               title={getModuleTitle()}
             />
-            <main className="flex-1 overflow-auto p-3 sm:p-4 bg-gradient-to-br from-background to-muted/30">
-              <div className="animate-fade-in">
+            <main className="flex-1 overflow-auto p-2 sm:p-3 md:p-4 bg-gradient-to-br from-background to-muted/20">
+              <div className="animate-fade-in w-full max-w-full">
                 {renderActiveModule()}
               </div>
             </main>
           </div>
-          <SheetContent side="left" className="w-64 sm:w-72 p-0">
+          <SheetContent side="left" className="w-[280px] sm:w-80 p-0 border-r border-border/40">
             <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
           </SheetContent>
         </Sheet>

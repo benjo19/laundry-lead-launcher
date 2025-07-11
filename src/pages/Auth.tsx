@@ -220,13 +220,13 @@ const Auth: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-      <Card className="w-full max-w-sm sm:max-w-md">
-        <CardHeader className="text-center space-y-2">
-          <CardTitle className="text-xl sm:text-2xl font-bold text-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-slate-100 flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8">
+      <Card className="w-full max-w-[340px] sm:max-w-md mx-auto shadow-lg border border-border/20">
+        <CardHeader className="text-center space-y-2 pb-4">
+          <CardTitle className="text-lg sm:text-xl md:text-2xl font-bold text-slate-900">
             Marketing Agent
           </CardTitle>
-          <p className="text-sm sm:text-base text-slate-600">
+          <p className="text-xs sm:text-sm md:text-base text-slate-600">
             Vaš AI asistent za marketing
           </p>
           {authError && (
@@ -238,13 +238,13 @@ const Auth: React.FC = () => {
             </div>
           )}
         </CardHeader>
-        <CardContent className="px-4 sm:px-6">
-          <div className="space-y-4 mb-6">
+        <CardContent className="px-3 sm:px-4 md:px-6">
+          <div className="space-y-3 sm:space-y-4 mb-4 sm:mb-6">
             <Button
               onClick={handleGoogleSignIn}
               disabled={googleLoading || loading}
               variant="outline"
-              className="w-full h-11 text-sm font-medium border-gray-300 hover:bg-gray-50"
+              className="w-full h-10 sm:h-11 text-xs sm:text-sm font-medium border-gray-300 hover:bg-gray-50 touch-manipulation"
             >
               {googleLoading ? (
                 <>
@@ -287,48 +287,48 @@ const Auth: React.FC = () => {
           </div>
 
           <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="signin" className="text-sm">
+            <TabsList className="grid w-full grid-cols-2 mb-4 sm:mb-6 h-9 sm:h-10">
+              <TabsTrigger value="signin" className="text-xs sm:text-sm">
                 Prijava
               </TabsTrigger>
-              <TabsTrigger value="signup" className="text-sm">
+              <TabsTrigger value="signup" className="text-xs sm:text-sm">
                 Registracija
               </TabsTrigger>
             </TabsList>
             
             <TabsContent value="signin">
-              <form onSubmit={handleSignIn} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signin-email" className="text-sm font-medium">
+              <form onSubmit={handleSignIn} className="space-y-3 sm:space-y-4">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="signin-email" className="text-xs sm:text-sm font-medium">
                     Email
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Mail className="absolute left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
                     <Input
                       id="signin-email"
                       type="email"
                       placeholder="vas-email@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-11"
+                      className="pl-9 sm:pl-10 h-9 sm:h-11 text-sm touch-manipulation"
                       required
                       disabled={loading || googleLoading}
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signin-password" className="text-sm font-medium">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="signin-password" className="text-xs sm:text-sm font-medium">
                     Lozinka
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Lock className="absolute left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
                     <Input
                       id="signin-password"
                       type="password"
                       placeholder="Unesite lozinku"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 h-11"
+                      className="pl-9 sm:pl-10 h-9 sm:h-11 text-sm touch-manipulation"
                       required
                       disabled={loading || googleLoading}
                     />
@@ -336,7 +336,7 @@ const Auth: React.FC = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full h-11 text-sm font-medium" 
+                  className="w-full h-9 sm:h-11 text-xs sm:text-sm font-medium touch-manipulation" 
                   disabled={loading || googleLoading}
                 >
                   {loading ? (
@@ -355,56 +355,56 @@ const Auth: React.FC = () => {
             </TabsContent>
             
             <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-fullname" className="text-sm font-medium">
+              <form onSubmit={handleSignUp} className="space-y-3 sm:space-y-4">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="signup-fullname" className="text-xs sm:text-sm font-medium">
                     Ime i prezime
                   </Label>
                   <div className="relative">
-                    <User className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <User className="absolute left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
                     <Input
                       id="signup-fullname"
                       type="text"
                       placeholder="Vaše ime i prezime"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
-                      className="pl-10 h-11"
+                      className="pl-9 sm:pl-10 h-9 sm:h-11 text-sm touch-manipulation"
                       required
                       disabled={loading || googleLoading}
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email" className="text-sm font-medium">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="signup-email" className="text-xs sm:text-sm font-medium">
                     Email
                   </Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Mail className="absolute left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
                     <Input
                       id="signup-email"
                       type="email"
                       placeholder="vas-email@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 h-11"
+                      className="pl-9 sm:pl-10 h-9 sm:h-11 text-sm touch-manipulation"
                       required
                       disabled={loading || googleLoading}
                     />
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password" className="text-sm font-medium">
+                <div className="space-y-1 sm:space-y-2">
+                  <Label htmlFor="signup-password" className="text-xs sm:text-sm font-medium">
                     Lozinka
                   </Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                    <Lock className="absolute left-3 top-2.5 sm:top-3 h-3 w-3 sm:h-4 sm:w-4 text-slate-400" />
                     <Input
                       id="signup-password"
                       type="password"
                       placeholder="Minimalno 6 karaktera"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 h-11"
+                      className="pl-9 sm:pl-10 h-9 sm:h-11 text-sm touch-manipulation"
                       required
                       minLength={6}
                       disabled={loading || googleLoading}
@@ -413,7 +413,7 @@ const Auth: React.FC = () => {
                 </div>
                 <Button 
                   type="submit" 
-                  className="w-full h-11 text-sm font-medium" 
+                  className="w-full h-9 sm:h-11 text-xs sm:text-sm font-medium touch-manipulation" 
                   disabled={loading || googleLoading}
                 >
                   {loading ? (
