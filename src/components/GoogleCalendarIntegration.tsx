@@ -18,40 +18,85 @@ const GoogleCalendarIntegration = () => {
     calendarId: 'primary'
   });
 
+  // Check connection status on component mount
+  useEffect(() => {
+    const savedConnection = localStorage.getItem('googleCalendarConnected');
+    const savedSettings = localStorage.getItem('googleCalendarSettings');
+    
+    if (savedConnection === 'true') {
+      setIsConnected(true);
+      if (savedSettings) {
+        try {
+          setCalendarSettings(JSON.parse(savedSettings));
+        } catch (e) {
+          console.error('Error parsing saved calendar settings:', e);
+        }
+      }
+    }
+  }, []);
+
   const handleConnect = async () => {
+    if (!calendarSettings.apiKey || !calendarSettings.clientId) {
+      toast({
+        title: "Greška",
+        description: "Molimo unesite API ključ i Client ID prije povezivanja.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
+    console.log('Attempting to connect to Google Calendar...');
+    
     try {
-      // Load Google APIs
+      // Load Google APIs if not already loaded
       if (!window.gapi) {
+        console.log('Loading Google API...');
         await loadGoogleAPI();
       }
 
-      await window.gapi.load('client:auth2', {
-        callback: async () => {
-          await window.gapi.client.init({
-            apiKey: calendarSettings.apiKey,
-            clientId: calendarSettings.clientId,
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-            scope: 'https://www.googleapis.com/auth/calendar.events',
-          });
-
-          const authInstance = window.gapi.auth2.getAuthInstance();
-          if (!authInstance.isSignedIn.get()) {
-            await authInstance.signIn();
-          }
-
-          setIsConnected(true);
-          toast({
-            title: "Google Calendar povezan",
-            description: "Uspješno ste povezali Google Calendar. Podsjetnici će se automatski dodavati.",
-          });
-        }
+      // Load and initialize Google API client
+      console.log('Initializing Google API client...');
+      await new Promise((resolve, reject) => {
+        window.gapi.load('client:auth2', {
+          callback: resolve,
+          onerror: reject,
+        });
       });
+
+      await window.gapi.client.init({
+        apiKey: calendarSettings.apiKey,
+        clientId: calendarSettings.clientId,
+        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+        scope: 'https://www.googleapis.com/auth/calendar.events',
+      });
+
+      console.log('Google API client initialized, checking auth...');
+      const authInstance = window.gapi.auth2.getAuthInstance();
+      
+      if (!authInstance.isSignedIn.get()) {
+        console.log('User not signed in, prompting for sign in...');
+        await authInstance.signIn();
+      }
+
+      console.log('Google Calendar successfully connected!');
+      setIsConnected(true);
+      
+      // Store connection state in localStorage
+      localStorage.setItem('googleCalendarConnected', 'true');
+      localStorage.setItem('googleCalendarSettings', JSON.stringify(calendarSettings));
+      
+      toast({
+        title: "Google Calendar povezan",
+        description: "Uspješno ste povezali Google Calendar. Podsjetnici će se automatski dodavati.",
+      });
+      
     } catch (error) {
       console.error('Error connecting to Google Calendar:', error);
+      setIsConnected(false);
       toast({
         title: "Greška",
-        description: "Dogodila se greška prilikom povezivanja s Google Calendar.",
+        description: `Dogodila se greška prilikom povezivanja: ${error.message || 'Nepoznata greška'}`,
         variant: "destructive",
       });
     } finally {
@@ -107,7 +152,19 @@ const GoogleCalendarIntegration = () => {
         authInstance.signOut();
       }
     }
+    
+    // Clear connection state from localStorage
+    localStorage.removeItem('googleCalendarConnected');
+    localStorage.removeItem('googleCalendarSettings');
+    
     setIsConnected(false);
+    setCalendarSettings({
+      apiKey: '',
+      clientId: '',
+      autoSync: true,
+      calendarId: 'primary'
+    });
+    
     toast({
       title: "Odjavljeno",
       description: "Uspješno ste se odjavili iz Google Calendar.",
