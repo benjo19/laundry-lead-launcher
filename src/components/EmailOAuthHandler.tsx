@@ -59,7 +59,7 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
     setIsConnecting(true);
 
     try {
-      const redirectTo = `${window.location.origin}/?oauth_callback=${provider}`;
+      const redirectTo = `${window.location.origin}/settings?tab=email&provider=${provider}`;
       
       // Different OAuth configurations for different providers
       const oauthConfig = {
@@ -67,6 +67,7 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
+          approval_prompt: 'force'
         }
       };
 
@@ -76,25 +77,48 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
           // @ts-ignore - scope is a valid parameter for Google OAuth
           scope: 'email profile https://www.googleapis.com/auth/gmail.send'
         };
-      } else if (provider === 'outlook') {
+        
+        // Info about Google verification issue but allow attempt
+        toast({
+          title: "Google OAuth upozorenje",
+          description: "Aplikacija možda nije verificirana. Ako se dogodi greška, koristite Gmail SMTP s App Password.",
+          variant: "destructive",
+        });
+        
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'google',
+          options: oauthConfig
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Google OAuth",
+          description: "Preusmjeravanje na Google autentifikaciju...",
+        });
+        return;
+      }
+      
+      // Continue only for non-google providers or if forcing Google OAuth
+      if (provider === 'outlook') {
         oauthConfig.queryParams = {
           ...oauthConfig.queryParams,
           // @ts-ignore - scope is a valid parameter for Azure OAuth
           scope: 'email profile https://graph.microsoft.com/Mail.Send offline_access'
         };
+        
+        const { error } = await supabase.auth.signInWithOAuth({
+          provider: 'azure',
+          options: oauthConfig
+        });
+
+        if (error) throw error;
+
+        toast({
+          title: "Outlook OAuth",
+          description: "Preusmjeravanje na autentifikaciju...",
+        });
       }
-
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: provider === 'google' ? 'google' : 'azure',
-        options: oauthConfig
-      });
-
-      if (error) throw error;
-
-      toast({
-        title: `${provider === 'google' ? 'Google' : 'Outlook'} OAuth`,
-        description: "Preusmjeravanje na autentifikaciju...",
-      });
 
     } catch (error) {
       console.error('OAuth error:', error);
