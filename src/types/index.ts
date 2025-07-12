@@ -12,6 +12,7 @@ export interface Lead {
   dateAdded: string;
   industry?: string;
   notes?: string;
+  country?: string;
 }
 
 export interface Email {

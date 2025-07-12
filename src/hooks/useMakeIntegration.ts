@@ -71,6 +71,7 @@ export const useMakeIntegration = () => {
         phone: data.phone || '',
         website: data.website || '',
         location: data.location || '',
+        country: data.country || '',
         status: data.status || '',
         potential: data.potential || '',
         industry: data.industry || '',

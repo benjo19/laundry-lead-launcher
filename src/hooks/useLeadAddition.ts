@@ -28,6 +28,10 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry }: Use
     console.log('Adding discovered lead:', discoveredLead.name);
     console.log('User is logged in:', !!user);
 
+    // Extract country from address (last part after comma)
+    const addressParts = discoveredLead.address.split(',').map(part => part.trim());
+    const country = addressParts.length > 1 ? addressParts[addressParts.length - 1] : '';
+
     const newLead: Omit<Lead, 'id' | 'dateAdded'> = {
       company: discoveredLead.name,
       location: discoveredLead.address,
@@ -38,6 +42,7 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry }: Use
       status: 'Nova',
       potential: discoveredLead.aiAnalysis?.potential || 'Srednji',
       industry: industry || '',
+      country: country,
       notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen na web stranici' : ''}${!discoveredLead.email ? ', Email adresa nije pronađena' : ''}${discoveredLead.aiAnalysis ? `, AI Score: ${discoveredLead.aiAnalysis.score}/10, ${discoveredLead.aiAnalysis.reasoning}` : ''}`
     };
 
