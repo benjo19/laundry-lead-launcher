@@ -61,33 +61,18 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
     try {
       const redirectTo = `${window.location.origin}/settings?tab=email&oauth_callback=${provider}`;
       
-      // Different OAuth configurations for different providers
-      const oauthConfig = {
-        redirectTo,
-        queryParams: {
-          access_type: 'offline',
-          prompt: 'consent',
-          approval_prompt: 'force'
-        }
-      };
-
       if (provider === 'google') {
-        oauthConfig.queryParams = {
-          ...oauthConfig.queryParams,
-          // @ts-ignore - scope is a valid parameter for Google OAuth
-          scope: 'email profile https://www.googleapis.com/auth/gmail.send'
-        };
-        
-        // Info about Google verification issue but allow attempt
-        toast({
-          title: "Google OAuth upozorenje",
-          description: "Aplikacija možda nije verificirana. Ako se dogodi greška, koristite Gmail SMTP s App Password.",
-          variant: "destructive",
-        });
-        
+        // Simplificirani OAuth config za Google bez konfliktnih parametara
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'google',
-          options: oauthConfig
+          options: {
+            redirectTo,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+              scope: 'email profile https://www.googleapis.com/auth/gmail.send'
+            }
+          }
         });
 
         if (error) throw error;
@@ -99,17 +84,17 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
         return;
       }
       
-      // Continue only for non-google providers or if forcing Google OAuth
       if (provider === 'outlook') {
-        oauthConfig.queryParams = {
-          ...oauthConfig.queryParams,
-          // @ts-ignore - scope is a valid parameter for Azure OAuth
-          scope: 'email profile https://graph.microsoft.com/Mail.Send offline_access'
-        };
-        
         const { error } = await supabase.auth.signInWithOAuth({
           provider: 'azure',
-          options: oauthConfig
+          options: {
+            redirectTo,
+            queryParams: {
+              access_type: 'offline',
+              prompt: 'consent',
+              scope: 'email profile https://graph.microsoft.com/Mail.Send offline_access'
+            }
+          }
         });
 
         if (error) throw error;
