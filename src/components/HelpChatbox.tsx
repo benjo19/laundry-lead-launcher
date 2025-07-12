@@ -3,14 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { MessageCircle, X, Send, HelpCircle } from 'lucide-react';
+import { MessageCircle, X, Send, HelpCircle, Bot } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface Message {
   id: string;
   text: string;
   isUser: boolean;
   timestamp: Date;
+  isLoading?: boolean;
 }
 
 const predefinedQuestions = {
@@ -38,39 +40,66 @@ export const HelpChatbox = () => {
 
   const currentQuestions = predefinedQuestions[language as keyof typeof predefinedQuestions] || predefinedQuestions.sr;
 
-  const addMessage = (text: string, isUser: boolean) => {
+  const addMessage = (text: string, isUser: boolean, isLoading: boolean = false) => {
     const newMessage: Message = {
       id: Date.now().toString(),
       text,
       isUser,
-      timestamp: new Date()
+      timestamp: new Date(),
+      isLoading
     };
     setMessages(prev => [...prev, newMessage]);
+    return newMessage.id;
   };
 
-  const handleSendMessage = () => {
+  const updateMessage = (id: string, text: string, isLoading: boolean = false) => {
+    setMessages(prev => prev.map(msg => 
+      msg.id === id ? { ...msg, text, isLoading } : msg
+    ));
+  };
+
+  const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
 
-    addMessage(inputValue, true);
-    
-    // Find matching answer from predefined questions
-    const matchedQuestion = currentQuestions.find(q => 
-      q.question.toLowerCase().includes(inputValue.toLowerCase()) ||
-      inputValue.toLowerCase().includes(q.question.toLowerCase().split(' ')[0])
-    );
-
-    setTimeout(() => {
-      if (matchedQuestion) {
-        addMessage(matchedQuestion.answer, false);
-      } else {
-        const helpText = language === 'en' 
-          ? "I'm here to help! Try asking about adding leads, sending emails, setting reminders, integrations, or analytics."
-          : "Tu sam da pomognem! Pokušajte da pitate o dodavanju leadova, slanju emailova, podsetnicima, integracijama ili analitici.";
-        addMessage(helpText, false);
-      }
-    }, 500);
-
+    const userMessage = inputValue;
     setInputValue('');
+    addMessage(userMessage, true);
+    
+    // Add loading message
+    const loadingId = addMessage('...', false, true);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: { 
+          message: userMessage,
+          language 
+        }
+      });
+
+      if (error) {
+        console.error('AI chat error:', error);
+        updateMessage(loadingId, language === 'en' 
+          ? 'Sorry, I encountered an error. Please try again.'
+          : 'Izvinjavam se, dogodila se greška. Molim pokušajte ponovo.'
+        );
+        return;
+      }
+
+      if (data?.response) {
+        updateMessage(loadingId, data.response);
+      } else {
+        updateMessage(loadingId, language === 'en' 
+          ? 'Sorry, I couldn\'t generate a response. Please try again.'
+          : 'Izvinjavam se, nisam mogao da generišem odgovor. Molim pokušajte ponovo.'
+        );
+      }
+    } catch (error) {
+      console.error('Error calling AI chat:', error);
+      updateMessage(loadingId, language === 'en' 
+        ? 'Connection error. Please check your internet connection and try again.'
+        : 'Greška sa konekcijom. Molim proverite internet konekciju i pokušajte ponovo.'
+      );
+    }
   };
 
   const handleQuestionClick = (question: string, answer: string) => {
@@ -139,13 +168,22 @@ export const HelpChatbox = () => {
                 className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-[80%] p-2 rounded-lg text-xs ${
+                  className={`max-w-[80%] p-2 rounded-lg text-xs flex items-center gap-1 ${
                     message.isUser
                       ? 'bg-primary text-primary-foreground'
                       : 'bg-muted'
                   }`}
                 >
-                  {message.text}
+                  {!message.isUser && <Bot className="h-3 w-3" />}
+                  {message.isLoading ? (
+                    <div className="flex gap-1">
+                      <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-1 h-1 bg-current rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  ) : (
+                    message.text
+                  )}
                 </div>
               </div>
             ))}
