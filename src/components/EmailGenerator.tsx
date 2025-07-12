@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail, Send, Sparkles, Trash2, Users, Settings, Edit3 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIntegratedEmailService } from '@/hooks/useIntegratedEmailService';
@@ -93,7 +94,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   ]);
 
-  const [leads] = useLocalStorage<Lead[]>('leads', []);
+  const { leads } = useLeadManagement();
   const [discoveredLeads] = useLocalStorage<any[]>('discoveredLeads', []);
   const [isGenerating, setIsGenerating] = useState(false);
 

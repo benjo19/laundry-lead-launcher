@@ -91,6 +91,34 @@ export const useSupabaseLeads = () => {
     }
 
     try {
+      // Check for duplicates first
+      console.log('Checking for duplicate leads...');
+      const { data: existingLeads, error: checkError } = await supabase
+        .from('leads')
+        .select('company, email')
+        .eq('user_id', user.id)
+        .or(`company.eq.${newLeadData.company},email.eq.${newLeadData.email}`);
+
+      if (checkError) {
+        console.error('Error checking for duplicates:', checkError);
+        toast({
+          title: "Greška",
+          description: checkError.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      if (existingLeads && existingLeads.length > 0) {
+        const duplicateBy = existingLeads.find(lead => lead.company === newLeadData.company) ? 'tvrtka' : 'email';
+        toast({
+          title: "Lead već postoji",
+          description: `Lead s istom ${duplicateBy} već postoji u bazi podataka.`,
+          variant: "destructive",
+        });
+        return false;
+      }
+
       console.log('Adding lead to Supabase:', newLeadData);
       const { error } = await supabase
         .from('leads')
