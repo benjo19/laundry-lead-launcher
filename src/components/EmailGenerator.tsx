@@ -367,7 +367,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       source: 'Lead Discovery'
     }));
     
-    return [...leadEmails, ...discoveredEmails];
+    const allEmails = [...leadEmails, ...discoveredEmails];
+    
+    // Remove duplicates based on email address
+    const uniqueEmails = allEmails.filter((email, index, self) => 
+      index === self.findIndex(e => e.email === email.email)
+    );
+    
+    return uniqueEmails;
   };
 
   const handleRecipientSelect = (selectedEmail: string) => {
