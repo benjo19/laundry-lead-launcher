@@ -15,7 +15,18 @@ export const useOAuthCallback = () => {
     const handleOAuthCallback = async () => {
       const oauthCallback = searchParams.get('oauth_callback');
       
-      if (!oauthCallback || !session || !user) return;
+      console.log('OAuth callback hook running', { 
+        url: window.location.href, 
+        oauthCallback, 
+        hasSession: !!session, 
+        hasUser: !!user,
+        searchParamsString: searchParams.toString() 
+      });
+      
+      if (!oauthCallback || !session || !user) {
+        console.log('OAuth callback skipped:', { oauthCallback: !!oauthCallback, session: !!session, user: !!user });
+        return;
+      }
 
       try {
         console.log('Processing OAuth callback for:', oauthCallback);
