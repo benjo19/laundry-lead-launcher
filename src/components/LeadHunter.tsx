@@ -43,7 +43,11 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
     const cities = leads.map(lead => {
       if (!lead.location) return null;
       const parts = lead.location.split(',');
-      return parts[0]?.trim();
+      // Take the second part if available (city), otherwise take the first part
+      // Format usually: "Street, City, Country" or "City, Country" or just "City"
+      return parts.length > 2 ? parts[1]?.trim() : 
+             parts.length > 1 ? parts[0]?.trim() : 
+             parts[0]?.trim();
     }).filter(Boolean);
     return [...new Set(cities)];
   }, [leads]);
@@ -86,9 +90,10 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
       
       if (selectedCity !== 'all') {
         const parts = lead.location?.split(',');
-        // For cities, take the second-to-last part if available, otherwise first part
-        const leadCity = parts && parts.length > 2 ? parts[parts.length - 2]?.trim() : 
-                         parts && parts.length > 1 ? parts[0]?.trim() : parts?.[0]?.trim();
+        // Use the same logic as uniqueCities generation
+        const leadCity = parts && parts.length > 2 ? parts[1]?.trim() : 
+                         parts && parts.length > 1 ? parts[0]?.trim() : 
+                         parts?.[0]?.trim();
         if (leadCity !== selectedCity) return false;
       }
       
