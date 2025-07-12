@@ -28,14 +28,7 @@ export default defineConfig(({ mode }) => ({
     global: 'globalThis',
   },
   optimizeDeps: {
-    include: ['react', 'react-dom'],
-    exclude: [
-      '@supabase/supabase-js', 
-      '@supabase/postgrest-js',
-      '@supabase/storage-js',
-      '@supabase/realtime-js',
-      '@supabase/gotrue-js'
-    ]
+    include: ['react', 'react-dom', '@supabase/supabase-js'],
   },
   build: {
     rollupOptions: {
@@ -47,13 +40,5 @@ export default defineConfig(({ mode }) => ({
         warn(warning);
       }
     }
-  },
-  ssr: {
-    noExternal: [
-      '@supabase/postgrest-js',
-      '@supabase/storage-js',
-      '@supabase/realtime-js',
-      '@supabase/gotrue-js'
-    ]
   }
 }));
