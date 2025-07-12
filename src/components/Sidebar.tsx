@@ -91,7 +91,7 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
-              {user?.user_metadata?.full_name || user?.email}
+              {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0]}
             </p>
             <p className="text-xs text-muted-foreground truncate">
               {user?.email}

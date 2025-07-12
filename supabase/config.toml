@@ -41,3 +41,6 @@ verify_jwt = true
 
 [functions.social-post]
 verify_jwt = true
+
+[functions.ai-chat]
+verify_jwt = false
