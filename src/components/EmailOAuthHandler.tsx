@@ -59,7 +59,7 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
     setIsConnecting(true);
 
     try {
-      const redirectTo = `${window.location.origin}/settings?tab=email&provider=${provider}`;
+      const redirectTo = `${window.location.origin}/settings?tab=email&oauth_callback=${provider}`;
       
       // Different OAuth configurations for different providers
       const oauthConfig = {
