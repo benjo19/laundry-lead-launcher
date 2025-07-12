@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useOAuthCallback } from "@/hooks/useOAuthCallback";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
 import Index from "./pages/Index";
@@ -65,6 +66,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 
 const AppContent: React.FC = () => {
   console.log('App: Starting application');
+  
+  // Handle OAuth callbacks globally
+  useOAuthCallback();
   
   try {
     return (

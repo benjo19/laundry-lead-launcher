@@ -1,12 +1,13 @@
 
 import { useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useOAuthCallback = () => {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const { user, session } = useAuth();
   const { toast } = useToast();
 
@@ -64,11 +65,8 @@ export const useOAuthCallback = () => {
           description: `${oauthCallback === 'google' ? 'Google' : 'Outlook'} račun je uspješno povezan.`,
         });
 
-        // Clean up URL parameters and redirect to settings
-        const newUrl = new URL(window.location.href);
-        newUrl.searchParams.delete('oauth_callback');
-        newUrl.pathname = '/settings';
-        window.location.href = newUrl.toString();
+        // Navigate to settings tab
+        navigate('/settings?tab=email');
 
       } catch (error) {
         console.error('OAuth callback error:', error);
@@ -81,5 +79,5 @@ export const useOAuthCallback = () => {
     };
 
     handleOAuthCallback();
-  }, [searchParams, session, user, toast]);
+  }, [searchParams, session, user, toast, navigate]);
 };

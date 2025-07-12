@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { useOAuthCallback } from '@/hooks/useOAuthCallback';
+
 import { supabase } from '@/integrations/supabase/client';
 import { Mail, Save, Loader2, Chrome, Globe, ExternalLink, Zap } from 'lucide-react';
 import EmailOAuthHandler from './EmailOAuthHandler';
@@ -64,8 +64,6 @@ const EmailSettings = () => {
     oauth_providers: {}
   });
 
-  // Handle OAuth callbacks
-  useOAuthCallback();
 
   useEffect(() => {
     if (user) {
