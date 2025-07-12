@@ -12,6 +12,7 @@ import MobileHeader from '@/components/MobileHeader';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { HelpChatbox } from '@/components/HelpChatbox';
 import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
@@ -106,6 +107,7 @@ const Index = () => {
             <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
           </SheetContent>
         </Sheet>
+        <HelpChatbox />
       </div>
     );
   }
@@ -118,6 +120,7 @@ const Index = () => {
           {renderActiveModule()}
         </div>
       </main>
+      <HelpChatbox />
     </div>
   );
 };
