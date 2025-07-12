@@ -19,6 +19,9 @@ const Auth: React.FC = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetLoading, setResetLoading] = useState(false);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -148,6 +151,50 @@ const Auth: React.FC = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!resetEmail) {
+      toast({
+        title: "Greška",
+        description: "Unesite email adresu.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setResetLoading(true);
+
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/auth?reset=true`,
+      });
+
+      if (error) {
+        toast({
+          title: "Greška",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Email poslan",
+          description: "Provjerite email za link za resetovanje lozinke.",
+        });
+        setShowForgotPassword(false);
+        setResetEmail('');
+      }
+    } catch (error) {
+      console.error('Reset password error:', error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se neočekivana greška.",
+        variant: "destructive",
+      });
+    } finally {
+      setResetLoading(false);
     }
   };
 
@@ -330,9 +377,19 @@ const Auth: React.FC = () => {
                       onChange={(e) => setPassword(e.target.value)}
                       className="pl-9 sm:pl-10 h-9 sm:h-11 text-sm touch-manipulation"
                       required
-                      disabled={loading || googleLoading}
+                     disabled={loading || googleLoading}
                     />
                   </div>
+                </div>
+                <div className="flex justify-end">
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="text-xs p-0 h-auto"
+                    onClick={() => setShowForgotPassword(true)}
+                  >
+                    Zaboravili ste lozinku?
+                  </Button>
                 </div>
                 <Button 
                   type="submit" 
@@ -433,6 +490,61 @@ const Auth: React.FC = () => {
           </Tabs>
         </CardContent>
       </Card>
+
+      {/* Forgot Password Modal */}
+      {showForgotPassword && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <Card className="w-full max-w-sm">
+            <CardHeader>
+              <CardTitle className="text-lg">Resetovanje lozinke</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleForgotPassword} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="reset-email">Email adresa</Label>
+                  <Input
+                    id="reset-email"
+                    type="email"
+                    placeholder="Unesite vašu email adresu"
+                    value={resetEmail}
+                    onChange={(e) => setResetEmail(e.target.value)}
+                    required
+                    disabled={resetLoading}
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => {
+                      setShowForgotPassword(false);
+                      setResetEmail('');
+                    }}
+                    disabled={resetLoading}
+                  >
+                    Otkaži
+                  </Button>
+                  <Button
+                    type="submit"
+                    className="flex-1"
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Šalje...
+                      </>
+                    ) : (
+                      'Pošalji'
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 };
