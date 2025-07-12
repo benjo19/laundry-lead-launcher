@@ -5,12 +5,12 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
-import { useOAuthCallback } from "@/hooks/useOAuthCallback";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./components/Settings";
+import OAuthWrapper from "./components/OAuthWrapper";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AlertTriangle, Loader2 } from 'lucide-react';
 
@@ -67,9 +67,6 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 const AppContent: React.FC = () => {
   console.log('App: Starting application');
   
-  // Handle OAuth callbacks globally
-  useOAuthCallback();
-  
   try {
     return (
       <ErrorBoundary>
@@ -79,19 +76,21 @@ const AppContent: React.FC = () => {
               <Toaster />
               <Sonner />
               <BrowserRouter>
-                <Routes>
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/" element={
-                    <ProtectedRoute>
-                      <Index />
-                    </ProtectedRoute>
-                  } />
-                  <Route path="/settings" element={
-                    <ProtectedRoute>
-                      <Settings />
-                    </ProtectedRoute>
-                  } />
-                </Routes>
+                <OAuthWrapper>
+                  <Routes>
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/" element={
+                      <ProtectedRoute>
+                        <Index />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/settings" element={
+                      <ProtectedRoute>
+                        <Settings />
+                      </ProtectedRoute>
+                    } />
+                  </Routes>
+                </OAuthWrapper>
               </BrowserRouter>
             </div>
           </TooltipProvider>
