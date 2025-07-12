@@ -34,6 +34,7 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry }: Use
       employees: '10-50', // Default estimate
       phone: discoveredLead.phone || '',
       email: discoveredLead.email || '', // Only real scraped emails or empty
+      website: discoveredLead.website || '',
       status: 'Nova',
       potential: discoveredLead.aiAnalysis?.potential || 'Srednji',
       industry: industry || '',
