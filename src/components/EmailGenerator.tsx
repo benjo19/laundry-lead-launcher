@@ -481,16 +481,33 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 </SelectTrigger>
                 <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none max-h-60 overflow-y-auto">
                   {getAllEmailAddresses().map((contact, index) => (
-                    <SelectItem key={index} value={contact.email} className="max-w-full p-3">
-                      <div className="flex flex-col w-full min-w-0">
-                        <div className="font-medium text-sm mb-1">{contact.company}</div>
-                        <div className="text-xs text-slate-500 mb-1">{contact.email}</div>
-                        <div className="text-xs text-slate-400">{contact.source}</div>
+                    <SelectItem key={index} value={contact.email} className="max-w-full p-2">
+                      <div className="flex flex-row items-center gap-2 w-full min-w-0">
+                        <div className="font-medium text-sm text-slate-900">{contact.company}</div>
+                        <div className="text-xs text-slate-500">•</div>
+                        <div className="text-xs text-slate-600 truncate">{contact.email}</div>
+                        <div className="text-xs text-slate-400 ml-auto shrink-0">({contact.source})</div>
                       </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
+              
+              {/* Display selected recipient horizontally if available */}
+              {recipient && (
+                <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-blue-700 font-medium">Odabrani primatelj:</span>
+                    <span className="text-blue-600 truncate">{recipient}</span>
+                    {selectedCompany && (
+                      <>
+                        <span className="text-blue-400">•</span>
+                        <span className="text-blue-600 truncate">{selectedCompany}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Manual Email Input */}
