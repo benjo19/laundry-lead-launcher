@@ -78,7 +78,14 @@ export const useAuth = () => {
     }
   };
 
-  console.log('useAuth: Returning state:', { user: !!user, session: !!session, loading, error });
+  console.log('useAuth: Returning state:', { 
+    user: !!user, 
+    session: !!session, 
+    loading, 
+    error,
+    userId: user?.id,
+    userEmail: user?.email
+  });
 
   return {
     user,
