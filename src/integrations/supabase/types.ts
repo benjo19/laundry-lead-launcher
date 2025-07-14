@@ -182,6 +182,45 @@ export type Database = {
         }
         Relationships: []
       }
+      user_knowledge: {
+        Row: {
+          content: string | null
+          created_at: string
+          file_path: string | null
+          id: string
+          metadata: Json | null
+          title: string
+          type: string
+          updated_at: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          title: string
+          type: string
+          updated_at?: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          file_path?: string | null
+          id?: string
+          metadata?: Json | null
+          title?: string
+          type?: string
+          updated_at?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_settings: {
         Row: {
           ai_settings: Json | null

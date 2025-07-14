@@ -8,6 +8,8 @@ import CRMReminder from '@/components/CRMReminder';
 import ContentBooster from '@/components/ContentBooster';
 import Analytics from '@/components/Analytics';
 import Settings from '@/components/Settings';
+import KnowledgeBase from '@/components/KnowledgeBase';
+import AIKnowledgeChat from '@/components/AIKnowledgeChat';
 import MobileHeader from '@/components/MobileHeader';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -51,6 +53,8 @@ const Index = () => {
       case 'dashboard': return t('dashboard');
       case 'lead-hunter': return t('lead_hunter');
       case 'lead-discovery': return t('lead_discovery');
+      case 'knowledge-base': return 'Knowledge Base';
+      case 'ai-chat': return 'AI Asistent';
       case 'email-generator': return t('email_generator');
       case 'crm-reminder': return 'CRM Datoteke';
       case 'content-booster': return t('content_booster');
@@ -68,6 +72,10 @@ const Index = () => {
         return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
       case 'lead-discovery':
         return <LeadDiscovery onAddLead={addLead} onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
+      case 'knowledge-base':
+        return <KnowledgeBase />;
+      case 'ai-chat':
+        return <AIKnowledgeChat />;
       case 'email-generator':
         return (
           <EmailGenerator 

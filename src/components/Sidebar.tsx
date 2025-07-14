@@ -2,7 +2,7 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
@@ -16,7 +16,9 @@ import {
   BarChart3,
   Settings,
   LogOut,
-  User
+  User,
+  Database,
+  Brain
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -25,7 +27,7 @@ interface SidebarProps {
 }
 
 const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuthContext();
   const navigate = useNavigate();
   const { t } = useLanguage();
 
@@ -33,6 +35,8 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
     { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { id: 'lead-hunter', label: t('lead_hunter'), icon: Search },
     { id: 'lead-discovery', label: t('lead_discovery'), icon: Compass },
+    { id: 'knowledge-base', label: 'Knowledge Base', icon: Database },
+    { id: 'ai-chat', label: 'AI Asistent', icon: Brain },
     { id: 'email-generator', label: t('email_generator'), icon: Mail },
     { id: 'crm-reminder', label: 'CRM Datoteke', icon: Calendar },
     { id: 'content-booster', label: t('content_booster'), icon: TrendingUp },
