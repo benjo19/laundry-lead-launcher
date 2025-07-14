@@ -1,5 +1,5 @@
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Lead } from '@/types';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
@@ -11,7 +11,7 @@ interface UseLeadAdditionProps {
 }
 
 export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry }: UseLeadAdditionProps) => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { toast } = useToast();
 
   const addDiscoveredLead = async (discoveredLead: AnalyzedLead) => {

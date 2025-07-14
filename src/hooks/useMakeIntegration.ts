@@ -1,6 +1,6 @@
 
 import { useState, useCallback } from 'react';
-import { useAuth } from './useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 
 interface MakeWebhookData {
@@ -17,7 +17,7 @@ interface MakeSettings {
 }
 
 export const useMakeIntegration = () => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [isLoading, setIsLoading] = useState(false);
 
   const getMakeSettings = useCallback(async (): Promise<MakeSettings | null> => {
