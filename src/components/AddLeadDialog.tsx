@@ -10,7 +10,7 @@ import { Lead } from '@/types';
 interface AddLeadDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => void;
+  onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => Promise<boolean>;
 }
 
 const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) => {
@@ -26,21 +26,31 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
     notes: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onAddLead(formData);
-    setFormData({
-      company: '',
-      location: '',
-      employees: '',
-      phone: '',
-      email: '',
-      status: 'Nova',
-      potential: 'Srednji',
-      industry: '',
-      notes: ''
-    });
-    onOpenChange(false);
+    console.log('AddLeadDialog: handleSubmit called with formData:', formData);
+    
+    try {
+      const success = await onAddLead(formData);
+      console.log('AddLeadDialog: onAddLead result:', success);
+      
+      if (success) {
+        setFormData({
+          company: '',
+          location: '',
+          employees: '',
+          phone: '',
+          email: '',
+          status: 'Nova',
+          potential: 'Srednji',
+          industry: '',
+          notes: ''
+        });
+        onOpenChange(false);
+      }
+    } catch (error) {
+      console.error('AddLeadDialog: Error in handleSubmit:', error);
+    }
   };
 
   return (
