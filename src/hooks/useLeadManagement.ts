@@ -2,10 +2,10 @@
 import { useSupabaseLeads } from '@/hooks/useSupabaseLeads';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { Lead } from '@/types';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 export const useLeadManagement = () => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const [localLeads] = useLocalStorage<Lead[]>('leads', []);
   
   // Use Supabase if user is authenticated, otherwise fallback to localStorage

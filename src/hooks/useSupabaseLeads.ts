@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useMakeIntegration } from '@/hooks/useMakeIntegration';
@@ -25,7 +25,7 @@ interface SupabaseLead {
 }
 
 export const useSupabaseLeads = () => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { toast } = useToast();
   const { triggerWebhook } = useMakeIntegration();
   const [leads, setLeads] = useState<Lead[]>([]);

@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
+import { AuthProvider, useAuthContext } from "@/contexts/AuthContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
 import Index from "./pages/Index";
@@ -25,7 +25,7 @@ const queryClient = new QueryClient({
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   console.log('ProtectedRoute: Rendering protected route');
-  const { user, loading, error } = useAuth();
+  const { user, loading, error } = useAuthContext();
   const { t } = useLanguage();
   
   console.log('ProtectedRoute: User state:', { user: !!user, loading, error });
@@ -72,10 +72,11 @@ const AppContent: React.FC = () => {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <div className="min-h-screen w-full">
-              <Toaster />
-              <Sonner />
-              <BrowserRouter>
+            <AuthProvider>
+              <div className="min-h-screen w-full">
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
                 <OAuthWrapper>
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
@@ -91,8 +92,9 @@ const AppContent: React.FC = () => {
                     } />
                   </Routes>
                 </OAuthWrapper>
-              </BrowserRouter>
-            </div>
+                </BrowserRouter>
+              </div>
+            </AuthProvider>
           </TooltipProvider>
         </QueryClientProvider>
       </ErrorBoundary>
