@@ -296,8 +296,13 @@ export const useSupabaseLeads = () => {
   };
 
   useEffect(() => {
-    fetchLeads();
-  }, [user]);
+    if (user?.id) {
+      fetchLeads();
+    } else {
+      setLeads([]);
+      setLoading(false);
+    }
+  }, [user?.id]); // Only depend on user ID to prevent unnecessary calls
 
   return {
     leads,

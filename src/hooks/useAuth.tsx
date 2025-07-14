@@ -14,17 +14,23 @@ export const useAuth = () => {
   useEffect(() => {
     console.log('useAuth: Setting up auth state listener');
     
+    let mounted = true;
+    
     // Set timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
-      console.log('useAuth: Timeout reached, stopping loading');
-      setLoading(false);
-      setError('Authentication timeout - please refresh the page');
+      if (mounted) {
+        console.log('useAuth: Timeout reached, stopping loading');
+        setLoading(false);
+        setError('Authentication timeout - please refresh the page');
+      }
     }, 10000); // 10 second timeout
     
     try {
       // Set up auth state listener
       const { data: { subscription } } = supabase.auth.onAuthStateChange(
         (event, session) => {
+          if (!mounted) return;
+          
           console.log('useAuth: Auth state changed:', { event, session: !!session });
           clearTimeout(timeoutId);
           setSession(session);
@@ -37,6 +43,8 @@ export const useAuth = () => {
       // Get initial session
       console.log('useAuth: Getting initial session');
       supabase.auth.getSession().then(({ data: { session }, error }) => {
+        if (!mounted) return;
+        
         if (error) {
           console.error('useAuth: Error getting session:', error);
           setError(error.message);
@@ -48,6 +56,8 @@ export const useAuth = () => {
         setUser(session?.user ?? null);
         setLoading(false);
       }).catch((err) => {
+        if (!mounted) return;
+        
         console.error('useAuth: Exception getting session:', err);
         clearTimeout(timeoutId);
         setError('Failed to initialize authentication');
@@ -56,14 +66,17 @@ export const useAuth = () => {
 
       return () => {
         console.log('useAuth: Cleaning up auth subscription');
+        mounted = false;
         clearTimeout(timeoutId);
         subscription.unsubscribe();
       };
     } catch (error) {
       console.error('useAuth: Error setting up auth:', error);
       clearTimeout(timeoutId);
-      setError('Failed to set up authentication');
-      setLoading(false);
+      if (mounted) {
+        setError('Failed to set up authentication');
+        setLoading(false);
+      }
     }
   }, []);
 
