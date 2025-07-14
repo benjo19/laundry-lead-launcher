@@ -116,9 +116,9 @@ async function extractPDFContent(fileData: Blob): Promise<string> {
 }
 
 async function analyzeImage(fileData: Blob): Promise<string> {
-  const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
-  if (!openAIApiKey) {
-    throw new Error('OpenAI API key not configured');
+  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!geminiApiKey) {
+    throw new Error('Gemini API key not configured');
   }
 
   try {
@@ -127,41 +127,40 @@ async function analyzeImage(fileData: Blob): Promise<string> {
     const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
     const mimeType = fileData.type || 'image/jpeg';
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${openAIApiKey}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: 'Analyze this image and extract all text content, describe what you see, and provide any relevant information that would be useful for a knowledge base. Be detailed and comprehensive.'
-              },
-              {
-                type: 'image_url',
-                image_url: {
-                  url: `data:${mimeType};base64,${base64}`
-                }
+        contents: [{
+          parts: [
+            {
+              text: 'Analyze this image and extract all text content, describe what you see, and provide any relevant information that would be useful for a knowledge base. Be detailed and comprehensive.'
+            },
+            {
+              inline_data: {
+                mime_type: mimeType,
+                data: base64
               }
-            ]
-          }
-        ],
-        max_tokens: 1000
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.4,
+          topK: 32,
+          topP: 1,
+          maxOutputTokens: 1000,
+        }
       }),
     });
 
     if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+      throw new Error(`Gemini API error: ${response.status}`);
     }
 
     const data = await response.json();
-    return data.choices[0].message.content;
+    return data.candidates[0].content.parts[0].text;
 
   } catch (error) {
     console.error('Image analysis error:', error);
