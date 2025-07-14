@@ -81,7 +81,11 @@ export const useSupabaseLeads = () => {
   };
 
   const addLead = async (newLeadData: Omit<Lead, 'id' | 'dateAdded'>) => {
+    console.log('addLead called with:', newLeadData);
+    console.log('Current user:', user);
+    
     if (!user) {
+      console.log('No user found, showing error toast');
       toast({
         title: "Greška",
         description: "Morate biti prijavljeni za dodavanje leadova.",
@@ -138,10 +142,11 @@ export const useSupabaseLeads = () => {
         });
 
       if (error) {
-        console.error('Error adding lead:', error);
+        console.error('Error adding lead to Supabase:', error);
+        console.error('Error details:', JSON.stringify(error, null, 2));
         toast({
           title: "Greška",
-          description: error.message,
+          description: `Greška prilikom dodavanja: ${error.message}`,
           variant: "destructive",
         });
         return false;
