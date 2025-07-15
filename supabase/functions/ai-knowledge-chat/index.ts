@@ -22,11 +22,15 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
+    console.log('Getting request body...');
     const { message } = await req.json();
+    console.log('Message received:', message);
     
     // Get the authorization header
+    console.log('Getting auth header...');
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
+      console.log('No authorization header found');
       throw new Error('No authorization header');
     }
 
