@@ -84,17 +84,23 @@ const KnowledgeBase = () => {
 
     try {
       setUploading(true);
+      console.log('Starting file upload:', file.name, 'type:', type);
       
       // Upload file to storage
       const fileExt = file.name.split('.').pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${user.id}/${fileName}`;
 
+      console.log('Uploading to storage path:', filePath);
       const { error: uploadError } = await supabase.storage
         .from('user-documents')
         .upload(filePath, file);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Storage upload error:', uploadError);
+        throw uploadError;
+      }
+      console.log('File uploaded to storage successfully');
 
       // Process file content using edge function
       const { data: processedData, error: processError } = await supabase.functions.invoke('process-document', {
