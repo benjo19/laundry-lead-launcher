@@ -63,6 +63,17 @@ const KnowledgeBase = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
+    // Check file size (max 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      toast({
+        title: "Greška",
+        description: "Fajl je prevelik. Maksimalna veličina je 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Validate file type
     if (type === 'pdf' && file.type !== 'application/pdf') {
       toast({
