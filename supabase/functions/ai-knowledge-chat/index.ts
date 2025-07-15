@@ -61,20 +61,24 @@ serve(async (req) => {
     ).join('\n\n') || 'No knowledge base content available.';
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+    console.log('Gemini API key present:', !!geminiApiKey);
     if (!geminiApiKey) {
+      console.log('ERROR: Gemini API key not configured');
       throw new Error('Gemini API key not configured');
     }
 
     // Call Gemini with knowledge context
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{
-          parts: [{
-            text: `You are an AI assistant with access to the user's personal knowledge base. Use the following context to answer questions accurately and helpfully. If the answer isn't in the knowledge base, say so clearly.
+    console.log('Calling Gemini API...');
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{
+              text: `You are an AI assistant with access to the user's personal knowledge base. Use the following context to answer questions accurately and helpfully. If the answer isn't in the knowledge base, say so clearly.
 
 Knowledge Base Context:
 ${context}
@@ -86,30 +90,40 @@ Instructions:
 - Cite which documents or sources you're referencing when applicable
 
 User Question: ${message}`
-          }]
-        }],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 40,
-          topP: 0.95,
-          maxOutputTokens: 1000,
-        }
-      }),
-    });
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.95,
+            maxOutputTokens: 1000,
+          }
+        }),
+      });
 
-    if (!response.ok) {
-      throw new Error(`Gemini API error: ${response.status}`);
+      console.log('Gemini response status:', response.status);
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.log('Gemini error response:', errorText);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      console.log('Gemini response received');
+      const aiResponse = data.candidates[0].content.parts[0].text;
+
+      return new Response(JSON.stringify({ 
+        response: aiResponse,
+        knowledgeItemsCount: knowledgeItems?.length || 0
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } catch (geminiError) {
+      console.error('Gemini API error:', geminiError);
+      throw new Error(`Failed to get AI response: ${geminiError.message}`);
     }
-
-    const data = await response.json();
-    const aiResponse = data.candidates[0].content.parts[0].text;
-
-    return new Response(JSON.stringify({ 
-      response: aiResponse,
-      knowledgeItemsCount: knowledgeItems?.length || 0
-    }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
 
   } catch (error) {
     console.error('Error in ai-knowledge-chat function:', error);
