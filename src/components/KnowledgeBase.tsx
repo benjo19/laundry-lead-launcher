@@ -103,14 +103,39 @@ const KnowledgeBase = () => {
       const filePath = `${user.id}/${fileName}`;
 
       console.log('Uploading to storage path:', filePath);
-      const { error: uploadError } = await supabase.storage
+      
+      // Try alternative upload method using createSignedUploadUrl
+      const { data: uploadData, error: signedError } = await supabase.storage
         .from('user-documents')
-        .upload(filePath, file);
+        .createSignedUploadUrl(filePath);
 
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw uploadError;
+      if (signedError) {
+        console.error('Signed URL error:', signedError);
+        // Fallback to direct upload
+        const { error: uploadError } = await supabase.storage
+          .from('user-documents')
+          .upload(filePath, file);
+        
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          throw uploadError;
+        }
+      } else {
+        // Use signed URL for upload
+        console.log('Using signed URL for upload');
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        const uploadResponse = await fetch(uploadData.signedUrl, {
+          method: 'POST',
+          body: formData,
+        });
+        
+        if (!uploadResponse.ok) {
+          throw new Error(`Upload failed: ${uploadResponse.status}`);
+        }
       }
+      
       console.log('File uploaded to storage successfully');
 
       // Process file content using edge function
