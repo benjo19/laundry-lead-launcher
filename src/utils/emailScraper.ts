@@ -42,7 +42,7 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     
     if (!htmlContent) {
       console.log(`All proxy services failed for: ${cleanUrl}`);
-      return generateBusinessEmail(cleanUrl);
+      return null;
     }
     
     if (!htmlContent) return null;
@@ -140,31 +140,16 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     }
     
     console.log(`No email found on ${cleanUrl}`);
-    return generateBusinessEmail(cleanUrl);
+    return null;
     
   } catch (error) {
     console.error(`Error scraping email from ${website}:`, error);
-    return generateBusinessEmail(website);
-  }
-};
-
-// Generate likely business email addresses based on domain
-const generateBusinessEmail = (website: string): string | null => {
-  try {
-    const url = new URL(website.startsWith('http') ? website : `https://${website}`);
-    const domain = url.hostname.replace('www.', '');
-    
-    // Common business email prefixes
-    const prefixes = ['info', 'contact', 'hello', 'office', 'sales', 'admin'];
-    
-    // Return the most likely email address
-    return `info@${domain}`;
-  } catch (error) {
     return null;
   }
 };
 
-// Enhanced email verification with multiple strategies
+
+// Enhanced email discovery that only returns scraped emails
 export const enhancedEmailDiscovery = async (companyName: string, website: string): Promise<string[]> => {
   const emails: string[] = [];
   
@@ -174,23 +159,7 @@ export const enhancedEmailDiscovery = async (companyName: string, website: strin
     emails.push(scrapedEmail);
   }
   
-  // 2. Generate common business emails
-  try {
-    const domain = new URL(website.startsWith('http') ? website : `https://${website}`).hostname.replace('www.', '');
-    const commonEmails = [
-      `info@${domain}`,
-      `contact@${domain}`,
-      `hello@${domain}`,
-      `office@${domain}`,
-      `sales@${domain}`,
-    ];
-    
-    emails.push(...commonEmails);
-  } catch (error) {
-    console.error('Error generating emails:', error);
-  }
-  
-  // 3. Try social media and directory lookup
+  // 2. Try social media and directory lookup
   try {
     const socialEmails = await searchSocialMediaEmails(companyName);
     emails.push(...socialEmails);
@@ -198,7 +167,7 @@ export const enhancedEmailDiscovery = async (companyName: string, website: strin
     console.error('Error searching social media:', error);
   }
   
-  // Remove duplicates and return
+  // Remove duplicates and return only found emails
   return [...new Set(emails)];
 };
 
