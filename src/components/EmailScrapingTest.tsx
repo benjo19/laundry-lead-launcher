@@ -12,6 +12,8 @@ export const EmailScrapingTest = () => {
   const [results, setResults] = useState<{
     scrapedEmail: string | null;
     enhancedEmails: string[];
+    socialProfiles: Record<string, string>;
+    emailSources: Record<string, string>;
     logs: string[];
   } | null>(null);
   const { toast } = useToast();
@@ -46,23 +48,25 @@ export const EmailScrapingTest = () => {
       console.log('Scraped email result:', scrapedEmail);
       
       // Test enhanced email discovery if company name is provided
-      let enhancedEmails: string[] = [];
+      let enhancedResult = { emails: [], socialProfiles: {}, emailSources: {} };
       if (companyName.trim()) {
         console.log('2. Testing enhanced email discovery...');
-        enhancedEmails = await enhancedEmailDiscovery(companyName, website);
-        console.log('Enhanced emails result:', enhancedEmails);
+        enhancedResult = await enhancedEmailDiscovery(companyName, website);
+        console.log('Enhanced emails result:', enhancedResult);
       }
       
       setResults({
         scrapedEmail,
-        enhancedEmails,
+        enhancedEmails: enhancedResult.emails,
+        socialProfiles: enhancedResult.socialProfiles,
+        emailSources: enhancedResult.emailSources,
         logs: [...logs]
       });
       
-      if (scrapedEmail || enhancedEmails.length > 0) {
+      if (scrapedEmail || enhancedResult.emails.length > 0) {
         toast({
           title: "Test uspješan",
-          description: `Pronađen${scrapedEmail ? '' : 'i'} ${scrapedEmail ? '1 email' : `${enhancedEmails.length} emailova`}`,
+          description: `Pronađen${scrapedEmail ? '' : 'i'} ${scrapedEmail ? '1 email' : `${enhancedResult.emails.length} emailova`}`,
         });
       } else {
         toast({
@@ -142,11 +146,35 @@ export const EmailScrapingTest = () => {
                   <div>
                     <strong>Enhanced discovery:</strong>
                     {results.enhancedEmails.length > 0 ? (
-                      <ul className="list-disc list-inside ml-4 text-green-600">
-                        {results.enhancedEmails.map((email, index) => (
-                          <li key={index}>{email}</li>
-                        ))}
-                      </ul>
+                      <div className="ml-4">
+                        <ul className="list-disc list-inside text-green-600">
+                          {results.enhancedEmails.map((email, index) => (
+                            <li key={index}>
+                              {email} 
+                              {results.emailSources[email] && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  ({results.emailSources[email]})
+                                </span>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                        
+                        {Object.keys(results.socialProfiles).length > 0 && (
+                          <div className="mt-2">
+                            <strong className="text-sm">Pronađeni profili:</strong>
+                            <ul className="list-disc list-inside text-blue-600 text-sm">
+                              {Object.entries(results.socialProfiles).map(([platform, url]) => (
+                                <li key={platform}>
+                                  <a href={url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                                    {platform}: {url}
+                                  </a>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                      </div>
                     ) : (
                       <span className="text-red-600 ml-2">Nisu pronađeni dodatni emailovi</span>
                     )}

@@ -149,35 +149,87 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
 };
 
 
-// Enhanced email discovery that only returns scraped emails
-export const enhancedEmailDiscovery = async (companyName: string, website: string): Promise<string[]> => {
+// Enhanced email discovery that returns emails with their sources
+export const enhancedEmailDiscovery = async (companyName: string, website: string): Promise<{
+  emails: string[];
+  socialProfiles: {
+    linkedin?: string;
+    facebook?: string;
+    yellowPages?: string;
+  };
+  emailSources: Record<string, string>; // email -> source mapping
+}> => {
   const emails: string[] = [];
+  const socialProfiles = {};
+  const emailSources: Record<string, string> = {};
   
   // 1. Try scraping from website
   const scrapedEmail = await scrapeEmailFromWebsite(website);
   if (scrapedEmail) {
     emails.push(scrapedEmail);
+    emailSources[scrapedEmail] = 'website';
   }
   
   // 2. Try social media and directory lookup
   try {
-    const socialEmails = await searchSocialMediaEmails(companyName);
-    emails.push(...socialEmails);
+    const socialResult = await searchSocialMediaEmails(companyName);
+    for (const result of socialResult) {
+      if (result.email) {
+        emails.push(result.email);
+        emailSources[result.email] = result.source;
+      }
+      if (result.profileUrl) {
+        (socialProfiles as any)[result.source] = result.profileUrl;
+      }
+    }
   } catch (error) {
     console.error('Error searching social media:', error);
   }
   
-  // Remove duplicates and return only found emails
-  return [...new Set(emails)];
+  return {
+    emails: [...new Set(emails)],
+    socialProfiles,
+    emailSources
+  };
 };
 
 // Search for emails on social media platforms and directories
-const searchSocialMediaEmails = async (companyName: string): Promise<string[]> => {
-  const emails: string[] = [];
+const searchSocialMediaEmails = async (companyName: string): Promise<Array<{
+  email?: string;
+  source: string;
+  profileUrl?: string;
+}>> => {
+  const results: Array<{
+    email?: string;
+    source: string;
+    profileUrl?: string;
+  }> = [];
   
   try {
-    // Search Google for company contact information
-    const searchQuery = `"${companyName}" contact email site:linkedin.com OR site:facebook.com OR site:yellowpages.com`;
+    // Search for LinkedIn profiles
+    await searchLinkedInProfiles(companyName, results);
+    
+    // Search for Facebook pages
+    await searchFacebookPages(companyName, results);
+    
+    // Search Yellow Pages
+    await searchYellowPages(companyName, results);
+    
+  } catch (error) {
+    console.error('Error searching for social media emails:', error);
+  }
+  
+  return results;
+};
+
+// Search LinkedIn profiles
+const searchLinkedInProfiles = async (companyName: string, results: Array<{
+  email?: string;
+  source: string;
+  profileUrl?: string;
+}>) => {
+  try {
+    const searchQuery = `"${companyName}" site:linkedin.com/company`;
     const searchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`)}`;
     
     const response = await fetch(searchUrl);
@@ -185,21 +237,127 @@ const searchSocialMediaEmails = async (companyName: string): Promise<string[]> =
       const data = await response.json();
       const searchResults = data.contents;
       
-      // Extract emails from search results
-      const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-      const foundEmails = searchResults.match(emailRegex) || [];
+      // Extract LinkedIn company URLs
+      const linkedInRegex = /https:\/\/[a-z]{2,3}\.linkedin\.com\/company\/[a-zA-Z0-9\-_]+/g;
+      const linkedInMatches = searchResults.match(linkedInRegex) || [];
       
-      emails.push(...foundEmails.filter(email => 
-        !email.includes('google.com') && 
-        !email.includes('facebook.com') &&
-        !email.includes('linkedin.com')
-      ));
+      for (const profileUrl of linkedInMatches.slice(0, 3)) { // Take first 3 results
+        results.push({
+          source: 'linkedin',
+          profileUrl: profileUrl.replace(/^https:\/\/[a-z]{2,3}\./, 'https://www.')
+        });
+        
+        // Try to find email in LinkedIn content
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+        const foundEmails = searchResults.match(emailRegex) || [];
+        
+        for (const email of foundEmails) {
+          if (!email.includes('linkedin.com') && validateEmailFormat(email)) {
+            results.push({
+              email: email,
+              source: 'linkedin',
+              profileUrl: profileUrl.replace(/^https:\/\/[a-z]{2,3}\./, 'https://www.')
+            });
+            break; // Take only first email per profile
+          }
+        }
+      }
     }
   } catch (error) {
-    console.error('Error searching for social media emails:', error);
+    console.error('Error searching LinkedIn:', error);
   }
-  
-  return emails;
+};
+
+// Search Facebook pages
+const searchFacebookPages = async (companyName: string, results: Array<{
+  email?: string;
+  source: string;
+  profileUrl?: string;
+}>) => {
+  try {
+    const searchQuery = `"${companyName}" site:facebook.com`;
+    const searchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`)}`;
+    
+    const response = await fetch(searchUrl);
+    if (response.ok) {
+      const data = await response.json();
+      const searchResults = data.contents;
+      
+      // Extract Facebook URLs
+      const facebookRegex = /https:\/\/www\.facebook\.com\/[a-zA-Z0-9\-_.]+/g;
+      const facebookMatches = searchResults.match(facebookRegex) || [];
+      
+      for (const profileUrl of facebookMatches.slice(0, 2)) { // Take first 2 results
+        results.push({
+          source: 'facebook',
+          profileUrl: profileUrl
+        });
+        
+        // Try to find email in Facebook content
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+        const foundEmails = searchResults.match(emailRegex) || [];
+        
+        for (const email of foundEmails) {
+          if (!email.includes('facebook.com') && validateEmailFormat(email)) {
+            results.push({
+              email: email,
+              source: 'facebook',
+              profileUrl: profileUrl
+            });
+            break; // Take only first email per profile
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error searching Facebook:', error);
+  }
+};
+
+// Search Yellow Pages
+const searchYellowPages = async (companyName: string, results: Array<{
+  email?: string;
+  source: string;
+  profileUrl?: string;
+}>) => {
+  try {
+    const searchQuery = `"${companyName}" site:yellowpages.com`;
+    const searchUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(`https://www.google.com/search?q=${encodeURIComponent(searchQuery)}`)}`;
+    
+    const response = await fetch(searchUrl);
+    if (response.ok) {
+      const data = await response.json();
+      const searchResults = data.contents;
+      
+      // Extract Yellow Pages URLs
+      const yellowPagesRegex = /https:\/\/www\.yellowpages\.com\/[a-zA-Z0-9\-_\/]+/g;
+      const yellowPagesMatches = searchResults.match(yellowPagesRegex) || [];
+      
+      for (const profileUrl of yellowPagesMatches.slice(0, 2)) { // Take first 2 results
+        results.push({
+          source: 'yellowPages',
+          profileUrl: profileUrl
+        });
+        
+        // Try to find email in Yellow Pages content
+        const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+        const foundEmails = searchResults.match(emailRegex) || [];
+        
+        for (const email of foundEmails) {
+          if (!email.includes('yellowpages.com') && validateEmailFormat(email)) {
+            results.push({
+              email: email,
+              source: 'yellowPages',
+              profileUrl: profileUrl
+            });
+            break; // Take only first email per profile
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error searching Yellow Pages:', error);
+  }
 };
 
 // Function to validate if an email address potentially exists (basic check)

@@ -15,6 +15,12 @@ export interface DiscoveredLead {
   email?: string;
   emailScraped?: boolean;
   emailGuessed?: boolean;
+  socialProfiles?: {
+    linkedin?: string;
+    facebook?: string;
+    yellowPages?: string;
+  };
+  emailSource?: string; // odakle je pronađen email (website, linkedin, facebook, etc.)
   rating?: number;
   types: string[];
   place_id: string;

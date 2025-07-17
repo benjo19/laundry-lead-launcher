@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { MapPin, Plus, Phone, Mail, Globe, Star, CheckCircle, AlertCircle, Brain, Target, Clock } from 'lucide-react';
+import { MapPin, Plus, Phone, Mail, Globe, Star, CheckCircle, AlertCircle, Brain, Target, Clock, Users } from 'lucide-react';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 
 interface LeadCardProps {
@@ -132,6 +132,13 @@ const LeadCard = ({ lead, onAddLead, onNavigateToEmailGenerator }: LeadCardProps
                   <CheckCircle className="h-3 w-3 text-green-500" />
                 </div>
               )}
+              {lead.emailSource && lead.emailSource !== 'website' && (
+                <div className="ml-2">
+                  <Badge variant="outline" className="text-xs">
+                    {lead.emailSource}
+                  </Badge>
+                </div>
+              )}
             </div>
           ) : (
             <div className="flex items-center">
@@ -143,6 +150,34 @@ const LeadCard = ({ lead, onAddLead, onNavigateToEmailGenerator }: LeadCardProps
           )}
         </div>
       </div>
+
+      {/* Social Media Profiles */}
+      {lead.socialProfiles && Object.keys(lead.socialProfiles).length > 0 && (
+        <div className="border-t pt-3 mb-3">
+          <div className="flex items-center gap-2 mb-2">
+            <Users className="h-4 w-4 text-blue-600" />
+            <span className="font-medium text-slate-700">Društvene mreže:</span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {Object.entries(lead.socialProfiles).map(([platform, url]) => (
+              <a
+                key={platform}
+                href={url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs hover:bg-blue-100 transition-colors"
+              >
+                {platform === 'linkedin' && '💼'}
+                {platform === 'facebook' && '📘'}
+                {platform === 'yellowPages' && '📞'}
+                <span className="ml-1 capitalize">
+                  {platform === 'yellowPages' ? 'Yellow Pages' : platform}
+                </span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
 
       {lead.aiAnalysis && (
         <div className="border-t pt-3 mt-3 bg-gradient-to-r from-blue-50 to-purple-50 p-3 rounded-lg">

@@ -1,7 +1,7 @@
 
 import { industries, DiscoveredLead } from './SearchForm';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
-import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
+import { scrapeEmailFromWebsite, enhancedEmailDiscovery } from '@/utils/emailScraper';
 
 export const performLeadSearch = async (
   searchQuery: string,
@@ -146,7 +146,10 @@ export const performLeadSearch = async (
           user_ratings_total: place.user_ratings_total
         };
         
-        // Try to scrape email if website exists
+        // Try to scrape email and social profiles if website exists
+        let emailSource = '';
+        let socialProfiles = {};
+        
         if (lead.website) {
           console.log(`📧 Scraping email from: ${lead.website}`);
           try {
@@ -154,11 +157,41 @@ export const performLeadSearch = async (
             if (email) {
               lead.email = email;
               lead.emailScraped = true;
+              emailSource = 'website';
               console.log(`✅ Email found: ${email}`);
             }
           } catch (emailError) {
             console.error(`❌ Email scraping failed:`, emailError);
           }
+        }
+        
+        // Try enhanced email discovery with social media
+        try {
+          console.log(`🔍 Enhanced email discovery for: ${lead.name}`);
+          const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '');
+          
+          if (enhancedResult.emails.length > 0 && !lead.email) {
+            // Use first email if none found from website
+            lead.email = enhancedResult.emails[0];
+            emailSource = enhancedResult.emailSources[enhancedResult.emails[0]] || 'social';
+          }
+          
+          // Store social profiles
+          socialProfiles = enhancedResult.socialProfiles;
+          
+          console.log(`📱 Social profiles found:`, socialProfiles);
+          console.log(`📧 Email source: ${emailSource}`);
+          
+        } catch (enhancedError) {
+          console.error(`❌ Enhanced discovery failed:`, enhancedError);
+        }
+        
+        // Add source and social profile information to lead
+        if (lead.email) {
+          lead.emailSource = emailSource;
+        }
+        if (Object.keys(socialProfiles).length > 0) {
+          lead.socialProfiles = socialProfiles as any;
         }
         
         realLeads.push(lead);
