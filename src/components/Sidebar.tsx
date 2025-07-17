@@ -18,7 +18,8 @@ import {
   LogOut,
   User,
   Database,
-  Brain
+  Brain,
+  TestTube
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -37,6 +38,7 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
     { id: 'lead-discovery', label: t('lead_discovery'), icon: Compass },
     { id: 'knowledge-base', label: 'Knowledge Base', icon: Database },
     { id: 'ai-chat', label: 'AI Asistent', icon: Brain },
+    { id: 'email-scraping-test', label: 'Email Scraping Test', icon: TestTube },
     { id: 'email-generator', label: t('email_generator'), icon: Mail },
     { id: 'crm-reminder', label: 'CRM Datoteke', icon: Calendar },
     { id: 'content-booster', label: t('content_booster'), icon: TrendingUp },
