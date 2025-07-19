@@ -23,13 +23,26 @@ const Index = () => {
   console.log('Index: Component starting to render');
   const [activeModule, setActiveModule] = useState('dashboard');
   console.log('Index: Active module state set:', activeModule);
-  const { addLead } = useLeadManagement();
-  console.log('Index: useLeadManagement hook called');
+  
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  console.log('Index: Sidebar state created');
+  
   const isMobile = useIsMobile();
-  console.log('Index: isMobile:', isMobile);
+  console.log('Index: isMobile hook called, result:', isMobile);
+  
   const { t } = useLanguage();
   console.log('Index: useLanguage hook called');
+  
+  let addLead;
+  try {
+    console.log('Index: About to call useLeadManagement');
+    const leadManagement = useLeadManagement();
+    addLead = leadManagement.addLead;
+    console.log('Index: useLeadManagement hook completed successfully');
+  } catch (error) {
+    console.error('Index: Error in useLeadManagement hook:', error);
+    addLead = async () => false; // fallback function
+  }
   
   // State for passing email data to EmailGenerator
   const [emailGeneratorData, setEmailGeneratorData] = useState<{
