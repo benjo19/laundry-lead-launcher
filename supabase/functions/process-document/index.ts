@@ -94,11 +94,79 @@ serve(async (req) => {
 });
 
 async function extractPDFContent(fileData: Blob): Promise<string> {
+  const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!geminiApiKey) {
+    console.warn('Gemini API key not available, falling back to basic extraction');
+    return await basicPDFExtraction(fileData);
+  }
+
   try {
-    console.log('Starting PDF content extraction');
+    console.log('Starting advanced PDF content extraction with Gemini AI');
+    
+    // Convert PDF to base64
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    
+    console.log('PDF converted to base64, size:', fileData.size);
+
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            {
+              text: 'Please extract all text content from this PDF document. Provide a comprehensive summary of the content including: main topics, key information, important details, data, specifications, and any other relevant information. Structure the output in a clear and organized way that would be useful for a knowledge base. Be detailed and thorough.'
+            },
+            {
+              inline_data: {
+                mime_type: 'application/pdf',
+                data: base64
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.1,
+          topK: 32,
+          topP: 1,
+          maxOutputTokens: 4000,
+        }
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Gemini API error: ${response.status} - ${errorText}`);
+      throw new Error(`Gemini API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Gemini API response received');
+    
+    if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+      throw new Error('Invalid response from Gemini API');
+    }
+    
+    const extractedContent = data.candidates[0].content.parts[0].text;
+    console.log('PDF extraction completed, extracted length:', extractedContent.length);
+    
+    return extractedContent;
+
+  } catch (error) {
+    console.error('Advanced PDF extraction error:', error);
+    console.log('Falling back to basic extraction...');
+    return await basicPDFExtraction(fileData);
+  }
+}
+
+async function basicPDFExtraction(fileData: Blob): Promise<string> {
+  try {
+    console.log('Using basic PDF content extraction');
     
     // Simple text extraction for demonstration
-    // In production, you'd use a proper PDF library
     const arrayBuffer = await fileData.arrayBuffer();
     
     // Try to safely decode the content
@@ -128,11 +196,11 @@ async function extractPDFContent(fileData: Blob): Promise<string> {
       extractedText = `PDF document uploaded: ${fileData.size} bytes. Basic text extraction was attempted but may be limited due to PDF structure. Document is stored for reference.`;
     }
     
-    console.log('PDF extraction completed, extracted length:', extractedText.length);
+    console.log('Basic PDF extraction completed, extracted length:', extractedText.length);
     return extractedText;
     
   } catch (error) {
-    console.error('PDF extraction error:', error);
+    console.error('Basic PDF extraction error:', error);
     return `PDF document uploaded (${fileData.size} bytes). Text extraction failed but document is stored for reference.`;
   }
 }
