@@ -10,11 +10,13 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, Loader2, AlertTriangle } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Auth: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -124,6 +126,13 @@ const Auth: React.FC = () => {
     setLoading(true);
 
     try {
+      // Save remember me preference in localStorage
+      if (rememberMe) {
+        localStorage.setItem('supabase.auth.remember', 'true');
+      } else {
+        localStorage.removeItem('supabase.auth.remember');
+      }
+
       const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -138,7 +147,9 @@ const Auth: React.FC = () => {
       } else {
         toast({
           title: "Uspješna prijava",
-          description: "Dobrodošli u Marketing Agent!",
+          description: rememberMe 
+            ? "Dobrodošli u Marketing Agent! Ostanete prijavljeni." 
+            : "Dobrodošli u Marketing Agent!",
         });
         navigate('/');
       }
@@ -205,7 +216,14 @@ const Auth: React.FC = () => {
     try {
       console.log('Attempting Google OAuth with Supabase...');
       const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google'
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/`,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          }
+        }
       });
 
       console.log('OAuth response:', { data, error });
@@ -220,6 +238,7 @@ const Auth: React.FC = () => {
         setGoogleLoading(false);
       } else {
         console.log('OAuth successful, redirecting...');
+        // User will be redirected to Google, then back to our app
       }
       // If successful, user will be redirected, so we don't set loading to false
     } catch (error) {
@@ -381,6 +400,23 @@ const Auth: React.FC = () => {
                     />
                   </div>
                 </div>
+                
+                {/* Remember Me Checkbox */}
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="remember-me"
+                    checked={rememberMe}
+                    onCheckedChange={(checked) => setRememberMe(checked === true)}
+                    disabled={loading || googleLoading}
+                  />
+                  <Label 
+                    htmlFor="remember-me" 
+                    className="text-xs sm:text-sm cursor-pointer"
+                  >
+                    Ostani prijavljen
+                  </Label>
+                </div>
+                
                 <div className="flex justify-end">
                   <Button
                     type="button"
