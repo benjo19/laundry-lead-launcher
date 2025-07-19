@@ -95,23 +95,45 @@ serve(async (req) => {
 
 async function extractPDFContent(fileData: Blob): Promise<string> {
   try {
+    console.log('Starting PDF content extraction');
+    
     // Simple text extraction for demonstration
     // In production, you'd use a proper PDF library
     const arrayBuffer = await fileData.arrayBuffer();
-    const text = new TextDecoder().decode(arrayBuffer);
+    
+    // Try to safely decode the content
+    let text = '';
+    try {
+      text = new TextDecoder('utf-8', { fatal: false }).decode(arrayBuffer);
+    } catch (decodeError) {
+      console.warn('UTF-8 decode failed, trying latin1:', decodeError);
+      text = new TextDecoder('latin1').decode(arrayBuffer);
+    }
+    
+    // Clean the text to remove potentially problematic characters
+    text = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
     
     // Extract text between 'stream' and 'endstream' markers (basic PDF text extraction)
     const streamRegex = /stream\s*(.*?)\s*endstream/gs;
     const matches = text.match(streamRegex);
     
-    if (matches) {
-      return matches.join(' ').replace(/stream|endstream/g, '').trim();
+    let extractedText = '';
+    if (matches && matches.length > 0) {
+      extractedText = matches.join(' ').replace(/stream|endstream/g, '').trim();
+      // Clean extracted text further
+      extractedText = extractedText.replace(/[^\x20-\x7E\u00A0-\uFFFF]/g, ' ').trim();
     }
     
-    return 'PDF content extracted (basic extraction)';
+    if (!extractedText || extractedText.length < 10) {
+      extractedText = `PDF document uploaded: ${fileData.size} bytes. Basic text extraction was attempted but may be limited due to PDF structure. Document is stored for reference.`;
+    }
+    
+    console.log('PDF extraction completed, extracted length:', extractedText.length);
+    return extractedText;
+    
   } catch (error) {
     console.error('PDF extraction error:', error);
-    return 'Failed to extract PDF content';
+    return `PDF document uploaded (${fileData.size} bytes). Text extraction failed but document is stored for reference.`;
   }
 }
 
