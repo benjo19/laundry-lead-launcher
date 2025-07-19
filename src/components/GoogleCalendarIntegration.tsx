@@ -126,6 +126,35 @@ const GoogleCalendarIntegration = () => {
 
     setIsLoading(true);
     try {
+      // Ensure Google API is loaded before testing
+      if (!window.gapi) {
+        console.log('Loading Google API for testing...');
+        await loadGoogleAPI();
+      }
+
+      // Ensure client is loaded
+      if (!window.gapi.client) {
+        console.log('Loading Google API client for testing...');
+        await new Promise((resolve, reject) => {
+          window.gapi.load('client:auth2', {
+            callback: resolve,
+            onerror: reject,
+          });
+        });
+
+        // Re-initialize client with saved settings
+        const savedSettings = localStorage.getItem('googleCalendarSettings');
+        if (savedSettings) {
+          const settings = JSON.parse(savedSettings);
+          await window.gapi.client.init({
+            apiKey: settings.apiKey,
+            clientId: settings.clientId,
+            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+            scope: 'https://www.googleapis.com/auth/calendar.events',
+          });
+        }
+      }
+
       const response = await window.gapi.client.calendar.calendarList.list();
       if (response.status === 200) {
         toast({
@@ -137,7 +166,7 @@ const GoogleCalendarIntegration = () => {
       console.error('Error testing connection:', error);
       toast({
         title: "Test neuspješan",
-        description: "Dogodila se greška prilikom testiranja konekcije.",
+        description: `Dogodila se greška prilikom testiranja konekcije: ${error.message || 'Nepoznata greška'}`,
         variant: "destructive",
       });
     } finally {
