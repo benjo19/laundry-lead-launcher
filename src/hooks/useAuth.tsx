@@ -4,8 +4,6 @@ import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useAuth = () => {
-  console.log('useAuth: Hook initialized');
-  
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
@@ -90,15 +88,6 @@ export const useAuth = () => {
       setError('Failed to sign out');
     }
   };
-
-  console.log('useAuth: Returning state:', { 
-    user: !!user, 
-    session: !!session, 
-    loading, 
-    error,
-    userId: user?.id,
-    userEmail: user?.email
-  });
 
   return {
     user,
