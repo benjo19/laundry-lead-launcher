@@ -20,6 +20,12 @@ import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 const Index = () => {
+  console.log('Index: Component starting to render - TEST');
+  
+  // Test render to see if component starts at all
+  return <div style={{color: 'red', fontSize: '24px', padding: '20px'}}>INDEX COMPONENT RENDERS!</div>;
+  
+  /*
   const [activeModule, setActiveModule] = useState('dashboard');
   const { addLead } = useLeadManagement();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -136,6 +142,7 @@ const Index = () => {
       <HelpChatbox />
     </div>
   );
+  */
 };
 
 export default Index;

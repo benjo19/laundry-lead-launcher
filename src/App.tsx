@@ -78,7 +78,9 @@ const AppContent: React.FC = () => {
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/" element={
                       <ProtectedRoute>
-                        <Index />
+                        <ErrorBoundary>
+                          <Index />
+                        </ErrorBoundary>
                       </ProtectedRoute>
                     } />
                     <Route path="/settings" element={
