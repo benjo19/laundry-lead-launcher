@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { Lead, Reminder } from '@/types';
+import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { Reminder } from '@/types';
 import { useReminders } from '@/hooks/useReminders';
 import { useMakeIntegration } from '@/hooks/useMakeIntegration';
 import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
@@ -39,7 +39,7 @@ const CRMReminder = () => {
     companyInputMode: 'select'
   });
 
-  const [leads] = useLocalStorage<Lead[]>('leads', []);
+  const { leads } = useLeadManagement();
   const { 
     reminders, 
     loading,
