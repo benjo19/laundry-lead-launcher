@@ -19,21 +19,126 @@ import { HelpChatbox } from '@/components/HelpChatbox';
 import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
-
 const Index = () => {
   console.log('Index: Component starting to render');
-  
   const [activeModule, setActiveModule] = useState('dashboard');
-  console.log('Index: useState works');
-  
+  console.log('Index: Active module state set:', activeModule);
   const { addLead } = useLeadManagement();
-  console.log('Index: useLeadManagement works');
+  console.log('Index: useLeadManagement hook called');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
+  console.log('Index: isMobile:', isMobile);
+  const { t } = useLanguage();
+  console.log('Index: useLanguage hook called');
   
+  // State for passing email data to EmailGenerator
+  const [emailGeneratorData, setEmailGeneratorData] = useState<{
+    email?: string;
+    company?: string;
+  }>({});
+
+
+  const handleNavigateToEmailGenerator = (email: string, company: string) => {
+    setEmailGeneratorData({ email, company });
+    setActiveModule('email-generator');
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const handleNavigateToModule = (module: string) => {
+    setActiveModule(module);
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const handleModuleChange = (module: string) => {
+    setActiveModule(module);
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const getModuleTitle = () => {
+    switch (activeModule) {
+      case 'dashboard': return t('dashboard');
+      case 'lead-hunter': return t('lead_hunter');
+      case 'lead-discovery': return t('lead_discovery');
+      case 'knowledge-base': return 'Knowledge Base';
+      case 'email-scraping-test': return 'Email Scraping Test';
+      case 'ai-chat': return 'AI Asistent';
+      case 'email-generator': return t('email_generator');
+      case 'crm-reminder': return 'CRM Datoteke';
+      case 'content-booster': return t('content_booster');
+      case 'analytics': return t('analytics');
+      case 'settings': return t('settings');
+      default: return t('marketing_agent');
+    }
+  };
+
+  const renderActiveModule = () => {
+    switch (activeModule) {
+      case 'dashboard':
+        return <Dashboard onNavigateToModule={handleNavigateToModule} />;
+      case 'lead-hunter':
+        return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
+      case 'lead-discovery':
+        return <LeadDiscovery onAddLead={addLead} onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
+      case 'knowledge-base':
+        return <KnowledgeBase />;
+      case 'email-scraping-test':
+        return <EmailScrapingTest />;
+      case 'ai-chat':
+        return <AIKnowledgeChat />;
+      case 'email-generator':
+        return (
+          <EmailGenerator 
+            preSelectedEmail={emailGeneratorData.email}
+            preSelectedCompany={emailGeneratorData.company}
+          />
+        );
+      case 'crm-reminder':
+        return <CRMReminder />;
+      case 'content-booster':
+        return <ContentBooster />;
+      case 'analytics':
+        return <Analytics />;
+      case 'settings':
+        return <Settings />;
+      default:
+        return <Dashboard onNavigateToModule={handleNavigateToModule} />;
+    }
+  };
+
+  console.log('Index: About to render, isMobile:', isMobile);
+  if (isMobile) {
+    return (
+      <div className="flex min-h-screen bg-background w-full">
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <div className="flex-1 flex flex-col min-w-0">
+            <MobileHeader 
+              onMenuClick={() => setSidebarOpen(true)}
+              title={getModuleTitle()}
+            />
+            <main className="flex-1 overflow-auto p-2 sm:p-3 md:p-4 bg-gradient-to-br from-background to-muted/20">
+              <div className="animate-fade-in w-full max-w-full">
+                {renderActiveModule()}
+              </div>
+            </main>
+          </div>
+          <SheetContent side="left" className="w-[280px] sm:w-80 p-0 border-r border-border/40">
+            <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
+          </SheetContent>
+        </Sheet>
+        <HelpChatbox />
+      </div>
+    );
+  }
+
   return (
     <div className="flex min-h-screen bg-background w-full">
-      <div style={{color: 'green', fontSize: '18px', padding: '20px'}}>
-        INDEX WITH BASIC STATE WORKS! Active module: {activeModule}
-      </div>
+      <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+      <main className="flex-1 overflow-auto min-w-0 bg-gradient-to-br from-background to-muted/30">
+        <div className="animate-fade-in">
+          {renderActiveModule()}
+        </div>
+      </main>
+      <HelpChatbox />
     </div>
   );
 };

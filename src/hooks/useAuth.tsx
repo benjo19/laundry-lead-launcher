@@ -80,7 +80,6 @@ export const useAuth = () => {
 
   const signOut = async () => {
     console.log('useAuth: Signing out user');
-    console.trace('useAuth: signOut called from:');
     try {
       await supabase.auth.signOut();
       console.log('useAuth: Sign out successful');

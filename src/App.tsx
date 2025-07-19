@@ -24,7 +24,10 @@ const queryClient = new QueryClient({
 });
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  console.log('ProtectedRoute: Rendering protected route');
   const { user, loading, error } = useAuthContext();
+  
+  console.log('ProtectedRoute: User state:', { user: !!user, loading, error });
   
   if (loading) {
     console.log('ProtectedRoute: Showing loading state');
@@ -78,9 +81,7 @@ const AppContent: React.FC = () => {
                     <Route path="/auth" element={<Auth />} />
                     <Route path="/" element={
                       <ProtectedRoute>
-                        <ErrorBoundary>
-                          <Index />
-                        </ErrorBoundary>
+                        <Index />
                       </ProtectedRoute>
                     } />
                     <Route path="/settings" element={
