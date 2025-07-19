@@ -1,22 +1,72 @@
 import React, { useState } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/components/Dashboard';
+import LeadHunter from '@/components/LeadHunter';
+import LeadDiscovery from '@/components/LeadDiscovery';
+import EmailGenerator from '@/components/EmailGenerator';
+import CRMReminder from '@/components/CRMReminder';
+import ContentBooster from '@/components/ContentBooster';
+import Analytics from '@/components/Analytics';
+import Settings from '@/components/Settings';
+import KnowledgeBase from '@/components/KnowledgeBase';
+import AIKnowledgeChat from '@/components/AIKnowledgeChat';
+import { EmailScrapingTest } from '@/components/EmailScrapingTest';
+import MobileHeader from '@/components/MobileHeader';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { HelpChatbox } from '@/components/HelpChatbox';
+import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
-import MobileHeader from '@/components/MobileHeader';
-
+import { useLeadManagement } from '@/hooks/useLeadManagement';
 const Index = () => {
-  console.log('Index: Component rendering - SUCCESS!');
+  console.log('Index: Component starting to render');
   const [activeModule, setActiveModule] = useState('dashboard');
+  console.log('Index: Active module state set:', activeModule);
+  const { addLead } = useLeadManagement();
+  console.log('Index: useLeadManagement hook called');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
+  console.log('Index: isMobile:', isMobile);
   const { t } = useLanguage();
+  console.log('Index: useLanguage hook called');
+  
+  // State for passing email data to EmailGenerator
+  const [emailGeneratorData, setEmailGeneratorData] = useState<{
+    email?: string;
+    company?: string;
+  }>({});
+
+
+  const handleNavigateToEmailGenerator = (email: string, company: string) => {
+    setEmailGeneratorData({ email, company });
+    setActiveModule('email-generator');
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const handleNavigateToModule = (module: string) => {
+    setActiveModule(module);
+    if (isMobile) setSidebarOpen(false);
+  };
+
+  const handleModuleChange = (module: string) => {
+    setActiveModule(module);
+    if (isMobile) setSidebarOpen(false);
+  };
 
   const getModuleTitle = () => {
     switch (activeModule) {
       case 'dashboard': return t('dashboard');
+      case 'lead-hunter': return t('lead_hunter');
+      case 'lead-discovery': return t('lead_discovery');
+      case 'knowledge-base': return 'Knowledge Base';
+      case 'email-scraping-test': return 'Email Scraping Test';
+      case 'ai-chat': return 'AI Asistent';
+      case 'email-generator': return t('email_generator');
+      case 'crm-reminder': return 'CRM Datoteke';
+      case 'content-booster': return t('content_booster');
+      case 'analytics': return t('analytics');
+      case 'settings': return t('settings');
       default: return t('marketing_agent');
     }
   };
@@ -24,12 +74,38 @@ const Index = () => {
   const renderActiveModule = () => {
     switch (activeModule) {
       case 'dashboard':
-        return <Dashboard onNavigateToModule={setActiveModule} />;
+        return <Dashboard onNavigateToModule={handleNavigateToModule} />;
+      case 'lead-hunter':
+        return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
+      case 'lead-discovery':
+        return <LeadDiscovery onAddLead={addLead} onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
+      case 'knowledge-base':
+        return <KnowledgeBase />;
+      case 'email-scraping-test':
+        return <EmailScrapingTest />;
+      case 'ai-chat':
+        return <AIKnowledgeChat />;
+      case 'email-generator':
+        return (
+          <EmailGenerator 
+            preSelectedEmail={emailGeneratorData.email}
+            preSelectedCompany={emailGeneratorData.company}
+          />
+        );
+      case 'crm-reminder':
+        return <CRMReminder />;
+      case 'content-booster':
+        return <ContentBooster />;
+      case 'analytics':
+        return <Analytics />;
+      case 'settings':
+        return <Settings />;
       default:
-        return <Dashboard onNavigateToModule={setActiveModule} />;
+        return <Dashboard onNavigateToModule={handleNavigateToModule} />;
     }
   };
 
+  console.log('Index: About to render, isMobile:', isMobile);
   if (isMobile) {
     return (
       <div className="flex min-h-screen bg-background w-full">
@@ -46,7 +122,7 @@ const Index = () => {
             </main>
           </div>
           <SheetContent side="left" className="w-[280px] sm:w-80 p-0 border-r border-border/40">
-            <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
+            <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
           </SheetContent>
         </Sheet>
         <HelpChatbox />
