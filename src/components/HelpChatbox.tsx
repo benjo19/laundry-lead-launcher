@@ -69,6 +69,8 @@ export const HelpChatbox = () => {
     const loadingId = addMessage('...', false, true);
 
     try {
+      console.log('Calling ai-chat function with:', { message: userMessage, language });
+      
       const { data, error } = await supabase.functions.invoke('ai-chat', {
         body: { 
           message: userMessage,
@@ -76,11 +78,13 @@ export const HelpChatbox = () => {
         }
       });
 
+      console.log('Supabase response:', { data, error });
+
       if (error) {
         console.error('AI chat error:', error);
         updateMessage(loadingId, language === 'en' 
-          ? 'Sorry, I encountered an error. Please try again.'
-          : 'Izvinjavam se, dogodila se greška. Molim pokušajte ponovo.'
+          ? `Sorry, I encountered an error: ${error.message}`
+          : `Izvinjavam se, dogodila se greška: ${error.message}`
         );
         return;
       }
@@ -88,6 +92,7 @@ export const HelpChatbox = () => {
       if (data?.response) {
         updateMessage(loadingId, data.response);
       } else {
+        console.log('No response in data:', data);
         updateMessage(loadingId, language === 'en' 
           ? 'Sorry, I couldn\'t generate a response. Please try again.'
           : 'Izvinjavam se, nisam mogao da generišem odgovor. Molim pokušajte ponovo.'
@@ -96,8 +101,8 @@ export const HelpChatbox = () => {
     } catch (error) {
       console.error('Error calling AI chat:', error);
       updateMessage(loadingId, language === 'en' 
-        ? 'Connection error. Please check your internet connection and try again.'
-        : 'Greška sa konekcijom. Molim proverite internet konekciju i pokušajte ponovo.'
+        ? `Connection error: ${error.message}. Please check your internet connection and try again.`
+        : `Greška sa konekcijom: ${error.message}. Molim proverite internet konekciju i pokušajte ponovo.`
       );
     }
   };
