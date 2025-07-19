@@ -26,7 +26,6 @@ const queryClient = new QueryClient({
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   console.log('ProtectedRoute: Rendering protected route');
   const { user, loading, error } = useAuthContext();
-  const { t } = useLanguage();
   
   console.log('ProtectedRoute: User state:', { user: !!user, loading, error });
   
@@ -36,7 +35,7 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
         <div className="text-center space-y-4">
           <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-sm sm:text-base text-gray-600">{t('loading')}</p>
+          <p className="text-sm sm:text-base text-gray-600">Učitava...</p>
           {error && (
             <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg max-w-sm mx-auto">
               <div className="flex items-center gap-2 text-red-800">
