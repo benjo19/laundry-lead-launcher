@@ -124,6 +124,16 @@ const GoogleCalendarIntegration = () => {
       return;
     }
 
+    // Check if this is simple integration (no API keys)
+    const savedSettings = localStorage.getItem('googleCalendarSettings');
+    if (!savedSettings || !JSON.parse(savedSettings).apiKey) {
+      toast({
+        title: "Jednostavna integracija",
+        description: "Koristite jednostavnu integraciju - nema API-ja za testiranje. Google Calendar linkovi će se generirati automatski.",
+      });
+      return;
+    }
+
     setIsLoading(true);
     try {
       console.log('Starting test connection...');
@@ -145,34 +155,29 @@ const GoogleCalendarIntegration = () => {
         });
 
         // Re-initialize client with saved settings
-        const savedSettings = localStorage.getItem('googleCalendarSettings');
-        if (savedSettings) {
-          const settings = JSON.parse(savedSettings);
-          console.log('Initializing client with saved settings...');
-          await window.gapi.client.init({
-            apiKey: settings.apiKey,
-            clientId: settings.clientId,
-            discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-            scope: 'https://www.googleapis.com/auth/calendar.events',
-          });
-          
-          // Wait for discovery docs to load
-          console.log('Waiting for calendar API to load...');
-          await new Promise((resolve) => {
-            const checkCalendarAPI = () => {
-              if (window.gapi.client.calendar) {
-                console.log('Calendar API loaded successfully');
-                resolve(null);
-              } else {
-                console.log('Waiting for calendar API...');
-                setTimeout(checkCalendarAPI, 100);
-              }
-            };
-            checkCalendarAPI();
-          });
-        } else {
-          throw new Error('Nema spremljenih postavki za Google Calendar');
-        }
+        const settings = JSON.parse(savedSettings);
+        console.log('Initializing client with saved settings...');
+        await window.gapi.client.init({
+          apiKey: settings.apiKey,
+          clientId: settings.clientId,
+          discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
+          scope: 'https://www.googleapis.com/auth/calendar.events',
+        });
+        
+        // Wait for discovery docs to load
+        console.log('Waiting for calendar API to load...');
+        await new Promise((resolve) => {
+          const checkCalendarAPI = () => {
+            if (window.gapi.client.calendar) {
+              console.log('Calendar API loaded successfully');
+              resolve(null);
+            } else {
+              console.log('Waiting for calendar API...');
+              setTimeout(checkCalendarAPI, 100);
+            }
+          };
+          checkCalendarAPI();
+        });
       }
 
       console.log('Testing calendar API...');
