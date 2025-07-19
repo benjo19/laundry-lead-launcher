@@ -9,6 +9,8 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
+  console.log('AI Chat function called');
+  
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -16,12 +18,25 @@ serve(async (req) => {
 
   try {
     const { message, language = 'sr' } = await req.json();
+    console.log('Received message:', message, 'Language:', language);
 
     if (!message) {
+      console.log('No message provided');
       return new Response(
         JSON.stringify({ error: 'Message is required' }), 
         { 
           status: 400, 
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+
+    if (!geminiApiKey) {
+      console.log('GEMINI_API_KEY not found');
+      return new Response(
+        JSON.stringify({ error: 'AI service not configured' }), 
+        { 
+          status: 500, 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' } 
         }
       );
