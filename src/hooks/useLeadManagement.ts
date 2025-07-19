@@ -5,7 +5,15 @@ import { Lead } from '@/types';
 import { useAuthContext } from '@/contexts/AuthContext';
 
 export const useLeadManagement = () => {
-  const { user } = useAuthContext();
+  // Safe call to useAuthContext with error boundary
+  let user = null;
+  try {
+    const authContext = useAuthContext();
+    user = authContext.user;
+  } catch (error) {
+    // If AuthContext is not available, user remains null
+    console.log('AuthContext not available, using fallback');
+  }
   const [localLeads] = useLocalStorage<Lead[]>('leads', []);
   
   // Use Supabase if user is authenticated, otherwise fallback to localStorage
