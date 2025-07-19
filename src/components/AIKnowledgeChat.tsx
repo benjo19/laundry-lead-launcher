@@ -81,10 +81,12 @@ const AIKnowledgeChat = () => {
         body: { message: inputMessage }
       });
 
-      console.log('AI response:', data);
-      console.log('AI error:', error);
+      console.log('Supabase invoke response:', { data, error });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw error;
+      }
 
       const assistantMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
