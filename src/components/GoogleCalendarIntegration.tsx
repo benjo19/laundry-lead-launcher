@@ -126,6 +126,8 @@ const GoogleCalendarIntegration = () => {
 
     setIsLoading(true);
     try {
+      console.log('Starting test connection...');
+      
       // Ensure Google API is loaded before testing
       if (!window.gapi) {
         console.log('Loading Google API for testing...');
@@ -133,7 +135,7 @@ const GoogleCalendarIntegration = () => {
       }
 
       // Ensure client is loaded
-      if (!window.gapi.client) {
+      if (!window.gapi.client || !window.gapi.client.calendar) {
         console.log('Loading Google API client for testing...');
         await new Promise((resolve, reject) => {
           window.gapi.load('client:auth2', {
@@ -146,17 +148,37 @@ const GoogleCalendarIntegration = () => {
         const savedSettings = localStorage.getItem('googleCalendarSettings');
         if (savedSettings) {
           const settings = JSON.parse(savedSettings);
+          console.log('Initializing client with saved settings...');
           await window.gapi.client.init({
             apiKey: settings.apiKey,
             clientId: settings.clientId,
             discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
             scope: 'https://www.googleapis.com/auth/calendar.events',
           });
+          
+          // Wait for discovery docs to load
+          console.log('Waiting for calendar API to load...');
+          await new Promise((resolve) => {
+            const checkCalendarAPI = () => {
+              if (window.gapi.client.calendar) {
+                console.log('Calendar API loaded successfully');
+                resolve(null);
+              } else {
+                console.log('Waiting for calendar API...');
+                setTimeout(checkCalendarAPI, 100);
+              }
+            };
+            checkCalendarAPI();
+          });
+        } else {
+          throw new Error('Nema spremljenih postavki za Google Calendar');
         }
       }
 
+      console.log('Testing calendar API...');
       const response = await window.gapi.client.calendar.calendarList.list();
       if (response.status === 200) {
+        console.log('Test successful');
         toast({
           title: "Test uspješan",
           description: "Google Calendar konekcija radi ispravno.",
