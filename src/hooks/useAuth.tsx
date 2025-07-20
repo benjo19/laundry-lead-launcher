@@ -29,7 +29,13 @@ export const useAuth = () => {
         (event, session) => {
           if (!mounted) return;
           
-          console.log('useAuth: Auth state changed:', { event, session: !!session });
+          console.log('useAuth: Auth state changed:', { 
+            event, 
+            session: !!session, 
+            user: !!session?.user,
+            userId: session?.user?.id,
+            userEmail: session?.user?.email 
+          });
           clearTimeout(timeoutId);
           setSession(session);
           setUser(session?.user ?? null);
@@ -47,7 +53,12 @@ export const useAuth = () => {
           console.error('useAuth: Error getting session:', error);
           setError(error.message);
         } else {
-          console.log('useAuth: Initial session:', { session: !!session });
+          console.log('useAuth: Initial session:', { 
+            session: !!session, 
+            user: !!session?.user,
+            userId: session?.user?.id,
+            userEmail: session?.user?.email 
+          });
         }
         clearTimeout(timeoutId);
         setSession(session);
