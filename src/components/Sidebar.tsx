@@ -19,7 +19,8 @@ import {
   User,
   Database,
   Brain,
-  TestTube
+  TestTube,
+  CreditCard
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -43,6 +44,7 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
     { id: 'crm-reminder', label: 'CRM Datoteke', icon: Calendar },
     { id: 'content-booster', label: t('content_booster'), icon: TrendingUp },
     { id: 'analytics', label: t('analytics'), icon: BarChart3 },
+    { id: 'subscription', label: 'Subscription', icon: CreditCard },
   ];
 
   const handleSignOut = async () => {

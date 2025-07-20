@@ -19,6 +19,7 @@ import { HelpChatbox } from '@/components/HelpChatbox';
 import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { SubscriptionPlans } from '@/components/SubscriptionPlans';
 const Index = () => {
   console.log('Index: Component starting to render');
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -67,6 +68,7 @@ const Index = () => {
       case 'content-booster': return t('content_booster');
       case 'analytics': return t('analytics');
       case 'settings': return t('settings');
+      case 'subscription': return 'Subscription';
       default: return t('marketing_agent');
     }
   };
@@ -100,6 +102,8 @@ const Index = () => {
         return <Analytics />;
       case 'settings':
         return <Settings />;
+      case 'subscription':
+        return <SubscriptionPlans />;
       default:
         return <Dashboard onNavigateToModule={handleNavigateToModule} />;
     }
