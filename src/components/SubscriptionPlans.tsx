@@ -4,6 +4,18 @@ import { Badge } from "@/components/ui/badge";
 import { Check, Crown, Zap, Users } from "lucide-react";
 import { useSubscription } from "@/hooks/useSubscription";
 
+// Declare the custom Stripe element for TypeScript
+declare global {
+  namespace JSX {
+    interface IntrinsicElements {
+      'stripe-buy-button': {
+        'buy-button-id': string;
+        'publishable-key': string;
+      };
+    }
+  }
+}
+
 const plans = [
   {
     id: "demo",
@@ -127,18 +139,27 @@ export const SubscriptionPlans = () => {
                   ))}
                 </ul>
 
-                <Button
-                  className="w-full"
-                  variant={isCurrent ? "secondary" : "default"}
-                  disabled={loading || isCurrent || plan.id === "demo"}
-                  onClick={() => handlePlanSelect(plan.id)}
-                >
-                  {isCurrent
-                    ? "Current Plan"
-                    : plan.id === "demo"
-                    ? "Free Plan"
-                    : "Subscribe"}
-                </Button>
+                {plan.id === "basic" ? (
+                  <div className="w-full">
+                    <stripe-buy-button
+                      buy-button-id="buy_btn_1Rn5KDB6VUycjathgJPAsgO7"
+                      publishable-key="pk_live_51PIHTrB6VUycjathn7VTsaCr58fyBlks7S4jFXHSlHI6v4mHor2DI82WMKyBMRKR1BvBjxlzod1QcpRedRrX1GKA00PgX0VGv8"
+                    />
+                  </div>
+                ) : (
+                  <Button
+                    className="w-full"
+                    variant={isCurrent ? "secondary" : "default"}
+                    disabled={loading || isCurrent || plan.id === "demo"}
+                    onClick={() => handlePlanSelect(plan.id)}
+                  >
+                    {isCurrent
+                      ? "Current Plan"
+                      : plan.id === "demo"
+                      ? "Free Plan"
+                      : "Subscribe"}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           );
