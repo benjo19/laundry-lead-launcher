@@ -111,8 +111,8 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h2 className="text-3xl font-bold text-slate-900">Dashboard</h2>
-          <p className="text-slate-600">Pregled aktivnosti Marketing Agent sustava</p>
+          <h2 className="text-3xl font-bold text-foreground">Dashboard</h2>
+          <p className="text-muted-foreground">Pregled aktivnosti Marketing Agent sustava</p>
         </div>
       </div>
 
@@ -126,14 +126,14 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               onClick={() => handleStatClick(stat.module)}
             >
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium text-slate-600">
+                <CardTitle className="text-sm font-medium text-muted-foreground">
                   {stat.title}
                 </CardTitle>
                 <Icon className={`h-5 w-5 ${stat.color}`} />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-slate-900">{stat.value}</div>
-                <p className="text-xs text-green-600 font-medium">
+                <div className="text-2xl font-bold text-foreground">{stat.value}</div>
+                <p className="text-xs text-success font-medium">
                   {stat.change} od prošlog tjedna
                 </p>
               </CardContent>
@@ -145,8 +145,8 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <MessageSquare className="h-5 w-5 mr-2 text-blue-600" />
+            <CardTitle className="flex items-center text-foreground">
+              <MessageSquare className="h-5 w-5 mr-2 text-primary" />
               Nedavne Aktivnosti
             </CardTitle>
           </CardHeader>
@@ -154,16 +154,16 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
             <div className="space-y-4">
               {recentActivity.length > 0 ? (
                 recentActivity.map((activity, index) => (
-                  <div key={index} className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                  <div key={index} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div>
-                      <p className="font-medium text-slate-900">{activity.action}</p>
-                      <p className="text-sm text-slate-600">{activity.company}</p>
+                      <p className="font-medium text-foreground">{activity.action}</p>
+                      <p className="text-sm text-muted-foreground">{activity.company}</p>
                     </div>
-                    <span className="text-xs text-slate-500">{activity.time}</span>
+                    <span className="text-xs text-muted-foreground">{activity.time}</span>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-4 text-slate-500">
+                <div className="text-center py-4 text-muted-foreground">
                   Nema nedavnih aktivnosti. Počnite dodavanjem leadova!
                 </div>
               )}
@@ -173,32 +173,32 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
 
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center">
-              <TrendingUp className="h-5 w-5 mr-2 text-green-600" />
+            <CardTitle className="flex items-center text-foreground">
+              <TrendingUp className="h-5 w-5 mr-2 text-success" />
               Ključni Pokazatelji
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Conversion rate</span>
-                <span className="font-bold text-green-600">{conversionRate}%</span>
+                <span className="text-muted-foreground">Conversion rate</span>
+                <span className="font-bold text-success">{conversionRate}%</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Aktivni leadovi</span>
-                <span className="font-bold text-blue-600">{leads.filter(l => l.status !== 'Odbačen').length}</span>
+                <span className="text-muted-foreground">Aktivni leadovi</span>
+                <span className="font-bold text-primary">{leads.filter(l => l.status !== 'Odbačen').length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Email drafts</span>
-                <span className="font-bold text-yellow-600">{emails.filter(e => e.status === 'Draft').length}</span>
+                <span className="text-muted-foreground">Email drafts</span>
+                <span className="font-bold text-warning">{emails.filter(e => e.status === 'Draft').length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Zakazani postovi</span>
-                <span className="font-bold text-purple-600">{posts.filter(p => p.status === 'Scheduled').length}</span>
+                <span className="text-muted-foreground">Zakazani postovi</span>
+                <span className="font-bold text-accent-foreground">{posts.filter(p => p.status === 'Scheduled').length}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-slate-600">Završeni podsjetnici</span>
-                <span className="font-bold text-green-600">{reminders.filter(r => r.status === 'Završen').length}</span>
+                <span className="text-muted-foreground">Završeni podsjetnici</span>
+                <span className="font-bold text-success">{reminders.filter(r => r.status === 'Završen').length}</span>
               </div>
             </div>
           </CardContent>
