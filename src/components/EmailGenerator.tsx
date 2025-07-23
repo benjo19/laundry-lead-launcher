@@ -210,8 +210,21 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       company: selectedCompany
     };
 
-    // Trigger Make.com webhook before sending
-    await triggerWebhook('email_sent', emailData);
+    try {
+      // Send to Make.com webhook
+      await fetch('https://hook.eu2.make.com/b9xhj8j489v248qyw78gctwlkimsonot', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify(emailData),
+      });
+
+      console.log('Email data sent to Make.com webhook:', emailData);
+    } catch (error) {
+      console.error('Error sending to webhook:', error);
+    }
 
     if (editingDraftId) {
       // Update existing draft to sent
