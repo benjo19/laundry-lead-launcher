@@ -20,6 +20,7 @@ import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { SubscriptionPlans } from '@/components/SubscriptionPlans';
+
 const Index = () => {
   console.log('Index: Component starting to render');
   const [activeModule, setActiveModule] = useState('dashboard');
@@ -74,38 +75,68 @@ const Index = () => {
   };
 
   const renderActiveModule = () => {
-    switch (activeModule) {
-      case 'dashboard':
-        return <Dashboard onNavigateToModule={handleNavigateToModule} />;
-      case 'lead-hunter':
-        return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
-      case 'lead-discovery':
-        return <LeadDiscovery onAddLead={addLead} onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
-      case 'knowledge-base':
-        return <KnowledgeBase />;
-      case 'email-scraping-test':
-        return <EmailScrapingTest />;
-      case 'ai-chat':
-        return <AIKnowledgeChat />;
-      case 'email-generator':
-        return (
-          <EmailGenerator 
-            preSelectedEmail={emailGeneratorData.email}
-            preSelectedCompany={emailGeneratorData.company}
-          />
-        );
-      case 'crm-reminder':
-        return <CRMReminder />;
-      case 'content-booster':
-        return <ContentBooster />;
-      case 'analytics':
-        return <Analytics />;
-      case 'settings':
-        return <Settings />;
-      case 'subscription':
-        return <SubscriptionPlans />;
-      default:
-        return <Dashboard onNavigateToModule={handleNavigateToModule} />;
+    try {
+      console.log('Index: Rendering module:', activeModule);
+      switch (activeModule) {
+        case 'dashboard':
+          console.log('Index: Rendering Dashboard');
+          return <Dashboard onNavigateToModule={handleNavigateToModule} />;
+        case 'lead-hunter':
+          console.log('Index: Rendering LeadHunter');
+          return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
+        case 'lead-discovery':
+          console.log('Index: Rendering LeadDiscovery');
+          return <LeadDiscovery onAddLead={addLead} onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
+        case 'knowledge-base':
+          console.log('Index: Rendering KnowledgeBase');
+          return <KnowledgeBase />;
+        case 'email-scraping-test':
+          console.log('Index: Rendering EmailScrapingTest');
+          return <EmailScrapingTest />;
+        case 'ai-chat':
+          console.log('Index: Rendering AIKnowledgeChat');
+          return <AIKnowledgeChat />;
+        case 'email-generator':
+          console.log('Index: Rendering EmailGenerator');
+          return (
+            <EmailGenerator 
+              preSelectedEmail={emailGeneratorData.email}
+              preSelectedCompany={emailGeneratorData.company}
+            />
+          );
+        case 'crm-reminder':
+          console.log('Index: Rendering CRMReminder');
+          return <CRMReminder />;
+        case 'content-booster':
+          console.log('Index: Rendering ContentBooster');
+          return <ContentBooster />;
+        case 'analytics':
+          console.log('Index: Rendering Analytics');
+          return <Analytics />;
+        case 'settings':
+          console.log('Index: Rendering Settings');
+          return <Settings />;
+        case 'subscription':
+          console.log('Index: Rendering SubscriptionPlans');
+          return <SubscriptionPlans />;
+        default:
+          console.log('Index: Rendering default Dashboard');
+          return <Dashboard onNavigateToModule={handleNavigateToModule} />;
+      }
+    } catch (error) {
+      console.error('Index: Error rendering module:', error);
+      return (
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-destructive mb-4">Greška pri učitavanju modula</h2>
+          <p className="text-muted-foreground mb-4">Dogodila se greška: {error?.toString()}</p>
+          <button 
+            onClick={() => setActiveModule('dashboard')} 
+            className="px-4 py-2 bg-primary text-primary-foreground rounded"
+          >
+            Povratak na Dashboard
+          </button>
+        </div>
+      );
     }
   };
 
