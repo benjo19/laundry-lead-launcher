@@ -138,7 +138,12 @@ const BusinessDocuments = () => {
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={() => window.open(doc.url, '_blank')}
+                    onClick={() => {
+                      const popup = window.open(doc.url, '_blank', 'width=800,height=600,scrollbars=yes,resizable=yes');
+                      if (!popup) {
+                        window.open(doc.url, '_blank');
+                      }
+                    }}
                   >
                     <Download className="h-4 w-4" />
                   </Button>

@@ -55,7 +55,7 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Dodaj Novi Lead</DialogTitle>
         </DialogHeader>
@@ -73,7 +73,6 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
             <Input
               value={formData.location}
               onChange={(e) => setFormData({...formData, location: e.target.value})}
-              required
             />
           </div>
           <div>
@@ -81,7 +80,6 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
             <Input
               value={formData.employees}
               onChange={(e) => setFormData({...formData, employees: e.target.value})}
-              required
             />
           </div>
           <div>
@@ -89,7 +87,6 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
             <Input
               value={formData.phone}
               onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              required
             />
           </div>
           <div>
@@ -98,7 +95,6 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
               type="email"
               value={formData.email}
               onChange={(e) => setFormData({...formData, email: e.target.value})}
-              required
             />
           </div>
           <div>

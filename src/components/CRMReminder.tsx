@@ -175,20 +175,24 @@ const CRMReminder = () => {
         onPriorityFilterChange={setPriorityFilter}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <ReminderList
-          reminders={filteredReminders}
-          onUpdateStatus={handleUpdateReminderStatus}
-          onPostpone={postponeReminder}
-          onDelete={deleteReminder}
-        />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
+        <div className="lg:col-span-2 min-h-0 max-h-[calc(100vh-300px)] overflow-y-auto">
+          <ReminderList
+            reminders={filteredReminders}
+            onUpdateStatus={handleUpdateReminderStatus}
+            onPostpone={postponeReminder}
+            onDelete={deleteReminder}
+          />
+        </div>
 
-        <ReminderForm
-          newReminder={newReminder}
-          setNewReminder={setNewReminder}
-          leads={leads}
-          onCreateReminder={handleCreateReminder}
-        />
+        <div className="lg:col-span-1 min-h-0 max-h-[calc(100vh-300px)] overflow-y-auto">
+          <ReminderForm
+            newReminder={newReminder}
+            setNewReminder={setNewReminder}
+            leads={leads}
+            onCreateReminder={handleCreateReminder}
+          />
+        </div>
       </div>
     </div>
   );
