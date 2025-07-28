@@ -207,7 +207,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       subject,
       content: emailContent,
       template: template || 'custom',
-      company: selectedCompany
+      company: selectedCompany,
+      action: 'save_draft' // Dodajemo action da Make.com zna da treba spremiti u draft
     };
 
     try {
@@ -221,9 +222,19 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         body: JSON.stringify(emailData),
       });
 
-      console.log('Email data sent to Make.com webhook:', emailData);
+      console.log('Email data sent to Make.com webhook for draft saving:', emailData);
+      
+      toast({
+        title: "Poslano u Make.com",
+        description: "Email je poslan na webhook i spremljen kao draft u Make.com",
+      });
     } catch (error) {
       console.error('Error sending to webhook:', error);
+      toast({
+        title: "Greška",
+        description: "Greška pri slanju na Make.com webhook",
+        variant: "destructive"
+      });
     }
 
     if (editingDraftId) {
