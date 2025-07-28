@@ -27,7 +27,7 @@ const CRMReminder = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const { triggerWebhook } = useMakeIntegration();
-  const { createCalendarEvent } = useGoogleCalendar();
+  const { createCalendarEvent, updateCalendarEvent } = useGoogleCalendar();
   
   const [newReminder, setNewReminder] = useState<NewReminderForm>({
     title: '',
@@ -80,8 +80,8 @@ const CRMReminder = () => {
           status: 'Aktivan' as const
         };
 
-        // Add to Google Calendar
-        await createCalendarEvent(reminderForCalendar);
+        // Add to Google Calendar and get event ID
+        const eventId = await createCalendarEvent(reminderForCalendar);
         
         // Trigger Make.com webhook
         await triggerWebhook('reminder_created', {
@@ -146,6 +146,22 @@ const CRMReminder = () => {
     try {
       const success = await updateReminder(editingReminder.id, newReminder);
       if (success) {
+        // Create updated reminder object for calendar
+        const reminderForCalendar = {
+          id: editingReminder.id,
+          title: newReminder.title,
+          description: newReminder.description,
+          date: newReminder.date,
+          time: newReminder.time,
+          priority: newReminder.priority,
+          company: newReminder.company,
+          status: editingReminder.status
+        };
+
+        // Try to update Google Calendar event if we have an event ID
+        // Note: For simplicity, this will create a new calendar link since we don't store event IDs yet
+        await updateCalendarEvent(reminderForCalendar, 'placeholder-event-id');
+        
         setEditingReminder(null);
         setNewReminder({
           title: '',

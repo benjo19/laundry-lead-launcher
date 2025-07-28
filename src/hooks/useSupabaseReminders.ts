@@ -178,6 +178,24 @@ export const useSupabaseReminders = () => {
         return false;
       }
 
+      // Find the actual database record to get the UUID and calendar_event_id
+      const { data: dbReminder, error: fetchError } = await supabase
+        .from('reminders')
+        .select('id, calendar_event_id')
+        .eq('user_id', user.id)
+        .eq('title', reminderToUpdate.title)
+        .eq('company', reminderToUpdate.company)
+        .single();
+
+      if (fetchError || !dbReminder) {
+        toast({
+          title: "Greška",
+          description: "Podsjetnik nije pronađen u bazi podataka.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
       const { error } = await supabase
         .from('reminders')
         .update({
@@ -189,9 +207,7 @@ export const useSupabaseReminders = () => {
           company: updates.company,
           updated_at: new Date().toISOString()
         })
-        .eq('user_id', user.id)
-        .eq('title', reminderToUpdate.title)
-        .eq('company', reminderToUpdate.company);
+        .eq('id', dbReminder.id);
 
       if (error) {
         console.error('Error updating reminder:', error);

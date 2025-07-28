@@ -139,6 +139,7 @@ export type Database = {
       }
       reminders: {
         Row: {
+          calendar_event_id: string | null
           company: string
           created_at: string | null
           date: string
@@ -153,6 +154,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          calendar_event_id?: string | null
           company: string
           created_at?: string | null
           date: string
@@ -167,6 +169,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          calendar_event_id?: string | null
           company?: string
           created_at?: string | null
           date?: string

@@ -19,7 +19,105 @@ export const useGoogleCalendar = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
 
-  const createCalendarEvent = useCallback(async (reminder: Reminder) => {
+  const createCalendarEvent = useCallback(async (reminder: Reminder): Promise<string | null> => {
+    setIsLoading(true);
+    
+    // Check if simple integration is active
+    const isSimpleIntegration = localStorage.getItem('googleCalendarConnected') === 'true';
+    
+    if (!isSimpleIntegration) {
+      toast({
+        title: "Google Calendar nije povezan",
+        description: "Molimo aktivirajte Google Calendar integraciju u postavkama.",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return null;
+    }
+
+    try {
+      // If API is available, try to use it
+      if (window.gapi && window.gapi.client && window.gapi.client.calendar) {
+        const startDateTime = new Date(`${reminder.date}T${reminder.time}`);
+        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour duration
+
+        const event: GoogleCalendarEvent = {
+          summary: `CRM: ${reminder.title}`,
+          description: `Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`,
+          start: {
+            dateTime: startDateTime.toISOString(),
+            timeZone: 'Europe/Zagreb',
+          },
+          end: {
+            dateTime: endDateTime.toISOString(),
+            timeZone: 'Europe/Zagreb',
+          },
+        };
+
+        const response = await window.gapi.client.calendar.events.insert({
+          calendarId: 'primary',
+          resource: event,
+        });
+
+        if (response.status === 200) {
+          toast({
+            title: "Događaj kreiran",
+            description: `Podsjetnik "${reminder.title}" je dodan u Google Calendar.`,
+          });
+          return response.result.id; // Return calendar event ID
+        }
+      } else {
+        // Fallback: create Google Calendar link
+        const startDateTime = new Date(`${reminder.date}T${reminder.time}`);
+        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+        
+        const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+        
+        const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+        const title = encodeURIComponent(`CRM: ${reminder.title}`);
+        const details = encodeURIComponent(`Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`);
+        const dates = `${formatDate(startDateTime)}/${formatDate(endDateTime)}`;
+        
+        const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
+        
+        // Open Google Calendar in new tab
+        window.open(fullUrl, '_blank');
+        
+        toast({
+          title: "Google Calendar otvoren",
+          description: `Podsjetnik "${reminder.title}" je pripremljen za dodavanje u Google Calendar.`,
+        });
+        return null; // Can't return ID for manual link creation
+      }
+    } catch (error) {
+      console.error('Error creating calendar event:', error);
+      
+      // Fallback to link creation if API fails
+      const startDateTime = new Date(`${reminder.date}T${reminder.time}`);
+      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
+      
+      const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+      
+      const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
+      const title = encodeURIComponent(`CRM: ${reminder.title}`);
+      const details = encodeURIComponent(`Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`);
+      const dates = `${formatDate(startDateTime)}/${formatDate(endDateTime)}`;
+      
+      const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
+      
+      window.open(fullUrl, '_blank');
+      
+      toast({
+        title: "Google Calendar otvoren",
+        description: `API nedostupan - otvoren je Google Calendar link za podsjetnik "${reminder.title}".`,
+      });
+      return null;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  const updateCalendarEvent = useCallback(async (reminder: Reminder, eventId: string): Promise<boolean> => {
     setIsLoading(true);
     
     // Check if simple integration is active
@@ -54,28 +152,29 @@ export const useGoogleCalendar = () => {
           },
         };
 
-        const response = await window.gapi.client.calendar.events.insert({
+        const response = await window.gapi.client.calendar.events.update({
           calendarId: 'primary',
+          eventId: eventId,
           resource: event,
         });
 
         if (response.status === 200) {
           toast({
-            title: "Događaj kreiran",
-            description: `Podsjetnik "${reminder.title}" je dodan u Google Calendar.`,
+            title: "Događaj ažuriran",
+            description: `Podsjetnik "${reminder.title}" je ažuriran u Google Calendar.`,
           });
           return true;
         }
       } else {
-        // Fallback: create Google Calendar link
+        // Fallback: create new Google Calendar link for update
         const startDateTime = new Date(`${reminder.date}T${reminder.time}`);
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
         
         const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
         
         const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
-        const title = encodeURIComponent(`CRM: ${reminder.title}`);
-        const details = encodeURIComponent(`Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`);
+        const title = encodeURIComponent(`CRM: ${reminder.title} (AŽURIRANO)`);
+        const details = encodeURIComponent(`Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a\n\nNAPOMENA: Ovo je ažurirani podsjetnik. Molimo uklonite stari događaj iz kalendara.`);
         const dates = `${formatDate(startDateTime)}/${formatDate(endDateTime)}`;
         
         const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
@@ -85,33 +184,18 @@ export const useGoogleCalendar = () => {
         
         toast({
           title: "Google Calendar otvoren",
-          description: `Podsjetnik "${reminder.title}" je pripremljen za dodavanje u Google Calendar.`,
+          description: `Ažurirani podsjetnik "${reminder.title}" je pripremljen za dodavanje u Google Calendar.`,
         });
         return true;
       }
     } catch (error) {
-      console.error('Error creating calendar event:', error);
-      
-      // Fallback to link creation if API fails
-      const startDateTime = new Date(`${reminder.date}T${reminder.time}`);
-      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
-      
-      const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
-      
-      const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
-      const title = encodeURIComponent(`CRM: ${reminder.title}`);
-      const details = encodeURIComponent(`Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`);
-      const dates = `${formatDate(startDateTime)}/${formatDate(endDateTime)}`;
-      
-      const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
-      
-      window.open(fullUrl, '_blank');
-      
+      console.error('Error updating calendar event:', error);
       toast({
-        title: "Google Calendar otvoren",
-        description: `API nedostupan - otvoren je Google Calendar link za podsjetnik "${reminder.title}".`,
+        title: "Greška",
+        description: "Dogodila se greška prilikom ažuriranja događaja u Google Calendar.",
+        variant: "destructive",
       });
-      return true;
+      return false;
     } finally {
       setIsLoading(false);
     }
@@ -161,6 +245,7 @@ export const useGoogleCalendar = () => {
 
   return {
     createCalendarEvent,
+    updateCalendarEvent,
     initGoogleCalendar,
     signInToGoogle,
     isLoading,

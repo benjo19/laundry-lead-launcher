@@ -37,6 +37,7 @@ export interface Reminder {
   status: 'Aktivan' | 'Završen' | 'Odgođen';
   company: string;
   leadId?: number;
+  calendarEventId?: string;
 }
 
 export interface ContentPost {
