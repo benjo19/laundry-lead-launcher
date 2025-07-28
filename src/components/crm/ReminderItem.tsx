@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, AlertCircle, CheckCircle2, Trash2, Users } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle2, Trash2, Users, Edit } from 'lucide-react';
 import { Reminder } from '@/types';
 
 interface ReminderItemProps {
@@ -10,9 +10,10 @@ interface ReminderItemProps {
   onUpdateStatus: (id: number, status: Reminder['status']) => void;
   onPostpone: (id: number) => void;
   onDelete: (id: number) => void;
+  onEdit: (reminder: Reminder) => void;
 }
 
-const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete }: ReminderItemProps) => {
+const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit }: ReminderItemProps) => {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'Visok': return 'bg-red-100 text-red-800';
@@ -88,6 +89,14 @@ const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete }: Remind
               Aktiviraj
             </Button>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEdit(reminder)}
+            className="text-blue-600 hover:text-blue-700 text-xs px-2 py-1 h-7"
+          >
+            <Edit className="h-3 w-3" />
+          </Button>
           <Button
             variant="outline"
             size="sm"

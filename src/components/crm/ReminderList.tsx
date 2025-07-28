@@ -10,9 +10,10 @@ interface ReminderListProps {
   onUpdateStatus: (id: number, status: Reminder['status']) => void;
   onPostpone: (id: number) => void;
   onDelete: (id: number) => void;
+  onEdit: (reminder: Reminder) => void;
 }
 
-const ReminderList = ({ reminders, onUpdateStatus, onPostpone, onDelete }: ReminderListProps) => {
+const ReminderList = ({ reminders, onUpdateStatus, onPostpone, onDelete, onEdit }: ReminderListProps) => {
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
@@ -30,6 +31,7 @@ const ReminderList = ({ reminders, onUpdateStatus, onPostpone, onDelete }: Remin
               onUpdateStatus={onUpdateStatus}
               onPostpone={onPostpone}
               onDelete={onDelete}
+              onEdit={onEdit}
             />
           ))}
           {reminders.length === 0 && (

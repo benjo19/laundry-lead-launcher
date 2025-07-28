@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuthContext } from "@/contexts/AuthContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -71,7 +72,8 @@ const AppContent: React.FC = () => {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <TooltipProvider>
-            <AuthProvider>
+            <ThemeProvider>
+              <AuthProvider>
               <div className="min-h-screen w-full">
                 <Toaster />
                 <Sonner />
@@ -94,6 +96,7 @@ const AppContent: React.FC = () => {
                 </BrowserRouter>
               </div>
             </AuthProvider>
+            </ThemeProvider>
           </TooltipProvider>
         </QueryClientProvider>
       </ErrorBoundary>

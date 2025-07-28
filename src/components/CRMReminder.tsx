@@ -39,6 +39,8 @@ const CRMReminder = () => {
     companyInputMode: 'select'
   });
 
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null);
+
   const { leads } = useLeadManagement();
   const { 
     reminders, 
@@ -48,7 +50,8 @@ const CRMReminder = () => {
     updateReminderStatus, 
     deleteReminder, 
     postponeReminder,
-    refreshReminders
+    refreshReminders,
+    updateReminder
   } = useReminders();
 
   const filteredReminders = useMemo(() => {
@@ -124,6 +127,54 @@ const CRMReminder = () => {
     }
   };
 
+  const handleEditReminder = (reminder: Reminder) => {
+    setEditingReminder(reminder);
+    setNewReminder({
+      title: reminder.title,
+      description: reminder.description,
+      date: reminder.date,
+      time: reminder.time,
+      priority: reminder.priority,
+      company: reminder.company,
+      companyInputMode: 'select'
+    });
+  };
+
+  const handleUpdateReminder = async () => {
+    if (!editingReminder || !updateReminder) return;
+    
+    try {
+      const success = await updateReminder(editingReminder.id, newReminder);
+      if (success) {
+        setEditingReminder(null);
+        setNewReminder({
+          title: '',
+          description: '',
+          date: '',
+          time: '',
+          priority: 'Srednji',
+          company: '',
+          companyInputMode: 'select'
+        });
+      }
+    } catch (error) {
+      console.error('Error updating reminder:', error);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingReminder(null);
+    setNewReminder({
+      title: '',
+      description: '',
+      date: '',
+      time: '',
+      priority: 'Srednji',
+      company: '',
+      companyInputMode: 'select'
+    });
+  };
+
   const activeReminders = reminders.filter(r => r.status === 'Aktivan');
   const completedReminders = reminders.filter(r => r.status === 'Završen');
 
@@ -182,6 +233,7 @@ const CRMReminder = () => {
             onUpdateStatus={handleUpdateReminderStatus}
             onPostpone={postponeReminder}
             onDelete={deleteReminder}
+            onEdit={handleEditReminder}
           />
         </div>
 
@@ -190,7 +242,9 @@ const CRMReminder = () => {
             newReminder={newReminder}
             setNewReminder={setNewReminder}
             leads={leads}
-            onCreateReminder={handleCreateReminder}
+            onCreateReminder={editingReminder ? handleUpdateReminder : handleCreateReminder}
+            editingReminder={editingReminder}
+            onCancelEdit={handleCancelEdit}
           />
         </div>
       </div>

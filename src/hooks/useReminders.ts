@@ -24,6 +24,10 @@ export const useReminders = () => {
       console.log('Please log in to create reminders');
       return false;
     },
+    updateReminder: async () => {
+      console.log('Please log in to update reminders');
+      return false;
+    },
     updateReminderStatus: async () => {
       console.log('Please log in to update reminders');
     },

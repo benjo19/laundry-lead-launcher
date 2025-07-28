@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Menu } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface MobileHeaderProps {
   onMenuClick: () => void;
@@ -21,6 +22,7 @@ const MobileHeader = ({ onMenuClick, title }: MobileHeaderProps) => {
         {displayTitle}
       </h1>
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <ThemeToggle />
         <LanguageToggle />
         <Button 
           variant="ghost" 

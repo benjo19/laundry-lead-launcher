@@ -6,6 +6,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
+import ThemeToggle from '@/components/ThemeToggle';
 import { 
   LayoutDashboard, 
   Search, 
@@ -63,7 +64,8 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
             <h1 className="text-lg sm:text-xl font-bold text-primary-foreground truncate">{t('marketing_agent')}</h1>
             <p className="text-xs sm:text-sm text-primary-foreground/80 mt-1 truncate">{t('ai_assistant')}</p>
           </div>
-          <div className="ml-2 shrink-0">
+          <div className="ml-2 shrink-0 flex items-center space-x-2">
+            <ThemeToggle />
             <LanguageToggle />
           </div>
         </div>

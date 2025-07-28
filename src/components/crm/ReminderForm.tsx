@@ -23,9 +23,11 @@ interface ReminderFormProps {
   setNewReminder: (reminder: NewReminderForm) => void;
   leads: Lead[];
   onCreateReminder: () => void;
+  editingReminder?: Reminder | null;
+  onCancelEdit?: () => void;
 }
 
-const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder }: ReminderFormProps) => {
+const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder, editingReminder, onCancelEdit }: ReminderFormProps) => {
   const { toast } = useToast();
 
   const handleSubmit = () => {
@@ -52,9 +54,16 @@ const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder }: 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center">
-          <Plus className="h-5 w-5 mr-2 text-green-600" />
-          Novi Podsjetnik
+        <CardTitle className="flex items-center justify-between">
+          <div className="flex items-center">
+            <Plus className="h-5 w-5 mr-2 text-green-600" />
+            {editingReminder ? 'Uredi podsjetnik' : 'Novi Podsjetnik'}
+          </div>
+          {editingReminder && onCancelEdit && (
+            <Button variant="ghost" size="sm" onClick={onCancelEdit}>
+              Odustani
+            </Button>
+          )}
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -182,7 +191,7 @@ const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder }: 
 
         <Button onClick={handleSubmit} className="w-full bg-green-600 hover:bg-green-700">
           <Plus className="h-4 w-4 mr-2" />
-          Stvori Podsjetnik
+          {editingReminder ? 'Ažuriraj Podsjetnik' : 'Stvori Podsjetnik'}
         </Button>
       </CardContent>
     </Card>

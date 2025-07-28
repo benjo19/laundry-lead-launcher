@@ -157,6 +157,69 @@ export const useSupabaseReminders = () => {
     };
   };
 
+  const updateReminder = async (reminderId: number, updates: NewReminderForm): Promise<boolean> => {
+    if (!user) {
+      toast({
+        title: "Greška",
+        description: "Morate biti prijavljeni za ažuriranje podsjetnika.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
+    try {
+      const reminderToUpdate = reminders.find(r => r.id === reminderId);
+      if (!reminderToUpdate) {
+        toast({
+          title: "Greška",
+          description: "Podsjetnik nije pronađen.",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('reminders')
+        .update({
+          title: updates.title,
+          description: updates.description,
+          date: updates.date,
+          time: updates.time,
+          priority: updates.priority,
+          company: updates.company,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id)
+        .eq('title', reminderToUpdate.title)
+        .eq('company', reminderToUpdate.company);
+
+      if (error) {
+        console.error('Error updating reminder:', error);
+        toast({
+          title: "Greška",
+          description: error.message,
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      await fetchReminders();
+      toast({
+        title: "Podsjetnik ažuriran",
+        description: `"${updates.title}" je uspješno ažuriran.`,
+      });
+      return true;
+    } catch (err) {
+      console.error('Exception updating reminder:', err);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška prilikom ažuriranja podsjetnika.",
+        variant: "destructive",
+      });
+      return false;
+    }
+  };
+
   const updateReminderStatus = async (reminderId: number, newStatus: Reminder['status']) => {
     if (!user) return;
 
@@ -291,6 +354,7 @@ export const useSupabaseReminders = () => {
     loading,
     error,
     createReminder,
+    updateReminder,
     updateReminderStatus,
     deleteReminder,
     postponeReminder,
