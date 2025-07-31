@@ -78,6 +78,18 @@ export const industries: Industry[] = [
   { value: 'hvac', label: 'Klimatizacija i grijanje', query: '"HVAC service" "air conditioning" "heating repair" "climate control"' },
   { value: 'construction', label: 'Građevinske tvrtke', query: '"construction company" "building contractor" "renovation service"' },
   
+  // Proizvodnja i industrija
+  { value: 'manufacturing', label: 'Proizvodnja općenito', query: 'manufacturing "production company" "industrial production" -retail -service' },
+  { value: 'textile-manufacturing', label: 'Tekstilna proizvodnja', query: '"textile manufacturing" "clothing production" "fabric production"' },
+  { value: 'food-production', label: 'Proizvodnja hrane', query: '"food production" "food manufacturing" "food processing" -restaurant -bakery' },
+  { value: 'metal-manufacturing', label: 'Metalska industrija', query: '"metal manufacturing" "steel production" "metalworking" "machining"' },
+  { value: 'plastic-manufacturing', label: 'Proizvodnja plastike', query: '"plastic manufacturing" "polymer production" "injection molding"' },
+  { value: 'wood-manufacturing', label: 'Drvna industrija', query: '"wood manufacturing" "lumber production" "furniture manufacturing"' },
+  { value: 'chemical-manufacturing', label: 'Kemijska industrija', query: '"chemical manufacturing" "chemical production" "pharmaceutical manufacturing"' },
+  { value: 'electronics-manufacturing', label: 'Elektronička proizvodnja', query: '"electronics manufacturing" "circuit board" "electronic components"' },
+  { value: 'automotive-manufacturing', label: 'Automobilska industrija', query: '"automotive manufacturing" "car production" "auto parts manufacturing"' },
+  { value: 'machinery-manufacturing', label: 'Proizvodnja strojeva', query: '"machinery manufacturing" "industrial equipment" "manufacturing equipment"' },
+
   // Ostale specifične usluge
   { value: 'cleaning-service', label: 'Usluge čišćenja', query: '"cleaning service" "housekeeping" "office cleaning" -laundry' },
   { value: 'photography', label: 'Foto studiji', query: '"photography studio" "wedding photographer" "portrait photography"' },
