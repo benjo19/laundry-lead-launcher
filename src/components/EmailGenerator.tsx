@@ -4,7 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Mail, Send, Sparkles, Trash2, Users, Settings, Edit3 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Mail, Send, Sparkles, Trash2, Users, Settings, Edit3, Eye } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { Email, Lead } from '@/types';
@@ -40,6 +41,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [emailContent, setEmailContent] = useState(savedFormData.emailContent || '');
   const [template, setTemplate] = useState(savedFormData.template || '');
   const [editingDraftId, setEditingDraftId] = useState<number | null>(null);
+  const [selectedEmailForView, setSelectedEmailForView] = useState<Email | null>(null);
   
   // Save form data to localStorage whenever fields change
   useEffect(() => {
@@ -720,6 +722,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                   <Button
                     variant="outline"
                     size="sm"
+                    onClick={() => setSelectedEmailForView(email)}
+                    className="text-blue-600 hover:text-blue-700 text-xs"
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
                     onClick={() => deleteEmail(email.id)}
                     className="text-red-600 hover:text-red-700 text-xs"
                   >
@@ -731,6 +741,69 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
           </div>
         </CardContent>
       </Card>
+
+      {/* Email View Modal */}
+      <Dialog open={!!selectedEmailForView} onOpenChange={() => setSelectedEmailForView(null)}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">
+              {selectedEmailForView?.subject}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedEmailForView && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <p className="font-medium text-slate-700">Primatelj:</p>
+                  <p className="text-slate-600">{selectedEmailForView.to}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-slate-700">Datum slanja:</p>
+                  <p className="text-slate-600">{selectedEmailForView.dateSent}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-slate-700">Predložak:</p>
+                  <p className="text-slate-600">{selectedEmailForView.template}</p>
+                </div>
+                <div>
+                  <p className="font-medium text-slate-700">Status:</p>
+                  <span className={`px-2 py-1 rounded-full text-xs ${
+                    selectedEmailForView.status === 'Sent' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-yellow-100 text-yellow-800'
+                  }`}>
+                    {selectedEmailForView.status}
+                  </span>
+                </div>
+              </div>
+              
+              {selectedEmailForView.openRate && (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <p className="font-medium text-slate-700">Open Rate:</p>
+                    <p className="text-slate-600">{selectedEmailForView.openRate}</p>
+                  </div>
+                  <div>
+                    <p className="font-medium text-slate-700">Click Rate:</p>
+                    <p className="text-slate-600">{selectedEmailForView.clickRate}</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="mt-6">
+                <p className="font-medium text-slate-700 mb-2">Sadržaj emaila:</p>
+                <div className="bg-slate-50 rounded-lg p-4 border">
+                  <div className="prose prose-sm max-w-none">
+                    <pre className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed">
+                      {selectedEmailForView.content}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
