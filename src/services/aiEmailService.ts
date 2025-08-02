@@ -17,7 +17,7 @@ interface GeneratedEmailContent {
   content: string;
 }
 
-export type AIProvider = 'openai' | 'gemini';
+export type AIProvider = 'openai' | 'gemini' | 'anthropic';
 
 export class AIEmailService {
   private apiKey: string;

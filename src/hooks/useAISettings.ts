@@ -5,7 +5,7 @@ import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 
 interface AISettings {
-  provider: 'openai' | 'gemini';
+  provider: 'openai' | 'gemini' | 'anthropic';
   api_key: string;
   model?: string;
   google_maps_api_key?: string;

@@ -15,7 +15,7 @@ const AISettings = () => {
   const { aiSettings, isLoading, saveAISettings, isAIConfigured } = useAISettings();
   const { toast } = useToast();
   const [formData, setFormData] = useState({
-    provider: 'openai' as 'openai' | 'gemini',
+    provider: 'openai' as 'openai' | 'gemini' | 'anthropic',
     api_key: '',
     model: '',
     google_maps_api_key: '',
@@ -118,7 +118,7 @@ const AISettings = () => {
           <Label htmlFor="provider">AI Provider</Label>
           <Select 
             value={formData.provider} 
-            onValueChange={(value: 'openai' | 'gemini') => setFormData({ ...formData, provider: value })}
+            onValueChange={(value: 'openai' | 'gemini' | 'anthropic') => setFormData({ ...formData, provider: value })}
           >
             <SelectTrigger>
               <SelectValue />
@@ -126,6 +126,7 @@ const AISettings = () => {
             <SelectContent>
               <SelectItem value="openai">OpenAI (ChatGPT)</SelectItem>
               <SelectItem value="gemini">Google Gemini</SelectItem>
+              <SelectItem value="anthropic">Anthropic (Claude)</SelectItem>
             </SelectContent>
           </Select>
           <p className="text-sm text-slate-500 mt-1">
@@ -144,7 +145,9 @@ const AISettings = () => {
               placeholder={
                 formData.provider === 'openai' 
                   ? "sk-..." 
-                  : "AIza..."
+                  : formData.provider === 'gemini'
+                  ? "AIza..."
+                  : "sk-ant-..."
               }
               className="flex-1"
             />
@@ -160,7 +163,9 @@ const AISettings = () => {
           <p className="text-sm text-slate-500 mt-1">
             {formData.provider === 'openai' 
               ? "Dobijte API ključ na platform.openai.com/api-keys"
-              : "Dobijte API ključ na aistudio.google.com/app/apikey"
+              : formData.provider === 'gemini'
+              ? "Dobijte API ključ na aistudio.google.com/app/apikey"
+              : "Dobijte API ključ na console.anthropic.com"
             }
           </p>
         </div>
@@ -192,6 +197,26 @@ const AISettings = () => {
             Za Lead Discovery funkcionalnost - dobijte ključ na console.cloud.google.com
           </p>
         </div>
+
+        
+        {formData.provider === 'anthropic' && (
+          <div>
+            <Label htmlFor="model">Model (opcionalno)</Label>
+            <Select 
+              value={formData.model} 
+              onValueChange={(value) => setFormData({ ...formData, model: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Odaberite model ili ostavite prazno za default" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="claude-sonnet-4-20250514">Claude 4 Sonnet (Default - najbolji balans)</SelectItem>
+                <SelectItem value="claude-opus-4-20250514">Claude 4 Opus (najmoćniji)</SelectItem>
+                <SelectItem value="claude-3-5-haiku-20241022">Claude 3.5 Haiku (najbrži)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
 
         {formData.provider === 'openai' && (
           <div>
@@ -270,12 +295,20 @@ const AISettings = () => {
                   <p>4. Kliknite "Create new secret key"</p>
                   <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
                 </>
-              ) : (
+              ) : formData.provider === 'gemini' ? (
                 <>
                   <p>1. Idite na <strong>aistudio.google.com</strong></p>
                   <p>2. Prijavite se s Google računom</p>
                   <p>3. Kliknite "Get API key"</p>
                   <p>4. Kreirajte novi API ključ</p>
+                  <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
+                </>
+              ) : (
+                <>
+                  <p>1. Idite na <strong>console.anthropic.com</strong></p>
+                  <p>2. Registrirajte se ili se prijavite</p>
+                  <p>3. Idite na "API Keys"</p>
+                  <p>4. Kliknite "Create Key"</p>
                   <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
                 </>
               )}
