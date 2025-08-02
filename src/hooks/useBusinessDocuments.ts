@@ -114,13 +114,40 @@ export const useBusinessDocuments = () => {
 
       if (error) throw error;
 
-      await loadDocuments();
-      
-      toast({
-        title: "Dokument uploadan",
-        description: `${file.name} je uspješno uploadan.`,
-      });
+      // Process the document with AI
+      try {
+        const { data: processResult, error: processError } = await supabase.functions.invoke('process-document', {
+          body: {
+            filePath,
+            type: file.type === 'application/pdf' ? 'pdf' : 'text',
+            title: file.name
+          }
+        });
 
+        if (processError) {
+          console.error('Document processing error:', processError);
+          toast({
+            title: "Upozorenje",
+            description: `${file.name} je uploadan, ali AI analiza nije uspjela. Dokument je i dalje dostupan.`,
+            variant: "default",
+          });
+        } else {
+          console.log('Document processed successfully:', processResult);
+          toast({
+            title: "Dokument uploadan i obrađen",
+            description: `${file.name} je uspješno uploadan i obrađen od strane AI.`,
+          });
+        }
+      } catch (processError) {
+        console.error('Document processing failed:', processError);
+        toast({
+          title: "Upozorenje", 
+          description: `${file.name} je uploadan, ali AI analiza nije uspjela. Dokument je i dalje dostupan.`,
+          variant: "default",
+        });
+      }
+
+      await loadDocuments();
       return true;
     } catch (error) {
       console.error('Error uploading document:', error);

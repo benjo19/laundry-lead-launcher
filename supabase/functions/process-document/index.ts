@@ -40,7 +40,7 @@ serve(async (req) => {
 
     // Download file from storage
     const { data: fileData, error: downloadError } = await supabaseClient.storage
-      .from('user-documents')
+      .from('business-documents')
       .download(filePath);
 
     if (downloadError) {
