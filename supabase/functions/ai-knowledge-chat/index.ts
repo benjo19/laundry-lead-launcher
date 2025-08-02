@@ -70,21 +70,27 @@ serve(async (req) => {
       .from('user_settings')
       .select('ai_settings')
       .eq('user_id', user.id)
-      .single();
+      .maybeSingle();
 
-    let provider = 'gemini'; // default
+    let provider = 'gemini'; // default fallback
     let aiApiKey = geminiApiKey;
     
     if (userSettings?.ai_settings) {
       const aiSettings = userSettings.ai_settings as any;
       if (aiSettings.provider) {
-        provider = aiSettings.provider;
-        if (provider === 'anthropic' && anthropicApiKey) {
+        // Check if the requested provider has available API key
+        if (aiSettings.provider === 'anthropic' && anthropicApiKey) {
+          provider = 'anthropic';
           aiApiKey = anthropicApiKey;
-        } else if (provider === 'openai' && aiSettings.api_key) {
+        } else if (aiSettings.provider === 'openai' && aiSettings.api_key) {
+          provider = 'openai';
           aiApiKey = aiSettings.api_key;
-        } else if (provider === 'gemini' && geminiApiKey) {
+        } else if (aiSettings.provider === 'gemini' && geminiApiKey) {
+          provider = 'gemini';
           aiApiKey = geminiApiKey;
+        } else {
+          // Fallback to available provider
+          console.log(`Requested provider ${aiSettings.provider} not available, falling back to gemini`);
         }
       }
     }
