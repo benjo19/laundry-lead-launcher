@@ -51,8 +51,14 @@ export const EmailScrapingTest = () => {
       let enhancedResult = { emails: [], socialProfiles: {}, emailSources: {} };
       if (companyName.trim()) {
         console.log('2. Testing enhanced email discovery...');
-        enhancedResult = await enhancedEmailDiscovery(companyName, website);
-        console.log('Enhanced emails result:', enhancedResult);
+        try {
+          enhancedResult = await enhancedEmailDiscovery(companyName, website);
+          console.log('Enhanced emails result:', enhancedResult);
+        } catch (error) {
+          console.log('Enhanced email discovery failed:', error);
+        }
+      } else {
+        console.log('2. Skipping enhanced discovery (no company name provided)');
       }
       
       setResults({

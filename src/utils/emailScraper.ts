@@ -45,6 +45,8 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
       return null;
     }
     
+    console.log(`Successfully fetched content from ${cleanUrl}, content length: ${htmlContent.length}`);
+    
     if (!htmlContent) return null;
     
     // Email regex patterns (enhanced)
@@ -65,8 +67,12 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     
     const foundEmails = new Set<string>();
     
+    console.log(`Searching for emails using ${emailPatterns.length} different patterns...`);
+    
     // Search for emails using different patterns
-    emailPatterns.forEach(pattern => {
+    emailPatterns.forEach((pattern, index) => {
+      console.log(`Testing pattern ${index + 1}/${emailPatterns.length}`);
+      try {
       const matches = htmlContent.match(pattern);
       if (matches) {
         matches.forEach(match => {
@@ -119,7 +125,12 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
           }
         });
       }
+      } catch (error) {
+        console.log(`Error with pattern ${index + 1}:`, error);
+      }
     });
+    
+    console.log(`Found ${foundEmails.size} unique emails after filtering`);
     
     // Return the first valid email found, preferring contact-related emails
     const emailsArray = Array.from(foundEmails);
