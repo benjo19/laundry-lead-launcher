@@ -5,6 +5,7 @@ import { performLeadSearch } from './SearchOperations';
 interface LeadDiscoverySearchProps {
   searchQuery: string;
   location: string;
+  country: string;
   industry: string;
   tempApiKey: string;
   savedGoogleMapsApiKey: string;
@@ -18,6 +19,7 @@ interface LeadDiscoverySearchProps {
 export const useLeadDiscoverySearch = ({
   searchQuery,
   location,
+  country,
   industry,
   tempApiKey,
   savedGoogleMapsApiKey,
@@ -55,9 +57,14 @@ export const useLeadDiscoverySearch = ({
 
     setIsSearching(true);
     try {
+      // Combine country and location if country is selected
+      const searchLocation = country && country !== location 
+        ? `${location}, ${country}` 
+        : location;
+        
       const detailedLeads = await performLeadSearch(
         searchQuery,
-        location,
+        searchLocation,
         industry,
         currentApiKey,
         getPlaceDetails

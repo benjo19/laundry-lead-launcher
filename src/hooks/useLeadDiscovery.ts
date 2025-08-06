@@ -18,12 +18,14 @@ export const useLeadDiscovery = () => {
   const [savedFormData, setSavedFormData] = useLocalStorage('leadDiscoveryForm', {
     searchQuery: '',
     location: '',
+    country: '',
     industry: 'laundry',
     tempApiKey: ''
   });
 
   const [searchQuery, setSearchQuery] = useState(savedFormData.searchQuery || '');
   const [location, setLocation] = useState(savedFormData.location || '');
+  const [country, setCountry] = useState(savedFormData.country || '');
   const [industry, setIndustry] = useState(savedFormData.industry || 'laundry');
   const [isSearching, setIsSearching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -34,14 +36,15 @@ export const useLeadDiscovery = () => {
   // Save form data to localStorage whenever fields change
   useEffect(() => {
     console.log('=== SAVING FORM DATA ===');
-    console.log('Form data:', { searchQuery, location, industry, hasApiKey: !!tempApiKey });
+    console.log('Form data:', { searchQuery, location, country, industry, hasApiKey: !!tempApiKey });
     setSavedFormData({
       searchQuery,
       location,
+      country,
       industry,
       tempApiKey
     });
-  }, [searchQuery, location, industry, tempApiKey, setSavedFormData]);
+  }, [searchQuery, location, country, industry, tempApiKey, setSavedFormData]);
 
   useEffect(() => {
     if (user) {
@@ -199,6 +202,8 @@ export const useLeadDiscovery = () => {
     setSearchQuery,
     location,
     setLocation,
+    country,
+    setCountry,
     industry,
     setIndustry,
     isSearching,

@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Search, Loader2, Brain, Key } from 'lucide-react';
 import IndustrySelector, { industries } from './IndustrySelector';
+import CountrySelector from './CountrySelector';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 
 export interface DiscoveredLead {
@@ -37,6 +38,8 @@ interface SearchFormProps {
   setSearchQuery: (query: string) => void;
   location: string;
   setLocation: (location: string) => void;
+  country: string;
+  setCountry: (country: string) => void;
   industry: string;
   setIndustry: (industry: string) => void;
   apiKey: string;
@@ -54,6 +57,8 @@ const SearchForm = ({
   setSearchQuery,
   location,
   setLocation,
+  country,
+  setCountry,
   industry,
   setIndustry,
   apiKey,
@@ -83,10 +88,20 @@ const SearchForm = ({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label htmlFor="country" className="block text-sm font-medium text-slate-700 mb-1">
+                Država
+              </label>
+              <CountrySelector 
+                value={country} 
+                onChange={setCountry} 
+              />
+            </div>
+            
             <div>
               <label htmlFor="location" className="block text-sm font-medium text-slate-700 mb-1">
-                Lokacija *
+                Grad/Regija *
               </label>
               <Input
                 id="location"
