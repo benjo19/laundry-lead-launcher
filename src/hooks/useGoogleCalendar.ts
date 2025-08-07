@@ -42,8 +42,8 @@ export const useGoogleCalendar = () => {
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour duration
 
         const event: GoogleCalendarEvent = {
-          summary: `CRM: ${reminder.title}`,
-          description: `Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`,
+          summary: reminder.company,
+          description: reminder.description,
           start: {
             dateTime: startDateTime.toISOString(),
             timeZone: 'Europe/Zagreb',
@@ -74,8 +74,8 @@ export const useGoogleCalendar = () => {
         const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
         
         const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
-        const title = encodeURIComponent(`CRM: ${reminder.title}`);
-        const details = encodeURIComponent(`Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`);
+        const title = encodeURIComponent(reminder.company);
+        const details = encodeURIComponent(reminder.description);
         const dates = `${formatDate(startDateTime)}/${formatDate(endDateTime)}`;
         
         const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
@@ -99,8 +99,8 @@ export const useGoogleCalendar = () => {
       const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
       
       const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
-      const title = encodeURIComponent(`CRM: ${reminder.title}`);
-      const details = encodeURIComponent(`Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`);
+      const title = encodeURIComponent(reminder.company);
+      const details = encodeURIComponent(reminder.description);
       const dates = `${formatDate(startDateTime)}/${formatDate(endDateTime)}`;
       
       const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
@@ -140,8 +140,8 @@ export const useGoogleCalendar = () => {
         const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour duration
 
         const event: GoogleCalendarEvent = {
-          summary: `CRM: ${reminder.title}`,
-          description: `Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a`,
+          summary: reminder.company,
+          description: reminder.description,
           start: {
             dateTime: startDateTime.toISOString(),
             timeZone: 'Europe/Zagreb',
@@ -173,8 +173,8 @@ export const useGoogleCalendar = () => {
         const formatDate = (date: Date) => date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
         
         const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
-        const title = encodeURIComponent(`CRM: ${reminder.title} (AŽURIRANO)`);
-        const details = encodeURIComponent(`Tvrtka: ${reminder.company}\n\nOpis: ${reminder.description}\n\nPrioritet: ${reminder.priority}\n\nGenerirano iz Marketing Agent CRM-a\n\nNAPOMENA: Ovo je ažurirani podsjetnik. Molimo uklonite stari događaj iz kalendara.`);
+        const title = encodeURIComponent(`${reminder.company} (AŽURIRANO)`);
+        const details = encodeURIComponent(`${reminder.description}\n\nNAPOMENA: Ovo je ažurirani podsjetnik. Molimo uklonite stari događaj iz kalendara.`);
         const dates = `${formatDate(startDateTime)}/${formatDate(endDateTime)}`;
         
         const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
