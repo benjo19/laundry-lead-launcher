@@ -58,7 +58,7 @@ export const useLeadDiscoverySearch = ({
     setIsSearching(true);
     try {
       // Combine country and location if country is selected
-      const searchLocation = country && country !== location 
+      const searchLocation = country && country !== "all" && country !== location 
         ? `${location}, ${country}` 
         : location;
         

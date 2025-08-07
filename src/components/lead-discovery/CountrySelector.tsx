@@ -57,7 +57,9 @@ const CountrySelector = ({ value, onChange }: CountrySelectorProps) => {
         <SelectValue placeholder="Odaberite državu..." />
       </SelectTrigger>
       <SelectContent className="max-h-60 bg-background border border-border shadow-lg z-50">
-        <SelectItem value="">Sve države</SelectItem>
+        <SelectItem value="all" className="cursor-pointer hover:bg-accent hover:text-accent-foreground">
+          Sve države
+        </SelectItem>
         {europeanCountries.map((country) => (
           <SelectItem 
             key={country.code} 
