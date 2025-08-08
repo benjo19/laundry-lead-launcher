@@ -17,30 +17,37 @@ serve(async (req) => {
   }
 
   try {
+    // Get the authorization header
+    console.log('Getting auth header...');
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      console.log('No authorization header found');
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Create a Supabase client with the user's JWT so RLS applies correctly
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
     );
 
     console.log('Getting request body...');
     const { message } = await req.json();
     console.log('Message received:', message);
     
-    // Get the authorization header
-    console.log('Getting auth header...');
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) {
-      console.log('No authorization header found');
-      throw new Error('No authorization header');
-    }
-
-    // Get user from token
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser(
-      authHeader.replace('Bearer ', '')
-    );
+    // Get user from token via SDK (reads from Authorization header)
+    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
 
     if (userError || !user) {
-      throw new Error('Unauthorized');
+      console.log('auth.getUser failed:', userError);
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log(`AI Knowledge Chat for user:`, user.id);
