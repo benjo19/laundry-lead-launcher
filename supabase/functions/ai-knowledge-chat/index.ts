@@ -62,15 +62,79 @@ serve(async (req) => {
     // Get user's knowledge base
     const { data: knowledgeItems, error: knowledgeError } = await supabaseClient
       .from('user_knowledge')
-      .select('title, content, type, url')
+      .select('id, title, content, type, url, file_path')
       .eq('user_id', user.id);
 
     if (knowledgeError) {
       throw new Error(`Failed to fetch knowledge base: ${knowledgeError.message}`);
     }
 
+    // Attempt to auto-repair bad PDF entries (binary/too short) by re-extracting with Gemini
+    const processedItems = [...(knowledgeItems || [])];
+
+    const needsReprocess = (c?: string) => {
+      const content = c || '';
+      if (content.length < 50) return true;
+      const nonPrintable = content.replace(/[\t\n\r\x20-\uFFFF]/g, '');
+      const ratio = nonPrintable.length / content.length;
+      return ratio > 0.2;
+    };
+
+    if (processedItems.length && Deno.env.get('GEMINI_API_KEY')) {
+      const geminiKey = Deno.env.get('GEMINI_API_KEY')!;
+      const candidates = processedItems
+        .filter(it => (it.type === 'pdf') && needsReprocess(it.content) && it.file_path)
+        .slice(0, 3);
+
+      for (const it of candidates) {
+        try {
+          const { data: fileBlob, error: dlErr } = await supabaseClient.storage
+            .from('user-documents')
+            .download(it.file_path as string);
+          if (dlErr || !fileBlob) {
+            console.log('Skip reprocess (download failed):', dlErr?.message);
+            continue;
+          }
+          // Convert to base64
+          const arr = await fileBlob.arrayBuffer();
+          const base64 = btoa(String.fromCharCode(...new Uint8Array(arr)));
+
+          // Ask Gemini to extract text from PDF
+          const resp = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${geminiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  { text: 'Extract all readable text from this PDF for QA over products (models/specs). Return clean text.' },
+                  { inline_data: { mime_type: 'application/pdf', data: base64 } }
+                ]
+              }],
+              generationConfig: { temperature: 0.1, maxOutputTokens: 6000 }
+            })
+          });
+          if (!resp.ok) {
+            console.log('Gemini extraction failed:', resp.status);
+            continue;
+          }
+          const data = await resp.json();
+          const extracted: string | undefined = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+          if (extracted && extracted.length > 50) {
+            await supabaseClient
+              .from('user_knowledge')
+              .update({ content: extracted })
+              .eq('id', it.id)
+              .eq('user_id', user.id);
+            it.content = extracted;
+          }
+        } catch (e) {
+          console.log('Reprocess error:', e);
+        }
+      }
+    }
+
     // Prepare context from knowledge base using relevance-focused snippets
-    console.log('Knowledge items count:', knowledgeItems?.length || 0);
+    console.log('Knowledge items count:', processedItems.length);
 
     const makeSnippet = (text: string, term: string, radius = 500) => {
       const lc = text.toLowerCase();
@@ -87,7 +151,7 @@ serve(async (req) => {
       .filter(w => w.length >= 3);
 
     // Build per-item snippets prioritizing matches
-    const sections = (knowledgeItems || []).map((item) => {
+    const sections = (processedItems || []).map((item) => {
       const content = item.content || '';
       let snippet = '';
       for (const t of terms) {
