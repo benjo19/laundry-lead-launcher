@@ -69,11 +69,42 @@ serve(async (req) => {
       throw new Error(`Failed to fetch knowledge base: ${knowledgeError.message}`);
     }
 
-    // Prepare context from knowledge base and trim to safe length
-    const fullContext = knowledgeItems?.map(item => 
-      `[${item.type.toUpperCase()}] ${item.title}: ${item.content || 'No content'}`
-    ).join('\n\n') || 'No knowledge base content available.';
-    const context = fullContext.slice(0, 12000);
+    // Prepare context from knowledge base using relevance-focused snippets
+    console.log('Knowledge items count:', knowledgeItems?.length || 0);
+
+    const makeSnippet = (text: string, term: string, radius = 500) => {
+      const lc = text.toLowerCase();
+      const idx = lc.indexOf(term.toLowerCase());
+      if (idx === -1) return text.slice(0, radius);
+      const start = Math.max(0, idx - radius);
+      const end = Math.min(text.length, idx + radius);
+      return text.slice(start, end);
+    };
+
+    const terms = message
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}]+/u)
+      .filter(w => w.length >= 3);
+
+    // Build per-item snippets prioritizing matches
+    const sections = (knowledgeItems || []).map((item) => {
+      const content = item.content || '';
+      let snippet = '';
+      for (const t of terms) {
+        if (content.toLowerCase().includes(t)) {
+          snippet = makeSnippet(content, t, 700);
+          break;
+        }
+      }
+      if (!snippet) snippet = content.slice(0, 1200);
+      return `[${(item.type || 'doc').toUpperCase()}] ${item.title}\n${snippet}`;
+    });
+
+    // Concatenate and trim to safe length while keeping early items
+    let context = sections.join('\n\n---\n\n');
+    const MAX_CONTEXT = 16000;
+    if (context.length > MAX_CONTEXT) context = context.slice(0, MAX_CONTEXT);
+
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
