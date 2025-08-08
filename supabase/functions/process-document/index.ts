@@ -38,10 +38,10 @@ serve(async (req) => {
 
     console.log(`Processing ${type} document:`, { filePath, title, userId: user.id });
 
-    // Download file from storage
-    const { data: fileData, error: downloadError } = await supabaseClient.storage
-      .from('business-documents')
-      .download(filePath);
+  // Download file from storage (correct bucket)
+  const { data: fileData, error: downloadError } = await supabaseClient.storage
+    .from('user-documents')
+    .download(filePath);
 
     if (downloadError) {
       throw new Error(`Failed to download file: ${downloadError.message}`);

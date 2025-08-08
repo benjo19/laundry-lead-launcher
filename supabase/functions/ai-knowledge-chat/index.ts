@@ -77,21 +77,20 @@ serve(async (req) => {
     
     if (userSettings?.ai_settings) {
       const aiSettings = userSettings.ai_settings as any;
-      if (aiSettings.provider) {
-        // Check if the requested provider has available API key
-        if (aiSettings.provider === 'anthropic' && anthropicApiKey) {
-          provider = 'anthropic';
-          aiApiKey = anthropicApiKey;
-        } else if (aiSettings.provider === 'openai' && aiSettings.api_key) {
-          provider = 'openai';
-          aiApiKey = aiSettings.api_key;
-        } else if (aiSettings.provider === 'gemini' && geminiApiKey) {
-          provider = 'gemini';
-          aiApiKey = geminiApiKey;
-        } else {
-          // Fallback to available provider
-          console.log(`Requested provider ${aiSettings.provider} not available, falling back to gemini`);
-        }
+      const openaiKey = aiSettings.openai_api_key || aiSettings.api_key; // support legacy
+      const geminiKey = aiSettings.gemini_api_key || geminiApiKey;
+      
+      if (aiSettings.provider === 'openai' && openaiKey) {
+        provider = 'openai';
+        aiApiKey = openaiKey;
+      } else if (aiSettings.provider === 'gemini' && geminiKey) {
+        provider = 'gemini';
+        aiApiKey = geminiKey;
+      } else if (anthropicApiKey && aiSettings.provider === 'anthropic') {
+        provider = 'anthropic';
+        aiApiKey = anthropicApiKey;
+      } else {
+        console.log(`Requested provider ${aiSettings.provider} not available, falling back to gemini`);
       }
     }
 
