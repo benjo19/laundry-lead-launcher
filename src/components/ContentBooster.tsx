@@ -42,6 +42,7 @@ const ContentBooster = () => {
     deletePost,
     isAIConfigured,
     businessProfile,
+    canGenerateImages,
   } = useContentBooster();
 
   return (
@@ -90,6 +91,7 @@ const ContentBooster = () => {
           contentFormat={contentFormat}
           setContentFormat={setContentFormat}
           generatedImageUrl={generatedImageUrl}
+          canGenerateImages={canGenerateImages}
           onGenerateContent={generateContent}
           onPublishNow={publishNow}
           onSchedulePost={schedulePost}

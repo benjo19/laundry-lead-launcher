@@ -78,10 +78,10 @@ export const useContentBooster = () => {
       return;
     }
 
-    if (contentFormat === 'text-with-image' && aiSettings?.provider !== 'openai') {
+    if (contentFormat === 'text-with-image' && !(aiSettings?.openai_api_key || aiSettings?.api_key)) {
       toast({
         title: "Generiranje slika nije podržano",
-        description: "Generiranje slika je dostupno samo s OpenAI providerom.",
+        description: "Za generiranje slika potreban je OpenAI API ključ.",
         variant: "destructive"
       });
       return;
@@ -91,11 +91,16 @@ export const useContentBooster = () => {
     setGeneratedImageUrl('');
     
     try {
-      const selectedKey = aiSettings!.provider === 'openai'
+      const hasOpenAIKey = !!(aiSettings?.openai_api_key || aiSettings?.api_key);
+      const providerForThis = (contentFormat === 'text-with-image' && hasOpenAIKey)
+        ? 'openai'
+        : aiSettings!.provider;
+
+      const selectedKey = providerForThis === 'openai'
         ? (aiSettings!.openai_api_key || aiSettings!.api_key || '')
         : (aiSettings!.gemini_api_key || aiSettings!.api_key || '');
 
-      const aiService = new AIContentService(selectedKey, aiSettings!.provider);
+      const aiService = new AIContentService(selectedKey, providerForThis as AIProvider);
       
       // Get business context for better content generation (now async)
       const businessContext = await getContextForAI();
@@ -127,7 +132,7 @@ export const useContentBooster = () => {
       
       toast({
         title: "AI Sadržaj generiran",
-        description: `Personalizirani sadržaj je uspješno generiran za ${industry} industriju pomoću ${aiSettings!.provider === 'openai' ? 'OpenAI' : 'Google Gemini'}.`,
+        description: `Personalizirani sadržaj je uspješno generiran za ${industry} industriju pomoću ${providerForThis === 'openai' ? 'OpenAI' : 'Google Gemini'}.`,
       });
     } catch (error) {
       console.error('AI generation error:', error);
@@ -267,5 +272,6 @@ export const useContentBooster = () => {
     // Add new properties for checking AI configuration
     isAIConfigured,
     businessProfile: profile,
+    canGenerateImages: !!(aiSettings?.openai_api_key || aiSettings?.api_key),
   };
 };

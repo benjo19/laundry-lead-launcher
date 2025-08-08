@@ -38,6 +38,7 @@ interface ContentFormProps {
   contentFormat: string;
   setContentFormat: (format: string) => void;
   generatedImageUrl: string;
+  canGenerateImages: boolean;
   onGenerateContent: () => void;
   onPublishNow: () => void;
   onSchedulePost: () => void;
@@ -69,6 +70,7 @@ const ContentForm: React.FC<ContentFormProps> = ({
   contentFormat,
   setContentFormat,
   generatedImageUrl,
+  canGenerateImages,
   onGenerateContent,
   onPublishNow,
   onSchedulePost,
@@ -149,9 +151,9 @@ const ContentForm: React.FC<ContentFormProps> = ({
               ))}
             </SelectContent>
           </Select>
-          {contentFormat === 'text-with-image' && aiProvider !== 'openai' && (
+          {contentFormat === 'text-with-image' && !canGenerateImages && (
             <p className="text-xs text-amber-600 mt-1">
-              Generiranje slika je dostupno samo s OpenAI providerom
+              Za generiranje slika potreban je OpenAI API ključ
             </p>
           )}
         </div>
