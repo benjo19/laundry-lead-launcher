@@ -16,7 +16,9 @@ const AISettings = () => {
   const { toast } = useToast();
   const [formData, setFormData] = useState({
     provider: 'openai' as 'openai' | 'gemini' | 'anthropic',
-    api_key: '',
+    api_key: '', // legacy/general
+    openai_api_key: '',
+    gemini_api_key: '',
     model: '',
     google_maps_api_key: '',
     custom_system_prompt: ''
@@ -30,6 +32,8 @@ const AISettings = () => {
       setFormData({
         provider: aiSettings.provider || 'openai',
         api_key: aiSettings.api_key || '',
+        openai_api_key: aiSettings.openai_api_key || (aiSettings.provider === 'openai' ? (aiSettings.api_key || '') : ''),
+        gemini_api_key: aiSettings.gemini_api_key || (aiSettings.provider === 'gemini' ? (aiSettings.api_key || '') : ''),
         model: aiSettings.model || '',
         google_maps_api_key: aiSettings.google_maps_api_key || '',
         custom_system_prompt: aiSettings.custom_system_prompt || ''
@@ -38,18 +42,19 @@ const AISettings = () => {
   }, [aiSettings]);
 
   const handleSave = async () => {
-    if (!formData.api_key.trim()) {
-      toast({
-        title: "Greška",
-        description: "AI API ključ je obavezan.",
-        variant: "destructive",
-      });
+    // Validate per selected provider
+    if (formData.provider === 'openai' && !formData.openai_api_key.trim()) {
+      toast({ title: "Greška", description: "Unesite OpenAI API ključ.", variant: "destructive" });
+      return;
+    }
+    if (formData.provider === 'gemini' && !formData.gemini_api_key.trim()) {
+      toast({ title: "Greška", description: "Unesite Google Gemini API ključ.", variant: "destructive" });
       return;
     }
 
     setIsSaving(true);
     try {
-      await saveAISettings(formData);
+      await saveAISettings(formData as any);
     } catch (error) {
       console.error('Error saving AI settings:', error);
     } finally {
@@ -58,21 +63,15 @@ const AISettings = () => {
   };
 
   const handleTestConnection = async () => {
-    if (!formData.api_key) {
-      toast({
-        title: "Greška",
-        description: "Unesite AI API ključ prije testiranja.",
-        variant: "destructive",
-      });
+    const needsOpenAI = formData.provider === 'openai';
+    const needsGemini = formData.provider === 'gemini';
+
+    if ((needsOpenAI && !formData.openai_api_key) || (needsGemini && !formData.gemini_api_key)) {
+      toast({ title: "Greška", description: `Unesite ${needsOpenAI ? 'OpenAI' : 'Google Gemini'} API ključ prije testiranja.`, variant: "destructive" });
       return;
     }
 
-    toast({
-      title: "Test veze",
-      description: "Testiranje AI konekcije...",
-    });
-
-    // Simple test - just save settings which will validate the key
+    toast({ title: "Test veze", description: "Testiranje AI konekcije..." });
     await handleSave();
   };
 
@@ -134,40 +133,42 @@ const AISettings = () => {
           </p>
         </div>
 
-        <div>
-          <Label htmlFor="api_key">AI API Ključ</Label>
-          <div className="flex gap-2">
-            <Input
-              id="api_key"
-              type={showApiKey ? "text" : "password"}
-              value={formData.api_key}
-              onChange={(e) => setFormData({ ...formData, api_key: e.target.value })}
-              placeholder={
-                formData.provider === 'openai' 
-                  ? "sk-..." 
-                  : formData.provider === 'gemini'
-                  ? "AIza..."
-                  : "sk-ant-..."
-              }
-              className="flex-1"
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setShowApiKey(!showApiKey)}
-            >
-              {showApiKey ? "Sakrij" : "Prikaži"}
-            </Button>
+        <div className="space-y-6">
+          <div>
+            <Label htmlFor="openai_api_key">OpenAI API Ključ</Label>
+            <div className="flex gap-2">
+              <Input
+                id="openai_api_key"
+                type={showApiKey ? "text" : "password"}
+                value={formData.openai_api_key}
+                onChange={(e) => setFormData({ ...formData, openai_api_key: e.target.value })}
+                placeholder="sk-..."
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowApiKey(!showApiKey)}>
+                {showApiKey ? "Sakrij" : "Prikaži"}
+              </Button>
+            </div>
+            <p className="text-sm text-slate-500 mt-1">Dobijte API ključ na platform.openai.com/api-keys</p>
           </div>
-          <p className="text-sm text-slate-500 mt-1">
-            {formData.provider === 'openai' 
-              ? "Dobijte API ključ na platform.openai.com/api-keys"
-              : formData.provider === 'gemini'
-              ? "Dobijte API ključ na aistudio.google.com/app/apikey"
-              : "Dobijte API ključ na console.anthropic.com"
-            }
-          </p>
+
+          <div>
+            <Label htmlFor="gemini_api_key">Google Gemini API Ključ</Label>
+            <div className="flex gap-2">
+              <Input
+                id="gemini_api_key"
+                type={showApiKey ? "text" : "password"}
+                value={formData.gemini_api_key}
+                onChange={(e) => setFormData({ ...formData, gemini_api_key: e.target.value })}
+                placeholder="AIza..."
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" size="sm" onClick={() => setShowApiKey(!showApiKey)}>
+                {showApiKey ? "Sakrij" : "Prikaži"}
+              </Button>
+            </div>
+            <p className="text-sm text-slate-500 mt-1">Dobijte API ključ na aistudio.google.com/app/apikey</p>
+          </div>
         </div>
 
         <div>
@@ -286,40 +287,21 @@ const AISettings = () => {
           <h4 className="font-medium mb-2">Kako dobiti API ključeve:</h4>
           <div className="space-y-2 text-sm text-slate-600">
             <div>
-              <strong>AI API ključ:</strong>
-              {formData.provider === 'openai' ? (
-                <>
-                  <p>1. Idite na <strong>platform.openai.com</strong></p>
-                  <p>2. Registrirajte se ili se prijavite</p>
-                  <p>3. Idite na "API Keys" u vašem dashboard-u</p>
-                  <p>4. Kliknite "Create new secret key"</p>
-                  <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
-                </>
-              ) : formData.provider === 'gemini' ? (
-                <>
-                  <p>1. Idite na <strong>aistudio.google.com</strong></p>
-                  <p>2. Prijavite se s Google računom</p>
-                  <p>3. Kliknite "Get API key"</p>
-                  <p>4. Kreirajte novi API ključ</p>
-                  <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
-                </>
-              ) : (
-                <>
-                  <p>1. Idite na <strong>console.anthropic.com</strong></p>
-                  <p>2. Registrirajte se ili se prijavite</p>
-                  <p>3. Idite na "API Keys"</p>
-                  <p>4. Kliknite "Create Key"</p>
-                  <p>5. Kopirajte ključ i zalijepite ga ovdje</p>
-                </>
-              )}
+              <strong>OpenAI API ključ:</strong>
+              <p>1. Idite na <strong>platform.openai.com</strong></p>
+              <p>2. Dashboard → API Keys</p>
+              <p>3. "Create new secret key" i kopirajte</p>
             </div>
             <div className="mt-3">
-              <strong>Google Maps API ključ:</strong>
-              <p>1. Idite na <strong>console.cloud.google.com</strong></p>
-              <p>2. Kreirajte novi projekt ili odaberite postojeći</p>
-              <p>3. Omogućite "Places API" i "Maps JavaScript API"</p>
-              <p>4. Kreirajte API ključ u "Credentials" sekciji</p>
-              <p>5. Kopirajte ključ za Lead Discovery funkcije</p>
+              <strong>Google Gemini API ključ:</strong>
+              <p>1. Idite na <strong>aistudio.google.com</strong></p>
+              <p>2. Prijavite se i otvorite "Get API key"</p>
+              <p>3. Kreirajte i kopirajte ključ</p>
+            </div>
+            <div className="mt-3">
+              <strong>Google Maps API ključ (opcionalno):</strong>
+              <p>1. console.cloud.google.com → Credentials</p>
+              <p>2. Omogućite potrebne API-je i kreirajte ključ</p>
             </div>
           </div>
         </div>

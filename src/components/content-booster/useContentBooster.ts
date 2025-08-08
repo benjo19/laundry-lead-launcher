@@ -91,7 +91,11 @@ export const useContentBooster = () => {
     setGeneratedImageUrl('');
     
     try {
-      const aiService = new AIContentService(aiSettings!.api_key, aiSettings!.provider);
+      const selectedKey = aiSettings!.provider === 'openai'
+        ? (aiSettings!.openai_api_key || aiSettings!.api_key || '')
+        : (aiSettings!.gemini_api_key || aiSettings!.api_key || '');
+
+      const aiService = new AIContentService(selectedKey, aiSettings!.provider);
       
       // Get business context for better content generation (now async)
       const businessContext = await getContextForAI();
@@ -246,8 +250,9 @@ export const useContentBooster = () => {
     scheduledDate,
     setScheduledDate,
     isGenerating,
-    // Remove manual API key and provider since we're using saved settings
-    apiKey: aiSettings?.api_key || '',
+    apiKey: (aiSettings?.provider === 'openai'
+      ? (aiSettings?.openai_api_key || aiSettings?.api_key)
+      : (aiSettings?.gemini_api_key || aiSettings?.api_key)) || '',
     setApiKey: () => {}, // No-op since we use saved settings
     aiProvider: (aiSettings?.provider || 'openai') as AIProvider,
     setAiProvider: () => {}, // No-op since we use saved settings
