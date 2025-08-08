@@ -39,16 +39,23 @@ serve(async (req) => {
     const { message } = await req.json();
     console.log('Message received:', message);
     
-    // Get user from token via SDK (reads from Authorization header)
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-
-    if (userError || !user) {
-      console.log('auth.getUser failed:', userError);
+    // Extract user id (sub) from JWT; verify_jwt is enforced by gateway
+    const token = authHeader.replace('Bearer ', '');
+    const payloadPart = token.split('.')[1];
+    let userId = '';
+    try {
+      const decoded = JSON.parse(atob(payloadPart.replace(/-/g, '+').replace(/_/g, '/')));
+      userId = decoded.sub;
+    } catch (e) {
+      console.log('Failed to decode JWT:', e);
       return new Response(JSON.stringify({ error: 'Unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    const user = { id: userId };
+
 
     console.log(`AI Knowledge Chat for user:`, user.id);
 
