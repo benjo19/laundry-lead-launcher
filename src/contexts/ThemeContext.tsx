@@ -24,11 +24,10 @@ interface ThemeProviderProps {
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    // Provjeri localStorage ili system preference
+    // Provjeri localStorage; ako nema postavke, default je 'light'
     const saved = localStorage.getItem('theme') as Theme;
-    if (saved) return saved;
-    
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    if (saved === 'light' || saved === 'dark') return saved;
+    return 'light';
   });
 
   useEffect(() => {
