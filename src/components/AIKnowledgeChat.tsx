@@ -103,16 +103,17 @@ const AIKnowledgeChat = () => {
 
     } catch (error) {
       console.error('Error sending message:', error);
+      const messageText = error instanceof Error ? error.message : 'Greška pri slanju poruke AI asistentu.';
       toast({
         title: "Greška",
-        description: "Greška pri slanju poruke AI asistentu.",
+        description: messageText,
         variant: "destructive",
       });
 
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: 'Izvinjavam se, dogodila se greška pri procesiranju vaše poruke. Molimo pokušajte ponovo.',
+        content: `Ispričavam se, došlo je do greške: ${messageText}`,
         timestamp: new Date()
       };
 

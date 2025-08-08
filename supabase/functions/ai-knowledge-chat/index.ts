@@ -55,10 +55,11 @@ serve(async (req) => {
       throw new Error(`Failed to fetch knowledge base: ${knowledgeError.message}`);
     }
 
-    // Prepare context from knowledge base - use more content
-    const context = knowledgeItems?.map(item => 
+    // Prepare context from knowledge base and trim to safe length
+    const fullContext = knowledgeItems?.map(item => 
       `[${item.type.toUpperCase()}] ${item.title}: ${item.content || 'No content'}`
     ).join('\n\n') || 'No knowledge base content available.';
+    const context = fullContext.slice(0, 12000);
 
     const geminiApiKey = Deno.env.get('GEMINI_API_KEY');
     const anthropicApiKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -99,7 +100,7 @@ serve(async (req) => {
       throw new Error(`${provider} API key not configured`);
     }
 
-    // Call appropriate AI service
+    // Call appropriate AI service with graceful fallback
     console.log(`Calling ${provider} API...`);
     try {
       let aiResponse: string;
@@ -121,7 +122,23 @@ serve(async (req) => {
 
     } catch (aiError) {
       console.error(`${provider} API error:`, aiError);
-      throw new Error(`Failed to get AI response: ${aiError.message}`);
+      // Fallback to Gemini if available and not already using it
+      if (provider !== 'gemini' && geminiApiKey) {
+        console.log('Falling back to Gemini provider...');
+        try {
+          const aiResponse = await callGeminiAPI(geminiApiKey, context, message);
+          return new Response(JSON.stringify({ 
+            response: aiResponse,
+            knowledgeItemsCount: knowledgeItems?.length || 0,
+            fallback: 'gemini'
+          }), {
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        } catch (fallbackError) {
+          console.error('Fallback to Gemini failed:', fallbackError);
+        }
+      }
+      throw new Error(`Failed to get AI response: ${aiError instanceof Error ? aiError.message : String(aiError)}`);
     }
 
   } catch (error) {
