@@ -87,7 +87,6 @@ export const useSocialService = () => {
         body: {
           content,
           platform,
-          user_id: user.id,
           image_url: imageUrl
         }
       });
