@@ -258,6 +258,12 @@ INDUSTRIJA: ${industry}`;
       if (additionalContext) {
         prompt += `\nDodatni vizualni kontekst/ključne riječi: ${additionalContext}.`;
       }
+      // Stil slike prema platformi
+      prompt += `\nUskladite vizualni stil s platformom (${platform}).`;
+      prompt += `\n- LinkedIn: clean, corporate, minimalistic, neutral colors, professional lighting.`;
+      prompt += `\n- Facebook: friendly lifestyle, relatable people, warm tones, approachable.`;
+      prompt += `\n- Instagram: vibrant, aesthetic, shallow depth of field, trending look.`;
+      prompt += `\n- TikTok: dynamic, fun, bold colors, energetic composition.`;
       prompt += `\nNa kraju odgovora dodajte točno jedan [IMAGE_PROMPT: ...] bez dodatnih komentara.`;
     }
 
