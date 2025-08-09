@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Loader2, Brain, Key } from 'lucide-react';
+import { Search, Loader2, Key, Globe2, MapPinned } from 'lucide-react';
 import IndustrySelector, { industries } from './IndustrySelector';
 import CountrySelector from './CountrySelector';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
@@ -33,6 +33,8 @@ export interface DiscoveredLead {
 // Export industries from IndustrySelector for consistency
 export { industries };
 
+type SearchSource = 'maps' | 'web';
+
 interface SearchFormProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
@@ -50,6 +52,8 @@ interface SearchFormProps {
   onSearchLeads: () => void;
   onAnalyzeWithAI: (leads: AnalyzedLead[]) => void;
   showApiKeyInput: boolean;
+  source: SearchSource;
+  setSource: (source: SearchSource) => void;
 }
 
 const SearchForm = ({
@@ -68,7 +72,9 @@ const SearchForm = ({
   discoveredLeads,
   onSearchLeads,
   onAnalyzeWithAI,
-  showApiKeyInput
+  showApiKeyInput,
+  source,
+  setSource
 }: SearchFormProps) => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,11 +89,41 @@ const SearchForm = ({
           Pretraži Leadove
         </CardTitle>
         <p className="text-sm text-slate-600">
-          Poboljšane kategorije za preciznije rezultate - svaka kategorija koristi specifične Google Maps upite
+          Poboljšane kategorije za preciznije rezultate - svaka kategorija koristi specifične Google upite
         </p>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Izbor izvora pretraživanja */}
+          <div className="flex flex-col gap-2">
+            <label className="text-sm font-medium text-slate-700">Izvor</label>
+            <div className="flex rounded-lg border border-border overflow-hidden w-full sm:w-fit">
+              <button
+                type="button"
+                onClick={() => setSource('maps')}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 text-sm transition-colors ${
+                  source === 'maps' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'
+                }`}
+              >
+                <MapPinned className="h-4 w-4" />
+                Google Maps
+              </button>
+              <button
+                type="button"
+                onClick={() => setSource('web')}
+                className={`flex items-center gap-2 px-3 sm:px-4 py-2 text-sm transition-colors border-l border-border ${
+                  source === 'web' ? 'bg-primary text-primary-foreground' : 'bg-background hover:bg-muted'
+                }`}
+              >
+                <Globe2 className="h-4 w-4" />
+                Google Web
+              </button>
+            </div>
+            <p className="text-xs text-slate-500">
+              Maps koristi Google Maps API (detalji, recenzije), Web koristi Google CSE (traži web stranice i emailove).
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="country" className="block text-sm font-medium text-slate-700 mb-1">
@@ -140,7 +176,7 @@ const SearchForm = ({
             </p>
           </div>
 
-          {showApiKeyInput && (
+          {showApiKeyInput && source === 'maps' && (
             <div>
               <label htmlFor="apiKey" className="block text-sm font-medium text-slate-700 mb-1">
                 <Key className="inline h-4 w-4 mr-1" />

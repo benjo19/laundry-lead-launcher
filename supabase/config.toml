@@ -44,3 +44,6 @@ verify_jwt = true
 
 [functions.ai-chat]
 verify_jwt = true
+
+[functions.google-web-lead-search]
+verify_jwt = true
