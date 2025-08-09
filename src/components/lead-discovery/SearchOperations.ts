@@ -3,6 +3,19 @@ import { industries, DiscoveredLead } from './SearchForm';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 import { scrapeEmailFromWebsite, enhancedEmailDiscovery } from '@/utils/emailScraper';
 
+// Local helpers for domain matching
+const stripWww = (host: string) => host.replace(/^www\./i, '');
+const twoPartTLDs = new Set(['co.uk','com.au','com.br','com.hr','com.tr','com.cn','com.mx','com.ar','com.pl','com.sg','com.my']);
+const getDomainRoot = (host: string) => {
+  const h = stripWww(host.toLowerCase());
+  const parts = h.split('.');
+  if (parts.length <= 2) return h;
+  const last2 = parts.slice(-2).join('.');
+  const last3 = parts.slice(-3).join('.');
+  return twoPartTLDs.has(last2) ? last3 : last2;
+};
+const isFreeEmailDomain = (domain: string) => /(gmail|yahoo|hotmail|outlook|aol|icloud|proton|yandex|zoho|gmx|live|msn)\./i.test(domain);
+
 export const performLeadSearch = async (
   searchQuery: string,
   location: string,
@@ -169,12 +182,23 @@ export const performLeadSearch = async (
         try {
           console.log(`🔍 Enhanced email discovery for: ${lead.name}`);
           const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '');
-          
-          if (enhancedResult.emails.length > 0 && !lead.email) {
-            // Use first email if none found from website
-            lead.email = enhancedResult.emails[0];
-            emailSource = enhancedResult.emailSources[enhancedResult.emails[0]] || 'social';
+
+          // Only accept emails from the same company domain (avoid free providers)
+          if (!lead.email && lead.website) {
+            const companyRoot = getDomainRoot(new URL(lead.website).hostname);
+            const filtered = enhancedResult.emails.filter((e) => {
+              const domain = (e.split('@')[1] || '').toLowerCase();
+              return !isFreeEmailDomain(domain) && getDomainRoot(domain) === companyRoot;
+            });
+            if (filtered.length > 0) {
+              lead.email = filtered[0];
+              emailSource = enhancedResult.emailSources[filtered[0]] || 'social';
+              console.log(`✅ Accepted domain-matching email: ${lead.email} (root: ${companyRoot})`);
+            } else {
+              console.log('ℹ️ Enhanced discovery found emails, but none matched company domain');
+            }
           }
+
           
           // Store social profiles
           socialProfiles = enhancedResult.socialProfiles;

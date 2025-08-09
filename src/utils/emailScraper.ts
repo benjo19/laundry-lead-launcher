@@ -1,3 +1,17 @@
+// Utilities for safer email extraction and domain matching
+const stripWww = (host: string) => host.replace(/^www\./i, '');
+const twoPartTLDs = new Set([
+  'co.uk','com.au','com.br','com.hr','com.tr','com.cn','com.mx','com.ar','com.pl','com.sg','com.my'
+]);
+const getDomainRoot = (host: string) => {
+  const h = stripWww(host.toLowerCase());
+  const parts = h.split('.');
+  if (parts.length <= 2) return h;
+  const last2 = parts.slice(-2).join('.');
+  const last3 = parts.slice(-3).join('.');
+  return twoPartTLDs.has(last2) ? last3 : last2;
+};
+const isFreeEmailDomain = (domain: string) => /(gmail|yahoo|hotmail|outlook|aol|icloud|proton|yandex|zoho|gmx|live|msn)\./i.test(domain);
 
 // Enhanced email scraper with multiple strategies for finding email addresses
 
@@ -134,22 +148,31 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     
     // Return the first valid email found, preferring contact-related emails
     const emailsArray = Array.from(foundEmails);
-    
-    // Prioritize contact-related emails
-    const priorityEmail = emailsArray.find(email => 
+
+    // Strictly match company domain and exclude free providers
+    const companyRoot = getDomainRoot(new URL(cleanUrl).hostname);
+    const domainMatched = emailsArray.filter((email) => {
+      const domain = (email.split('@')[1] || '').toLowerCase();
+      return !isFreeEmailDomain(domain) && getDomainRoot(domain) === companyRoot;
+    });
+
+    // Prioritize contact-related emails within company domain
+    const priorityEmail = domainMatched.find(email => 
       /^(info|contact|office|sales|hello|inquiries|general)@/i.test(email)
     );
-    
+
     if (priorityEmail) {
-      console.log(`Found priority email: ${priorityEmail} from ${cleanUrl}`);
+      console.log(`Found priority company-domain email: ${priorityEmail} for ${companyRoot}`);
       return priorityEmail;
     }
-    
-    if (emailsArray.length > 0) {
-      console.log(`Found email: ${emailsArray[0]} from ${cleanUrl}`);
-      return emailsArray[0];
+
+    if (domainMatched.length > 0) {
+      console.log(`Found company-domain email: ${domainMatched[0]} for ${companyRoot}`);
+      return domainMatched[0];
     }
-    
+
+    console.log(`No company-domain email matched for ${companyRoot}; returning null to avoid wrong emails`);
+
     console.log(`No email found on ${cleanUrl}`);
     return null;
     
