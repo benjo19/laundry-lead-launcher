@@ -128,6 +128,8 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const q: string = (body.q || "").toString().trim();
     const limit: number = Math.min(Math.max(parseInt(body.limit || "10"), 1), 10);
+    const gl: string | undefined = typeof body.gl === 'string' && /^[a-zA-Z]{2}$/.test(body.gl) ? body.gl.toLowerCase() : undefined;
+    const lr: string | undefined = typeof body.lr === 'string' && /^lang_[a-zA-Z]{2}$/.test(body.lr) ? body.lr.toLowerCase() : undefined;
 
     if (!q) {
       return new Response(JSON.stringify({ error: "Missing query (q)" }), {
@@ -143,15 +145,26 @@ serve(async (req) => {
     cseUrl.searchParams.set("cx", cx);
     cseUrl.searchParams.set("q", q);
     cseUrl.searchParams.set("num", String(limit));
+    if (gl) cseUrl.searchParams.set("gl", gl);
+    if (lr) cseUrl.searchParams.set("lr", lr);
 
     const cseRes = await fetch(cseUrl.toString());
     if (!cseRes.ok) {
-      const errText = await cseRes.text();
-      console.error("CSE error:", cseRes.status, errText);
-      return new Response(JSON.stringify({ error: "CSE request failed" }), {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      let errBody: any = null;
+      let errText = '';
+      try {
+        errBody = await cseRes.clone().json();
+      } catch {
+        errText = await cseRes.text();
+      }
+      const status = cseRes.status;
+      const details = errBody?.error?.message || errText || 'Unknown error';
+      const reason = errBody?.error?.status;
+      console.error("CSE error:", status, details);
+      return new Response(
+        JSON.stringify({ error: "CSE request failed", status, reason, details }),
+        { status, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const data = await cseRes.json();

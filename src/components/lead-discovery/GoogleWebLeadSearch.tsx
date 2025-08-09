@@ -43,17 +43,25 @@ export const useGoogleWebLeadSearch = ({
       const q = parts.join(" ").trim();
       console.log("Web Search - Query:", q);
 
+      // Minimal localization: map Croatia to hr
+      const countryLc = (country || '').toLowerCase();
+      const gl = countryLc.includes('hrvatska') || countryLc.includes('croatia') || countryLc === 'hr' ? 'hr' : undefined;
+      const lr = gl ? `lang_${gl}` : undefined;
+
       const { data, error } = await supabase.functions.invoke("google-web-lead-search", {
-        body: { q, limit: 10 },
+        body: { q, limit: 10, gl, lr },
       });
 
       if (error) {
         console.error("Web search error:", error);
-        toast({
-          title: "Greška",
-          description: error.message || "Dogodila se greška pri web pretraživanju leadova.",
-          variant: "destructive",
-        });
+        const status = (error as any)?.status || (error as any)?.context?.status;
+        let description = (error as any)?.context?.details || error.message || "Dogodila se greška pri web pretraživanju leadova.";
+        if (status === 404 || /404|not found/i.test(description)) {
+          description = "Google CSE: Pogrešan ili nepostojeći CX (Search Engine ID). Provjerite CSE konfiguraciju i ID.";
+        } else if (status === 403 || /403|forbidden|permission/i.test(description)) {
+          description = "Google CSE: Nema dopuštenja. Provjerite da je Custom Search JSON API uključen i da API ključ ima dopuštenja.";
+        }
+        toast({ title: "Greška", description, variant: "destructive" });
         setDiscoveredLeads([]);
         return;
       }
