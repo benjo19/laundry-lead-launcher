@@ -264,6 +264,12 @@ INDUSTRIJA: ${industry}`;
       prompt += `\n- Facebook: friendly lifestyle, relatable people, warm tones, approachable.`;
       prompt += `\n- Instagram: vibrant, aesthetic, shallow depth of field, trending look.`;
       prompt += `\n- TikTok: dynamic, fun, bold colors, energetic composition.`;
+      // Aspect ratio / orientation per platform
+      prompt += `\nKadriranje i omjer stranica (aspect ratio) prilagodite platformi.`;
+      prompt += `\n- LinkedIn: 1.91:1 (npr. 1200x627), landscape composition.`;
+      prompt += `\n- Facebook: 4:5 (npr. 1080x1350), portrait composition.`;
+      prompt += `\n- Instagram: 1:1 (npr. 1080x1080), square composition.`;
+      prompt += `\n- TikTok: 9:16 (npr. 1080x1920), vertical composition.`;
       prompt += `\nNa kraju odgovora dodajte točno jedan [IMAGE_PROMPT: ...] bez dodatnih komentara.`;
     }
 
