@@ -210,9 +210,11 @@ VAŽNE SMJERNICE:
       prompt += `
 
 GENERIRANJE SLIKA:
-- Ako generirate sadržaj s slikom, na kraju dodajte [IMAGE_PROMPT: kratak opis slike na engleskom]
-- Opis slike treba biti relevantan za sadržaj i industriju
-- Koristite jednostavne, jasne opise (npr. "professional laundry worker in modern facility")`;
+- Ako generirate sadržaj sa slikom, na kraju odgovora dodajte točno jedan tag: [IMAGE_PROMPT: ...]
+- Opis mora biti na engleskom jeziku
+- Opis MORA odražavati odabranu industriju i stil platforme te, kada su dostupni, uključiti ključne pojmove iz TEMA i DODATNE INFORMACIJE
+- Fokusirajte se na jasne vizualne elemente (subjekt, okruženje, stil, osvjetljenje), bez teksta u slici
+- Primjer: "professional laundry worker in modern facility"`; 
     }
 
     prompt += `
@@ -243,7 +245,20 @@ INDUSTRIJA: ${industry}`;
     }
 
     if (format === 'text-with-image') {
-      prompt += `\nFORMAT: Generiraj tekst s prijedlogom za sliku`;
+      prompt += `\nFORMAT: Generiraj tekst s prijedlogom za sliku.`;
+      // Specifične upute za IMAGE_PROMPT kako bi slika pratila industriju/temu/kontekst
+      prompt += `\nZA [IMAGE_PROMPT]: koristite engleski jezik, opišite ključne vizualne elemente (subjekt, okruženje, stil, svjetlo).`;
+      prompt += `\nObavezno ugradite industriju: ${industry}.`;
+      if (companyName) {
+        prompt += `\nAko je relevantno, prilagodite stil/brending tvrtki: ${companyName}.`;
+      }
+      if (topic) {
+        prompt += `\nTema/koncept slike: ${topic}.`;
+      }
+      if (additionalContext) {
+        prompt += `\nDodatni vizualni kontekst/ključne riječi: ${additionalContext}.`;
+      }
+      prompt += `\nNa kraju odgovora dodajte točno jedan [IMAGE_PROMPT: ...] bez dodatnih komentara.`;
     }
 
     prompt += `\n\nKreiraj sadržaj koji je relevantan za ${industry} industriju i prilagođen ${platform} platformi.`;
