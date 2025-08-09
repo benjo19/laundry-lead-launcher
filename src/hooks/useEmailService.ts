@@ -22,8 +22,7 @@ export const useEmailService = () => {
         body: {
           to_email,
           subject,
-          content,
-          user_id: user.id
+          content
         }
       });
 

@@ -12,7 +12,6 @@ interface EmailRequest {
   to_email: string;
   subject: string;
   content: string;
-  user_id: string;
 }
 
 serve(async (req) => {
@@ -21,13 +20,31 @@ serve(async (req) => {
   }
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { to_email, subject, content, user_id }: EmailRequest = await req.json();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
+    const { to_email, subject, content }: EmailRequest = await req.json();
+
+    const user_id = user.id;
     console.log('Sending email for user:', user_id);
 
     // Get user email settings

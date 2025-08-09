@@ -9,7 +9,6 @@ const corsHeaders = {
 interface SocialPostRequest {
   content: string;
   platform: 'facebook' | 'linkedin' | 'instagram';
-  user_id: string;
   image_url?: string;
 }
 
@@ -21,21 +20,40 @@ serve(async (req) => {
   try {
     console.log('Social post request received');
     
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
     );
 
-    const { content, platform, user_id, image_url }: SocialPostRequest = await req.json();
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    console.log(`Processing post for platform: ${platform}, user: ${user_id}`);
+    const { content, platform, image_url }: SocialPostRequest = await req.json();
+
+    const userId = user.id;
+
+    console.log(`Processing post for platform: ${platform}, user: ${userId}`);
     console.log(`Content length: ${content.length}, Has image: ${!!image_url}`);
 
     // Dobijanje korisničkih postavki za društvene mreže
     const { data: userSettings, error: settingsError } = await supabase
       .from('user_settings')
       .select('social_platforms')
-      .eq('user_id', user_id)
+      .eq('user_id', userId)
       .single();
 
     console.log('User settings query result:', { userSettings, settingsError });
