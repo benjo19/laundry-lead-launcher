@@ -28,8 +28,8 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     // Pages that commonly contain contact info (HR/EN variants)
     const candidatePaths = [
       '/',
-      '/contact', '/contact/', '/contact-us', '/contact-us/', '/contact.html',
-      '/kontakt', '/kontakt/', '/kontakt.html',
+      '/contact', '/contact/', '/contact-us', '/contact-us/', '/contact.html', '/en/contact', '/contact-hr',
+      '/kontakt', '/kontakt/', '/kontakt.html', '/hr/kontakt', '/kontakti', '/kontaktirajte-nas',
       '/about', '/about-us', '/about/', '/about-us/',
       '/o-nama', '/o-nama/', '/impressum', '/impressum/'
     ];
@@ -42,6 +42,7 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
     ];
 
     const foundEmails = new Set<string>();
+    const emailMeta = new Map<string, { mailto: boolean }>();
 
     // Helper: fetch a URL via proxies and return text content
     const fetchViaProxies = async (url: string): Promise<string | null> => {
@@ -87,30 +88,32 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
         .replace(/\u2022|&bull;/g, '.') // bullets sometimes used instead of dots
         .replace(/\s+/g, ' ');
 
-      const patterns: RegExp[] = [
-        /mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
-        /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+      // Exclusions: obvious non-contact technical addresses
+      const exclude = [
+        /noreply/i, /no-reply/i, /donotreply/i, /do-not-reply/i,
+        /example\.com/i, /test\.com/i, /postmaster/i, /webmaster/i,
       ];
 
-      for (const rx of patterns) {
-        const matches = text.match(rx) || [];
-        for (let m of matches) {
-          let email = m;
-          if (email.startsWith('mailto:')) email = email.replace('mailto:', '');
-          email = email.replace(/<[^>]*>/g, '').trim().toLowerCase();
+      // First, capture mailto links (higher confidence)
+      const mailtoMatches = Array.from(text.matchAll(/mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi));
+      for (const m of mailtoMatches) {
+        let email = (m[1] || '').replace(/<[^>]*>/g, '').trim().toLowerCase();
+        const valid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!valid.test(email)) continue;
+        if (exclude.some((p) => p.test(email))) continue;
+        foundEmails.add(email);
+        emailMeta.set(email, { mailto: true });
+      }
 
-          const valid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-          if (!valid.test(email)) continue;
-
-          // Exclusions: obvious non-contact technical addresses
-          const exclude = [
-            /noreply/i, /no-reply/i, /donotreply/i, /do-not-reply/i,
-            /example\.com/i, /test\.com/i, /postmaster/i, /webmaster/i,
-          ];
-          if (exclude.some((p) => p.test(email))) continue;
-
-          foundEmails.add(email);
-        }
+      // Then, capture plain text emails
+      const plainMatches = Array.from(text.matchAll(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g));
+      for (const m of plainMatches) {
+        let email = (m[0] || '').replace(/<[^>]*>/g, '').trim().toLowerCase();
+        const valid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+        if (!valid.test(email)) continue;
+        if (exclude.some((p) => p.test(email))) continue;
+        foundEmails.add(email);
+        if (!emailMeta.has(email)) emailMeta.set(email, { mailto: false });
       }
     };
 
@@ -136,25 +139,30 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
 
     const emailsArray = Array.from(foundEmails);
 
-    // 1) Prefer company-domain emails (including subdomains)
-    const companyEmails = emailsArray.filter((email) => {
-      const domain = (email.split('@')[1] || '').toLowerCase();
-      return !isFreeEmailDomain(domain) && getDomainRoot(domain) === companyRoot;
-    });
+    // Score and pick the best email
+    const brand = companyRoot.split('.')[0] || '';
+    const scoreEmail = (email: string) => {
+      const [local, domainPart] = email.split('@');
+      const domain = (domainPart || '').toLowerCase();
+      let score = 0;
+      if (domain && getDomainRoot(domain) === companyRoot) score += 100;
+      else if (isFreeEmailDomain(domain)) score -= 60;
 
-    // Prioritize role-based first
-    const rolePriority = (list: string[]) =>
-      list.find((e) => /^(info|contact|office|sales|hello|inquiries|general|support)@/i.test(e)) || list[0];
+      if (/^(info|kontakt|contact|office|sales|hello|support|booking|reservations)@/i.test(email)) score += 25;
+      if (brand && local && local.includes(brand.replace(/[^a-z0-9]/gi, ''))) score += 10;
+      if (/(newsletter|marketing|noreply|no-reply|donotreply|do-not-reply)/i.test(email)) score -= 40;
+      if (/(postmaster|webmaster|admin)@/i.test(email)) score -= 50;
 
-    if (companyEmails.length > 0) {
-      const chosen = rolePriority(companyEmails);
-      return chosen;
-    }
+      const meta = emailMeta.get(email);
+      if (meta?.mailto) score += 15;
+      return score;
+    };
 
-    // 2) Fallback: if company-domain not found, accept emails found on the official site (even free providers)
-    // Still prioritize role-based, then first
-    const chosen = rolePriority(emailsArray);
-    return chosen || null;
+    const best = emailsArray
+      .map((e) => ({ e, s: scoreEmail(e) }))
+      .sort((a, b) => b.s - a.s)[0];
+
+    return best?.e || null;
   } catch (error) {
     console.error(`Error scraping email from ${website}:`, error);
     return null;
