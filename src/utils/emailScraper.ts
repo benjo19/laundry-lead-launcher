@@ -18,164 +18,143 @@ const isFreeEmailDomain = (domain: string) => /(gmail|yahoo|hotmail|outlook|aol|
 // Enhanced email scraper with multiple strategies and proxy services
 export const scrapeEmailFromWebsite = async (website: string): Promise<string | null> => {
   if (!website) return null;
-  
+
   try {
-    // Clean up the website URL
-    const cleanUrl = website.startsWith('http') ? website : `https://${website}`;
-    
-    // Try multiple proxy services for better success rate
-    const proxyServices = [
+    // Normalize base URL
+    const baseUrl = website.startsWith('http') ? website : `https://${website}`;
+    const base = new URL(baseUrl);
+    const companyRoot = getDomainRoot(base.hostname);
+
+    // Pages that commonly contain contact info (HR/EN variants)
+    const candidatePaths = [
+      '/',
+      '/contact', '/contact/', '/contact-us', '/contact-us/', '/contact.html',
+      '/kontakt', '/kontakt/', '/kontakt.html',
+      '/about', '/about-us', '/about/', '/about-us/',
+      '/o-nama', '/o-nama/', '/impressum', '/impressum/'
+    ];
+
+    // Proxies (prefer raw text to avoid JSON parsing issues)
+    const proxies = [
+      'https://api.allorigins.win/raw?url=',
       'https://api.allorigins.win/get?url=',
       'https://corsproxy.io/?',
-      'https://cors-anywhere.herokuapp.com/',
     ];
-    
-    let htmlContent = null;
-    
-    for (const proxyUrl of proxyServices) {
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000);
-        
-        const response = await fetch(proxyUrl + encodeURIComponent(cleanUrl), {
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-          const data = await response.json();
-          htmlContent = data.contents || data;
-          break;
+
+    const foundEmails = new Set<string>();
+
+    // Helper: fetch a URL via proxies and return text content
+    const fetchViaProxies = async (url: string): Promise<string | null> => {
+      for (const proxy of proxies) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+          const proxiedUrl = proxy + encodeURIComponent(url);
+          const res = await fetch(proxiedUrl, { signal: controller.signal });
+          clearTimeout(timeoutId);
+
+          if (!res.ok) continue;
+
+          const contentType = res.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+            const data = await res.json();
+            const txt = typeof data === 'string' ? data : (data.contents || JSON.stringify(data));
+            return String(txt);
+          } else {
+            const txt = await res.text();
+            return txt;
+          }
+        } catch (e) {
+          // try next proxy
+          continue;
         }
-      } catch (error) {
-        console.log(`Failed with proxy ${proxyUrl}:`, error);
-        continue;
+      }
+      return null;
+    };
+
+    // Helper: extract and normalize emails from a block of text/html
+    const extractEmails = (html: string) => {
+      if (!html) return;
+
+      // Replace common obfuscations before matching
+      let text = html
+        .replace(/\s*\[at\]\s*/gi, '@')
+        .replace(/\s*\(at\)\s*/gi, '@')
+        .replace(/\s+at\s+/gi, '@')
+        .replace(/\s*\[dot\]\s*/gi, '.')
+        .replace(/\s*\(dot\)\s*/gi, '.')
+        .replace(/\u2022|&bull;/g, '.') // bullets sometimes used instead of dots
+        .replace(/\s+/g, ' ');
+
+      const patterns: RegExp[] = [
+        /mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
+        /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
+      ];
+
+      for (const rx of patterns) {
+        const matches = text.match(rx) || [];
+        for (let m of matches) {
+          let email = m;
+          if (email.startsWith('mailto:')) email = email.replace('mailto:', '');
+          email = email.replace(/<[^>]*>/g, '').trim().toLowerCase();
+
+          const valid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+          if (!valid.test(email)) continue;
+
+          // Exclusions: obvious non-contact technical addresses
+          const exclude = [
+            /noreply/i, /no-reply/i, /donotreply/i, /do-not-reply/i,
+            /example\.com/i, /test\.com/i, /postmaster/i, /webmaster/i,
+          ];
+          if (exclude.some((p) => p.test(email))) continue;
+
+          foundEmails.add(email);
+        }
+      }
+    };
+
+    // Crawl candidate pages (stop early if we already have a good company email)
+    for (const path of candidatePaths) {
+      const pageUrl = new URL(path, base).toString();
+      const html = await fetchViaProxies(pageUrl);
+      if (!html) continue;
+      extractEmails(html);
+
+      // Early stop if we already have a company-domain role email
+      const arr = Array.from(foundEmails);
+      const companyMatches = arr.filter((e) => getDomainRoot((e.split('@')[1] || '')) === companyRoot && !isFreeEmailDomain((e.split('@')[1] || '')));
+      const roleBest = companyMatches.find((e) => /^(info|contact|office|sales|hello|inquiries|general|support)@/i.test(e));
+      if (roleBest) {
+        return roleBest;
       }
     }
-    
-    if (!htmlContent) {
-      console.log(`All proxy services failed for: ${cleanUrl}`);
+
+    if (foundEmails.size === 0) {
       return null;
     }
-    
-    console.log(`Successfully fetched content from ${cleanUrl}, content length: ${htmlContent.length}`);
-    
-    if (!htmlContent) return null;
-    
-    // Email regex patterns (enhanced)
-    const emailPatterns = [
-      // Standard email pattern
-      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-      // Email in mailto links
-      /mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/g,
-      // Email with [at] or (at) instead of @
-      /[a-zA-Z0-9._%+-]+\s*\[at\]\s*[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-      /[a-zA-Z0-9._%+-]+\s*\(at\)\s*[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g,
-      // Email with " at " or " AT " instead of @
-      /[a-zA-Z0-9._%+-]+\s+at\s+[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/gi,
-      // Email with [dot] or (dot) instead of .
-      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+\s*\[dot\]\s*[a-zA-Z]{2,}/gi,
-      /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+\s*\(dot\)\s*[a-zA-Z]{2,}/gi,
-    ];
-    
-    const foundEmails = new Set<string>();
-    
-    console.log(`Searching for emails using ${emailPatterns.length} different patterns...`);
-    
-    // Search for emails using different patterns
-    emailPatterns.forEach((pattern, index) => {
-      console.log(`Testing pattern ${index + 1}/${emailPatterns.length}`);
-      try {
-      const matches = htmlContent.match(pattern);
-      if (matches) {
-        matches.forEach(match => {
-          let email = match;
-          
-          // Clean up the email
-          if (email.includes('mailto:')) {
-            email = email.replace('mailto:', '');
-          }
-          
-          // Replace [at] and (at) with @
-          email = email.replace(/\s*\[at\]\s*/gi, '@');
-          email = email.replace(/\s*\(at\)\s*/gi, '@');
-          email = email.replace(/\s+at\s+/gi, '@');
-          
-          // Replace [dot] and (dot) with .
-          email = email.replace(/\s*\[dot\]\s*/gi, '.');
-          email = email.replace(/\s*\(dot\)\s*/gi, '.');
-          
-          // Remove any HTML tags
-          email = email.replace(/<[^>]*>/g, '');
-          
-          // Remove extra spaces
-          email = email.replace(/\s+/g, '');
-          
-          // Validate email format
-          const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-          if (emailRegex.test(email.trim())) {
-            // Filter out common non-business emails
-            const excludePatterns = [
-              /noreply/i,
-              /no-reply/i,
-              /donotreply/i,
-              /do-not-reply/i,
-              /example\.com/i,
-              /test\.com/i,
-              /placeholder/i,
-              /sample/i,
-              /webmaster/i,
-              /admin@/i,
-              /postmaster/i,
-              /newsletter/i,
-              /marketing@/i,
-            ];
-            
-            const isExcluded = excludePatterns.some(pattern => pattern.test(email));
-            if (!isExcluded) {
-              foundEmails.add(email.trim().toLowerCase());
-            }
-          }
-        });
-      }
-      } catch (error) {
-        console.log(`Error with pattern ${index + 1}:`, error);
-      }
-    });
-    
-    console.log(`Found ${foundEmails.size} unique emails after filtering`);
-    
-    // Return the first valid email found, preferring contact-related emails
+
     const emailsArray = Array.from(foundEmails);
 
-    // Strictly match company domain and exclude free providers
-    const companyRoot = getDomainRoot(new URL(cleanUrl).hostname);
-    const domainMatched = emailsArray.filter((email) => {
+    // 1) Prefer company-domain emails (including subdomains)
+    const companyEmails = emailsArray.filter((email) => {
       const domain = (email.split('@')[1] || '').toLowerCase();
       return !isFreeEmailDomain(domain) && getDomainRoot(domain) === companyRoot;
     });
 
-    // Prioritize contact-related emails within company domain
-    const priorityEmail = domainMatched.find(email => 
-      /^(info|contact|office|sales|hello|inquiries|general)@/i.test(email)
-    );
+    // Prioritize role-based first
+    const rolePriority = (list: string[]) =>
+      list.find((e) => /^(info|contact|office|sales|hello|inquiries|general|support)@/i.test(e)) || list[0];
 
-    if (priorityEmail) {
-      console.log(`Found priority company-domain email: ${priorityEmail} for ${companyRoot}`);
-      return priorityEmail;
+    if (companyEmails.length > 0) {
+      const chosen = rolePriority(companyEmails);
+      return chosen;
     }
 
-    if (domainMatched.length > 0) {
-      console.log(`Found company-domain email: ${domainMatched[0]} for ${companyRoot}`);
-      return domainMatched[0];
-    }
-
-    console.log(`No company-domain email matched for ${companyRoot}; returning null to avoid wrong emails`);
-
-    console.log(`No email found on ${cleanUrl}`);
-    return null;
-    
+    // 2) Fallback: if company-domain not found, accept emails found on the official site (even free providers)
+    // Still prioritize role-based, then first
+    const chosen = rolePriority(emailsArray);
+    return chosen || null;
   } catch (error) {
     console.error(`Error scraping email from ${website}:`, error);
     return null;
