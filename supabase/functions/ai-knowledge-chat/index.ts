@@ -136,10 +136,23 @@ serve(async (req) => {
     // Prepare context from knowledge base using relevance-focused snippets
     console.log('Knowledge items count:', processedItems.length);
 
-    const makeSnippet = (text: string, term: string, radius = 500) => {
+    // Fuzzy matching that tolerates separators like "-", " ", "/"
+    const buildFuzzyRegex = (term: string) => {
+      const escaped = term.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
+      const pattern = escaped.split('').join('[^\\p{L}\\p{N}]{0,3}');
+      return new RegExp(pattern, 'iu');
+    };
+
+    const findMatchIndex = (text: string, term: string) => {
+      const re = buildFuzzyRegex(term);
+      const m = re.exec(text);
+      if (m && typeof m.index === 'number') return m.index;
       const lc = text.toLowerCase();
-      const idx = lc.indexOf(term.toLowerCase());
-      if (idx === -1) return text.slice(0, radius);
+      return lc.indexOf(term.toLowerCase());
+    };
+
+    const makeSnippet = (text: string, idx: number, radius = 700) => {
+      if (idx < 0) return text.slice(0, radius);
       const start = Math.max(0, idx - radius);
       const end = Math.min(text.length, idx + radius);
       return text.slice(start, end);
@@ -155,8 +168,9 @@ serve(async (req) => {
       const content = item.content || '';
       let snippet = '';
       for (const t of terms) {
-        if (content.toLowerCase().includes(t)) {
-          snippet = makeSnippet(content, t, 700);
+        const idx = findMatchIndex(content, t);
+        if (idx !== -1) {
+          snippet = makeSnippet(content, idx, 700);
           break;
         }
       }
