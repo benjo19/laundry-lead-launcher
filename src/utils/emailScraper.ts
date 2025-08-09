@@ -378,3 +378,69 @@ export const validateEmailFormat = (email: string): boolean => {
   const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
   return emailRegex.test(email);
 };
+
+// Discover official website from social profiles (Facebook/LinkedIn About)
+export const discoverWebsiteFromSocial = async (
+  companyName: string
+): Promise<{ website: string; source: 'facebook' | 'linkedin' } | null> => {
+  const queries = [
+    { q: `"${companyName}" site:facebook.com`, src: 'facebook' as const },
+    { q: `"${companyName}" site:linkedin.com/company`, src: 'linkedin' as const },
+  ];
+  const proxy = 'https://api.allorigins.win/get?url=';
+
+  const extractExternalSite = (html: string, exclude: RegExp): string | null => {
+    // Find external links not belonging to the social domain
+    const linkRegex = /href=["'](https?:\/\/[a-zA-Z0-9._%\-/:?#=&]+)["']/gi;
+    const seen = new Set<string>();
+    let match: RegExpExecArray | null;
+    while ((match = linkRegex.exec(html)) !== null) {
+      const url = match[1];
+      if (exclude.test(url)) continue;
+      // Filter obvious non-website links (mailto, tel, trackers)
+      if (/^mailto:|^tel:/i.test(url)) continue;
+      if (/facebook\.com|linkedin\.com|instagram\.com|twitter\.com|maps\.google\.com|goo\.gl|bit\.ly/i.test(url)) continue;
+      try {
+        const u = new URL(url);
+        const host = u.hostname.toLowerCase();
+        if (!host) continue;
+        if (!seen.has(u.origin)) {
+          seen.add(u.origin);
+          return u.origin; // return origin as website base
+        }
+      } catch {}
+    }
+    return null;
+  };
+
+  for (const { q, src } of queries) {
+    try {
+      const googleUrl = `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+      const res = await fetch(proxy + encodeURIComponent(googleUrl));
+      if (!res.ok) continue;
+      const data = await res.json();
+      const searchHtml: string = data.contents || '';
+
+      // Extract profile URLs
+      const profileRegex = src === 'facebook'
+        ? /https:\/\/(?:m\.|www\.)facebook\.com\/[a-zA-Z0-9_.\-/%?=]+/g
+        : /https:\/\/(?:[a-z]{2,3}\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_%]+/g;
+      const profiles = (searchHtml.match(profileRegex) || []).slice(0, 2);
+
+      for (const profile of profiles) {
+        try {
+          const profileUrl = src === 'linkedin' ? profile.replace(/^https:\/\/[a-z]{2,3}\./, 'https://www.') : profile;
+          const profRes = await fetch(proxy + encodeURIComponent(profileUrl));
+          if (!profRes.ok) continue;
+          const profData = await profRes.json();
+          const html: string = profData.contents || '';
+          const website = extractExternalSite(html, new RegExp(src, 'i'));
+          if (website) {
+            return { website, source: src };
+          }
+        } catch {}
+      }
+    } catch {}
+  }
+  return null;
+};

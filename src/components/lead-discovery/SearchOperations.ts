@@ -1,7 +1,7 @@
 
 import { industries, DiscoveredLead } from './SearchForm';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
-import { scrapeEmailFromWebsite, enhancedEmailDiscovery } from '@/utils/emailScraper';
+import { scrapeEmailFromWebsite, enhancedEmailDiscovery, discoverWebsiteFromSocial } from '@/utils/emailScraper';
 
 // Local helpers for domain matching
 const stripWww = (host: string) => host.replace(/^www\./i, '');
@@ -159,10 +159,10 @@ export const performLeadSearch = async (
           user_ratings_total: place.user_ratings_total
         };
         
-        // Try to scrape email and social profiles if website exists
+        // Try to scrape email and social profiles if website exists, otherwise try to discover website from social
         let emailSource = '';
         let socialProfiles = {};
-        
+
         if (lead.website) {
           console.log(`📧 Scraping email from: ${lead.website}`);
           try {
@@ -175,6 +175,26 @@ export const performLeadSearch = async (
             }
           } catch (emailError) {
             console.error(`❌ Email scraping failed:`, emailError);
+          }
+        } else {
+          // Discover website from social profiles (Facebook/LinkedIn About)
+          try {
+            console.log('🌐 No website in details. Trying to discover from social profiles...');
+            const discovered = await discoverWebsiteFromSocial(lead.name);
+            if (discovered?.website) {
+              lead.website = discovered.website;
+              console.log(`🌍 Discovered website via ${discovered.source}: ${lead.website}`);
+              // Now scrape email from discovered website
+              const email = await scrapeEmailFromWebsite(lead.website);
+              if (email) {
+                lead.email = email;
+                lead.emailScraped = true;
+                emailSource = 'website';
+                console.log(`✅ Email found after discovery: ${email}`);
+              }
+            }
+          } catch (discoverErr) {
+            console.error('❌ Website discovery from social failed:', discoverErr);
           }
         }
         
