@@ -135,6 +135,25 @@ const AISettings = () => {
           </p>
         </div>
 
+        <div>
+          <Label htmlFor="search_provider">Web Search Provider</Label>
+          <Select 
+            value={(formData as any).search_provider}
+            onValueChange={(value: 'google_cse' | 'serpapi') => setFormData({ ...formData, search_provider: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Odaberite pretraživač" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="google_cse">Google Custom Search (CSE)</SelectItem>
+              <SelectItem value="serpapi">SerpAPI</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-slate-500 mt-1">
+            Ključevi se postavljaju u Supabase Secrets: GOOGLE_CSE_API_KEY, GOOGLE_CSE_CX, SERPAPI_API_KEY.
+          </p>
+        </div>
+
         <div className="space-y-6">
           <div>
             <Label htmlFor="openai_api_key">OpenAI API Ključ</Label>

@@ -116,6 +116,9 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       />
 
       {discoveredLeads.length === 0 && !isSearching && <EmptyState />}
+
+      {/* Web Search Tab */}
+      <WebSearchTab onAddLead={onAddLead} />
     </div>
   );
 };
