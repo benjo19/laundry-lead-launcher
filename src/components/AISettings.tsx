@@ -37,7 +37,8 @@ const AISettings = () => {
         gemini_api_key: aiSettings.gemini_api_key || (aiSettings.provider === 'gemini' ? (aiSettings.api_key || '') : ''),
         model: aiSettings.model || '',
         google_maps_api_key: aiSettings.google_maps_api_key || '',
-        custom_system_prompt: aiSettings.custom_system_prompt || ''
+        custom_system_prompt: aiSettings.custom_system_prompt || '',
+        search_provider: (aiSettings as any).search_provider || 'google_cse'
       });
     }
   }, [aiSettings]);
