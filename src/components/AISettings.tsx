@@ -21,7 +21,8 @@ const AISettings = () => {
     gemini_api_key: '',
     model: '',
     google_maps_api_key: '',
-    custom_system_prompt: ''
+    custom_system_prompt: '',
+    search_provider: 'google_cse' as 'google_cse' | 'serpapi',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [showApiKey, setShowApiKey] = useState(false);

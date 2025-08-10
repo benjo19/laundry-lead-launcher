@@ -12,6 +12,7 @@ interface AISettings {
   model?: string;
   google_maps_api_key?: string;
   custom_system_prompt?: string;
+  search_provider?: 'google_cse' | 'serpapi';
 }
 
 export const useAISettings = () => {

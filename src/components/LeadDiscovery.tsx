@@ -10,6 +10,7 @@ import { useLeadAddition } from '@/hooks/useLeadAddition';
 import { useLeadDiscoverySearch } from './lead-discovery/LeadDiscoverySearch';
 import { useAuth } from '@/hooks/useAuth';
 import { useGoogleWebLeadSearch } from './lead-discovery/GoogleWebLeadSearch';
+import WebSearchTab from './lead-discovery/WebSearchTab';
 
 type SearchSource = 'maps' | 'web';
 
