@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAISettings } from '@/hooks/useAISettings';
 import { Plus, Search, Loader2, Globe } from 'lucide-react';
 import { Lead } from '@/types';
+import { supabase } from '@/integrations/supabase/client';
 
 interface WebResult {
   title: string;
@@ -34,10 +35,8 @@ const WebSearchTab: React.FC<WebSearchTabProps> = ({ onAddLead }) => {
   const [results, setResults] = useState<WebResult[]>([]);
   const [providerUsed, setProviderUsed] = useState<'google_cse' | 'serpapi'>(defaultProvider);
 
-  const baseUrl = useMemo(
-    () => `https://uwtzhkdgprmrmknjrfeb.supabase.co/functions/v1/search-web`,
-    []
-  );
+  // Using supabase.functions.invoke for authenticated call
+
 
   const runSearch = async () => {
     if (!q.trim()) {
@@ -46,17 +45,15 @@ const WebSearchTab: React.FC<WebSearchTabProps> = ({ onAddLead }) => {
     }
     setIsLoading(true);
     try {
-      const params = new URLSearchParams({ q: q.trim(), num: String(num), page: String(page), provider: defaultProvider });
-      if (site.trim()) params.set('site', site.trim());
-      const url = `${baseUrl}?${params.toString()}`;
-      const res = await fetch(url, { method: 'GET' });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.details || data?.error || 'Neuspješan upit');
+      const { data, error } = await supabase.functions.invoke('search-web', {
+        body: { q: q.trim(), site: site.trim() || undefined, num, page, provider: defaultProvider },
+      });
+      if (error) {
+        throw new Error((error as any)?.message || 'Neuspješan upit');
       }
-      const items = (data.results || []) as WebResult[];
+      const items = (data?.results || []) as WebResult[];
       setResults(items);
-      setProviderUsed(data.provider || defaultProvider);
+      setProviderUsed((data?.provider as any) || defaultProvider);
       toast({ title: 'Uspjeh', description: `Pronađeno ${items.length} rezultata.` });
     } catch (e: any) {
       console.error('WebSearch error:', e);

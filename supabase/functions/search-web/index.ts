@@ -22,25 +22,39 @@ serve(async (req) => {
 
   try {
     const url = new URL(req.url);
-    if (req.method !== "GET") {
-      return new Response(JSON.stringify({ error: "Only GET supported" }), {
+
+    let provider: "google_cse" | "serpapi" = "google_cse";
+    let qRaw = "";
+    let site = "";
+    let num = 10;
+    let page = 1;
+
+    if (req.method === "GET") {
+      provider = (url.searchParams.get("provider") as "google_cse" | "serpapi") || "google_cse";
+      qRaw = url.searchParams.get("q")?.trim() || "";
+      site = url.searchParams.get("site")?.trim() || "";
+      num = Math.max(1, Math.min(parseInt(url.searchParams.get("num") || "10", 10), 10));
+      page = Math.max(1, Math.min(parseInt(url.searchParams.get("page") || "1", 10), 10));
+    } else if (req.method === "POST") {
+      const body = await req.json().catch(() => ({}));
+      provider = (body.provider as "google_cse" | "serpapi") || "google_cse";
+      qRaw = (body.q || "").toString().trim();
+      site = (body.site || "").toString().trim();
+      num = Math.max(1, Math.min(parseInt(body.num || "10", 10), 10));
+      page = Math.max(1, Math.min(parseInt(body.page || "1", 10), 50));
+    } else {
+      return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const provider = (url.searchParams.get("provider") as "google_cse" | "serpapi") || "google_cse";
-    const qRaw = url.searchParams.get("q")?.trim() || "";
     if (!qRaw) {
       return new Response(JSON.stringify({ error: "Missing q" }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const site = url.searchParams.get("site")?.trim() || "";
-    const num = Math.max(1, Math.min(parseInt(url.searchParams.get("num") || "10", 10), 10));
-    const page = Math.max(1, Math.min(parseInt(url.searchParams.get("page") || "1", 10), 10));
 
     // Compose query with optional site filter
     const q = site ? `${qRaw} site:${site}` : qRaw;
