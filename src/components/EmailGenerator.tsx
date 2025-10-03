@@ -202,17 +202,29 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
-    // Open Gmail with pre-filled email data
+    // Create Gmail URL with pre-filled email data
     const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(recipient)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailContent)}`;
     
-    const gmailWindow = window.open(gmailUrl, '_blank');
-    
-    if (!gmailWindow) {
-      toast({
-        title: "Blokirano otvaranje",
-        description: "Molimo dozvolite popup prozore za otvaranje Gmaila.",
-        variant: "destructive"
-      });
+    // Try to open in new window
+    try {
+      const gmailWindow = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+      
+      // Check if popup was blocked
+      setTimeout(() => {
+        if (!gmailWindow || gmailWindow.closed || typeof gmailWindow.closed === 'undefined') {
+          // Popup blocked - use direct navigation as fallback
+          toast({
+            title: "Otvaranje Gmaila...",
+            description: "Preusmjeravam vas na Gmail",
+          });
+          window.location.href = gmailUrl;
+          return;
+        }
+      }, 100);
+    } catch (error) {
+      // Error opening popup - use direct navigation
+      console.error('Error opening Gmail:', error);
+      window.location.href = gmailUrl;
       return;
     }
 
