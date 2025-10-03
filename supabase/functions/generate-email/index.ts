@@ -90,6 +90,8 @@ serve(async (req) => {
     // Parse request
     const params: EmailGenerationRequest = await req.json();
 
+    console.log(`About to generate with provider: ${aiProvider}, API key starts with: ${apiKey.substring(0, 10)}...`);
+
     // Generate email using AI
     const generatedEmail = await generatePersonalizedEmail(params, apiKey, aiProvider, customSystemPrompt);
 
