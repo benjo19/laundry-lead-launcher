@@ -119,6 +119,7 @@ const ContentScheduler = () => {
       content: newPost.content,
       platform: newPost.platform,
       status: 'Scheduled' as const,
+      date: new Date().toISOString().split('T')[0],
       scheduledDate: newPost.scheduledDate,
       scheduledTime: newPost.scheduledTime,
       recurring: newPost.recurring,

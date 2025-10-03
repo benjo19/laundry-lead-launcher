@@ -3,9 +3,10 @@ import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { FileText, Trash2, Clock } from 'lucide-react';
+import { FileText, Trash2, Clock, Share2 } from 'lucide-react';
 import { ContentPost } from '@/types';
 import { platforms } from './constants';
+import { openSocialMedia, SocialPlatform } from '@/utils/socialMediaUtils';
 
 interface PostsListProps {
   posts: ContentPost[];
@@ -45,6 +46,15 @@ const PostsList: React.FC<PostsListProps> = ({ posts, onDeletePost }) => {
                     <Badge variant={post.status === 'Published' ? 'default' : 'secondary'}>
                       {post.status}
                     </Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => openSocialMedia(post.platform as SocialPlatform, post.content, post.imageUrl)}
+                      className="text-blue-600 hover:text-blue-700"
+                      title="Objavi na društvenoj mreži"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </Button>
                     <Button
                       variant="outline"
                       size="sm"

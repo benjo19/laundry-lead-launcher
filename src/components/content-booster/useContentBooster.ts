@@ -158,7 +158,7 @@ export const useContentBooster = () => {
     setGeneratedImageUrl('');
   };
 
-  const publishNow = async () => {
+  const publishNow = () => {
     console.log('publishNow: Starting publish process', { content, platform });
 
     if (!content || !platform) {
@@ -172,29 +172,33 @@ export const useContentBooster = () => {
     }
 
     try {
-      console.log('publishNow: Attempting to post to social media');
-      
-      const socialPlatform = platform.toLowerCase() as 'facebook' | 'linkedin' | 'instagram';
-      await postToSocial(content, socialPlatform, generatedImageUrl || undefined);
+      // Import the social media utility dynamically
+      import('@/utils/socialMediaUtils').then(({ openSocialMedia }) => {
+        // Open the social media platform with pre-filled content
+        openSocialMedia(platform as any, content, generatedImageUrl || undefined);
+        
+        // Add to local posts list
+        const newPost: ContentPost = {
+          id: Date.now(),
+          platform: platform as ContentPost['platform'],
+          content,
+          contentType: contentType as ContentPost['contentType'] || 'promotional',
+          date: new Date().toISOString().split('T')[0],
+          status: 'Published'
+        };
 
-      console.log('publishNow: Social post successful, adding to local posts');
+        setPosts([newPost, ...posts]);
+        resetForm();
 
-      const newPost: ContentPost = {
-        id: Date.now(),
-        platform: platform as ContentPost['platform'],
-        content,
-        contentType: contentType as ContentPost['contentType'] || 'promotional',
-        date: new Date().toISOString().split('T')[0],
-        status: 'Published'
-      };
-
-      setPosts([newPost, ...posts]);
-      resetForm();
-
-      console.log('publishNow: Process completed successfully');
+        console.log('publishNow: Process completed successfully');
+      });
     } catch (error) {
       console.error('publishNow: Error during publish process:', error);
-      // Error is already handled in useSocialService
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška pri otvaranju društvene mreže.",
+        variant: "destructive"
+      });
     }
   };
 

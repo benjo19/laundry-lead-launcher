@@ -14,13 +14,15 @@ export interface GeneratedContent {
 
 export interface ContentPost {
   id: number;
-  platform: 'LinkedIn' | 'Facebook' | 'Instagram' | 'TikTok' | 'facebook' | 'instagram' | 'linkedin' | 'twitter';
+  platform: 'LinkedIn' | 'Facebook' | 'Instagram' | 'TikTok' | 'Twitter/X' | 'facebook' | 'instagram' | 'linkedin' | 'twitter';
   content: string;
   contentType?: 'tip' | 'case-study' | 'news' | 'promotional' | 'educational' | 'behind-scenes';
   status: 'Draft' | 'Scheduled' | 'Published';
-  createdAt: string;
+  date: string;
+  createdAt?: string;
   publishedAt?: string;
   scheduledTime?: string;
   scheduledDate?: string;
   engagement?: string;
+  imageUrl?: string;
 }

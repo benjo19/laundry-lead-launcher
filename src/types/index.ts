@@ -40,13 +40,5 @@ export interface Reminder {
   calendarEventId?: string;
 }
 
-export interface ContentPost {
-  id: number;
-  platform: 'LinkedIn' | 'Facebook' | 'Instagram';
-  content: string;
-  contentType: 'tip' | 'case-study' | 'news' | 'promotional';
-  date: string;
-  status: 'Draft' | 'Scheduled' | 'Published';
-  engagement?: string;
-  scheduledTime?: string;
-}
+// Re-export ContentPost from contentTypes
+export type { ContentPost, ContentGenerationParams, GeneratedContent } from './contentTypes';
