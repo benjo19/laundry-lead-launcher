@@ -3,6 +3,13 @@ import { toast } from '@/hooks/use-toast';
 export type SocialPlatform = 'Facebook' | 'LinkedIn' | 'Instagram' | 'TikTok' | 'Twitter/X';
 
 /**
+ * Detects if user is on mobile device
+ */
+const isMobile = (): boolean => {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+};
+
+/**
  * Opens the specified social media platform with pre-filled content
  * @param platform - The social media platform to open
  * @param content - The content to pre-fill
@@ -17,49 +24,102 @@ export const openSocialMedia = async (
   await copyToClipboard(content, platform);
   
   let url: string;
-  let shouldOpen = true;
+  const mobile = isMobile();
   
   switch (platform) {
     case 'Facebook':
-      // Copy to clipboard and inform user
+      if (mobile) {
+        // Try Facebook app first
+        url = 'fb://';
+        setTimeout(() => {
+          // Fallback to mobile web if app not installed
+          window.location.href = 'https://m.facebook.com/';
+        }, 500);
+      } else {
+        url = 'https://www.facebook.com/';
+      }
       toast({
         title: 'Facebook',
-        description: 'Tekst je kopiran! Otvorit će se Facebook - zalijepite sadržaj u novu objavu.',
+        description: '📋 Tekst je kopiran! Zalijepite ga u novu objavu.',
+        duration: 5000,
       });
-      url = 'https://www.facebook.com/';
       break;
       
     case 'LinkedIn':
+      if (mobile) {
+        url = 'linkedin://';
+        setTimeout(() => {
+          window.location.href = 'https://www.linkedin.com/feed/';
+        }, 500);
+      } else {
+        url = 'https://www.linkedin.com/feed/';
+      }
       toast({
         title: 'LinkedIn',
-        description: 'Tekst je kopiran! Otvorit će se LinkedIn - zalijepite sadržaj u novu objavu.',
+        description: '📋 Tekst je kopiran! Zalijepite ga u novu objavu.',
+        duration: 5000,
       });
-      url = 'https://www.linkedin.com/feed/';
       break;
       
     case 'Twitter/X':
       // Twitter supports pre-filled text through intent URL
+      if (mobile) {
+        url = `twitter://post?message=${encodeURIComponent(content)}`;
+        setTimeout(() => {
+          // Fallback to web
+          window.location.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
+        }, 500);
+      } else {
+        url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
+      }
       toast({
         title: 'Twitter/X',
-        description: 'Otvaram Twitter s vašim sadržajem...',
+        description: '✅ Otvaram Twitter s vašim sadržajem...',
+        duration: 3000,
       });
-      url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
       break;
       
     case 'Instagram':
-      toast({
-        title: 'Instagram',
-        description: 'Tekst je kopiran! Otvorit će se Instagram - zalijepite sadržaj u novu objavu.',
-      });
-      url = 'https://www.instagram.com/';
+      if (mobile) {
+        // Try Instagram app
+        url = 'instagram://camera';
+        setTimeout(() => {
+          // Show instructions since Instagram web is blocked
+          toast({
+            title: 'Instagram App',
+            description: '📋 Tekst je kopiran! Otvorite Instagram app i zalijepite sadržaj.',
+            duration: 6000,
+          });
+        }, 100);
+      } else {
+        // Desktop - just show instructions
+        toast({
+          title: 'Instagram',
+          description: '📋 Tekst je kopiran! Otvorite Instagram aplikaciju ili web stranicu i zalijepite sadržaj ručno.',
+          duration: 6000,
+        });
+        return; // Don't try to open web as it's blocked
+      }
       break;
       
     case 'TikTok':
-      toast({
-        title: 'TikTok',
-        description: 'Tekst je kopiran! Otvorit će se TikTok - zalijepite sadržaj u novu objavu.',
-      });
-      url = 'https://www.tiktok.com/';
+      if (mobile) {
+        url = 'tiktok://';
+        setTimeout(() => {
+          toast({
+            title: 'TikTok App',
+            description: '📋 Tekst je kopiran! Zalijepite ga u novu objavu.',
+            duration: 5000,
+          });
+        }, 100);
+      } else {
+        toast({
+          title: 'TikTok',
+          description: '📋 Tekst je kopiran! Otvorite TikTok app i zalijepite sadržaj.',
+          duration: 6000,
+        });
+        return;
+      }
       break;
       
     default:
@@ -71,15 +131,12 @@ export const openSocialMedia = async (
       return;
   }
   
-  if (shouldOpen) {
-    // Open in new tab
-    try {
-      window.open(url, '_blank', 'noopener,noreferrer');
-    } catch (error) {
-      console.error(`Error opening ${platform}:`, error);
-      // If window.open fails, try direct navigation
-      window.location.href = url;
-    }
+  // Open URL
+  try {
+    window.open(url, '_blank', 'noopener,noreferrer');
+  } catch (error) {
+    console.error(`Error opening ${platform}:`, error);
+    // Silently fail - user already has content in clipboard
   }
 };
 
@@ -91,10 +148,7 @@ export const openSocialMedia = async (
 const copyToClipboard = async (text: string, platform: string): Promise<void> => {
   try {
     await navigator.clipboard.writeText(text);
-    toast({
-      title: 'Tekst kopiran',
-      description: `Sadržaj za ${platform} je kopiran u clipboard.`,
-    });
+    // Silent copy - toast will be shown by the platform-specific message
   } catch (error) {
     console.error('Failed to copy to clipboard:', error);
     toast({
