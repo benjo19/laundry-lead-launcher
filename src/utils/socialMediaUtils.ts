@@ -8,56 +8,58 @@ export type SocialPlatform = 'Facebook' | 'LinkedIn' | 'Instagram' | 'TikTok' | 
  * @param content - The content to pre-fill
  * @param imageUrl - Optional image URL
  */
-export const openSocialMedia = (
+export const openSocialMedia = async (
   platform: SocialPlatform,
   content: string,
   imageUrl?: string
-): void => {
+): Promise<void> => {
+  // First, always copy content to clipboard
+  await copyToClipboard(content, platform);
+  
   let url: string;
+  let shouldOpen = true;
   
   switch (platform) {
     case 'Facebook':
-      // Facebook doesn't support pre-filled text via URL for security reasons
-      // We can only share a URL, so we'll open the Facebook sharing dialog
-      url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(window.location.href)}&quote=${encodeURIComponent(content)}`;
+      // Copy to clipboard and inform user
+      toast({
+        title: 'Facebook',
+        description: 'Tekst je kopiran! Otvorit će se Facebook - zalijepite sadržaj u novu objavu.',
+      });
+      url = 'https://www.facebook.com/';
       break;
       
     case 'LinkedIn':
-      // LinkedIn share URL with text
-      // Note: LinkedIn deprecated pre-filled text, so we'll open the share page
-      url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(window.location.href)}`;
-      // Copy content to clipboard for user to paste
-      copyToClipboard(content, 'LinkedIn');
+      toast({
+        title: 'LinkedIn',
+        description: 'Tekst je kopiran! Otvorit će se LinkedIn - zalijepite sadržaj u novu objavu.',
+      });
+      url = 'https://www.linkedin.com/feed/';
       break;
       
     case 'Twitter/X':
-      // Twitter/X intent URL with pre-filled text
+      // Twitter supports pre-filled text through intent URL
+      toast({
+        title: 'Twitter/X',
+        description: 'Otvaram Twitter s vašim sadržajem...',
+      });
       url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(content)}`;
-      if (imageUrl) {
-        url += `&url=${encodeURIComponent(imageUrl)}`;
-      }
       break;
       
     case 'Instagram':
-      // Instagram doesn't have a web posting API
-      // Best we can do is copy content and open Instagram web
-      copyToClipboard(content, 'Instagram');
-      url = 'https://www.instagram.com/';
       toast({
         title: 'Instagram',
-        description: 'Tekst je kopiran. Otvorit će se Instagram - zalijepite sadržaj ručno.',
+        description: 'Tekst je kopiran! Otvorit će se Instagram - zalijepite sadržaj u novu objavu.',
       });
+      url = 'https://www.instagram.com/';
       break;
       
     case 'TikTok':
-      // TikTok doesn't have a web posting API
-      // Copy content and open TikTok web
-      copyToClipboard(content, 'TikTok');
-      url = 'https://www.tiktok.com/';
       toast({
         title: 'TikTok',
-        description: 'Tekst je kopiran. Otvorit će se TikTok - zalijepite sadržaj ručno.',
+        description: 'Tekst je kopiran! Otvorit će se TikTok - zalijepite sadržaj u novu objavu.',
       });
+      url = 'https://www.tiktok.com/';
       break;
       
     default:
@@ -69,24 +71,15 @@ export const openSocialMedia = (
       return;
   }
   
-  // Try to open in new window/tab
-  try {
-    const socialWindow = window.open(url, '_blank', 'noopener,noreferrer');
-    
-    // Check if popup was blocked
-    setTimeout(() => {
-      if (!socialWindow || socialWindow.closed || typeof socialWindow.closed === 'undefined') {
-        // Popup blocked - use direct navigation as fallback
-        toast({
-          title: `Otvaranje ${platform}...`,
-          description: 'Preusmjeravam vas na platformu',
-        });
-        window.location.href = url;
-      }
-    }, 100);
-  } catch (error) {
-    console.error(`Error opening ${platform}:`, error);
-    window.location.href = url;
+  if (shouldOpen) {
+    // Open in new tab
+    try {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch (error) {
+      console.error(`Error opening ${platform}:`, error);
+      // If window.open fails, try direct navigation
+      window.location.href = url;
+    }
   }
 };
 
