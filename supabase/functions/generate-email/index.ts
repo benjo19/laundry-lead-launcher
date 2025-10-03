@@ -64,13 +64,28 @@ serve(async (req) => {
     }
 
     const aiSettings = userSettings.ai_settings as any;
-    const aiProvider = aiSettings.provider || 'openai';
     const apiKey = aiSettings.api_key;
     const customSystemPrompt = aiSettings.custom_system_prompt;
 
     if (!apiKey) {
       throw new Error('AI API key not found in settings. Please configure it in Settings.');
     }
+
+    // Auto-detect provider based on API key format
+    let aiProvider = aiSettings.provider;
+    if (!aiProvider) {
+      if (apiKey.startsWith('AIzaSy')) {
+        aiProvider = 'gemini';
+        console.log('Auto-detected Gemini API key');
+      } else if (apiKey.startsWith('sk-')) {
+        aiProvider = 'openai';
+        console.log('Auto-detected OpenAI API key');
+      } else {
+        aiProvider = 'openai'; // default fallback
+      }
+    }
+
+    console.log(`Using AI provider: ${aiProvider}`);
 
     // Parse request
     const params: EmailGenerationRequest = await req.json();
