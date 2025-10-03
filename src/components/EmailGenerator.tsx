@@ -12,7 +12,6 @@ import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIntegratedEmailService } from '@/hooks/useIntegratedEmailService';
 import { useAISettings } from '@/hooks/useAISettings';
-import { useMakeIntegration } from '@/hooks/useMakeIntegration';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
@@ -24,7 +23,6 @@ interface EmailGeneratorProps {
 
 const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGeneratorProps) => {
   const { t } = useLanguage();
-  const { triggerWebhook } = useMakeIntegration();
 
   // Load saved form data from localStorage
   const [savedFormData, setSavedFormData] = useLocalStorage('emailGeneratorForm', {
@@ -194,7 +192,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
-  const sendEmail = async () => {
+  const sendEmail = () => {
     if (!recipient || !subject || !emailContent) {
       toast({
         title: "Nedostaju podaci",
@@ -204,39 +202,18 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
-    const emailData = {
-      to: recipient,
-      subject,
-      content: emailContent,
-      template: template || 'custom',
-      company: selectedCompany,
-      action: 'save_draft' // Dodajemo action da Make.com zna da treba spremiti u draft
-    };
-
-    try {
-      // Send to Make.com webhook
-      await fetch('https://hook.eu2.make.com/b9xhj8j489v248qyw78gctwlkimsonot', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        mode: 'no-cors',
-        body: JSON.stringify(emailData),
-      });
-
-      console.log('Email data sent to Make.com webhook for draft saving:', emailData);
-      
+    // Open Gmail with pre-filled email data
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(recipient)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailContent)}`;
+    
+    const gmailWindow = window.open(gmailUrl, '_blank');
+    
+    if (!gmailWindow) {
       toast({
-        title: "Poslano u Make.com",
-        description: "Email je poslan na webhook i spremljen kao draft u Make.com",
-      });
-    } catch (error) {
-      console.error('Error sending to webhook:', error);
-      toast({
-        title: "Greška",
-        description: "Greška pri slanju na Make.com webhook",
+        title: "Blokirano otvaranje",
+        description: "Molimo dozvolite popup prozore za otvaranje Gmaila.",
         variant: "destructive"
       });
+      return;
     }
 
     if (editingDraftId) {
@@ -278,8 +255,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setSavedFormData(resetData);
 
     toast({
-      title: "Email poslan",
-      description: `Email je uspješno poslan na ${recipient}`,
+      title: "Gmail otvoren",
+      description: `Email otvoren u Gmailu, spreman za slanje na ${recipient}`,
     });
   };
 
