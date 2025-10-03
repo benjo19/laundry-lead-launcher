@@ -15,154 +15,34 @@ const isFreeEmailDomain = (domain: string) => /(gmail|yahoo|hotmail|outlook|aol|
 
 // Enhanced email scraper with multiple strategies for finding email addresses
 
-// Enhanced email scraper with multiple strategies and proxy services
-export const scrapeEmailFromWebsite = async (website: string): Promise<string | null> => {
+// Enhanced email scraper using backend edge function
+export const scrapeEmailFromWebsite = async (website: string, companyName: string = ''): Promise<string | null> => {
   if (!website) return null;
 
   try {
-    // Normalize base URL
-    const baseUrl = website.startsWith('http') ? website : `https://${website}`;
-    const base = new URL(baseUrl);
-    const companyRoot = getDomainRoot(base.hostname);
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      'https://uwtzhkdgprmrmknjrfeb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3dHpoa2RncHJtcm1rbmpyZmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3MzcxNTksImV4cCI6MjA2NDMxMzE1OX0.uck1u0Q1sDZf2aQXB9yw3FE_n2cIjZEA292YavuIDb0'
+    );
 
-    // Pages that commonly contain contact info (HR/EN variants)
-    const candidatePaths = [
-      '/',
-      '/contact', '/contact/', '/contact-us', '/contact-us/', '/contact.html', '/en/contact', '/contact-hr',
-      '/kontakt', '/kontakt/', '/kontakt.html', '/hr/kontakt', '/kontakti', '/kontaktirajte-nas',
-      '/about', '/about-us', '/about/', '/about-us/',
-      '/o-nama', '/o-nama/', '/impressum', '/impressum/'
-    ];
+    console.log(`🔍 Scraping contact info for: ${companyName || website}`);
+    
+    const { data, error } = await supabase.functions.invoke('scrape-contact', {
+      body: { website, companyName }
+    });
 
-    // Proxies (prefer raw text to avoid JSON parsing issues)
-    const proxies = [
-      'https://api.allorigins.win/raw?url=',
-      'https://api.allorigins.win/get?url=',
-      'https://corsproxy.io/?',
-    ];
-
-    const foundEmails = new Set<string>();
-    const emailMeta = new Map<string, { mailto: boolean }>();
-
-    // Helper: fetch a URL via proxies and return text content
-    const fetchViaProxies = async (url: string): Promise<string | null> => {
-      for (const proxy of proxies) {
-        try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 12000);
-
-          const proxiedUrl = proxy + encodeURIComponent(url);
-          const res = await fetch(proxiedUrl, { signal: controller.signal });
-          clearTimeout(timeoutId);
-
-          if (!res.ok) continue;
-
-          const contentType = res.headers.get('content-type') || '';
-          if (contentType.includes('application/json')) {
-            const data = await res.json();
-            const txt = typeof data === 'string' ? data : (data.contents || JSON.stringify(data));
-            return String(txt);
-          } else {
-            const txt = await res.text();
-            return txt;
-          }
-        } catch (e) {
-          // try next proxy
-          continue;
-        }
-      }
-      return null;
-    };
-
-    // Helper: extract and normalize emails from a block of text/html
-    const extractEmails = (html: string) => {
-      if (!html) return;
-
-      // Replace common obfuscations before matching
-      let text = html
-        .replace(/\s*\[at\]\s*/gi, '@')
-        .replace(/\s*\(at\)\s*/gi, '@')
-        .replace(/\s+at\s+/gi, '@')
-        .replace(/\s*\[dot\]\s*/gi, '.')
-        .replace(/\s*\(dot\)\s*/gi, '.')
-        .replace(/\u2022|&bull;/g, '.') // bullets sometimes used instead of dots
-        .replace(/\s+/g, ' ');
-
-      // Exclusions: obvious non-contact technical addresses
-      const exclude = [
-        /noreply/i, /no-reply/i, /donotreply/i, /do-not-reply/i,
-        /example\.com/i, /test\.com/i, /postmaster/i, /webmaster/i,
-      ];
-
-      // First, capture mailto links (higher confidence)
-      const mailtoMatches = Array.from(text.matchAll(/mailto:([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi));
-      for (const m of mailtoMatches) {
-        let email = (m[1] || '').replace(/<[^>]*>/g, '').trim().toLowerCase();
-        const valid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (!valid.test(email)) continue;
-        if (exclude.some((p) => p.test(email))) continue;
-        foundEmails.add(email);
-        emailMeta.set(email, { mailto: true });
-      }
-
-      // Then, capture plain text emails
-      const plainMatches = Array.from(text.matchAll(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g));
-      for (const m of plainMatches) {
-        let email = (m[0] || '').replace(/<[^>]*>/g, '').trim().toLowerCase();
-        const valid = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-        if (!valid.test(email)) continue;
-        if (exclude.some((p) => p.test(email))) continue;
-        foundEmails.add(email);
-        if (!emailMeta.has(email)) emailMeta.set(email, { mailto: false });
-      }
-    };
-
-    // Crawl candidate pages (stop early if we already have a good company email)
-    for (const path of candidatePaths) {
-      const pageUrl = new URL(path, base).toString();
-      const html = await fetchViaProxies(pageUrl);
-      if (!html) continue;
-      extractEmails(html);
-
-      // Early stop if we already have a company-domain role email
-      const arr = Array.from(foundEmails);
-      const companyMatches = arr.filter((e) => getDomainRoot((e.split('@')[1] || '')) === companyRoot && !isFreeEmailDomain((e.split('@')[1] || '')));
-      const roleBest = companyMatches.find((e) => /^(info|contact|office|sales|hello|inquiries|general|support)@/i.test(e));
-      if (roleBest) {
-        return roleBest;
-      }
-    }
-
-    if (foundEmails.size === 0) {
+    if (error) {
+      console.error('Scraping error:', error);
       return null;
     }
 
-    const emailsArray = Array.from(foundEmails);
+    if (data?.emails && data.emails.length > 0) {
+      console.log(`✅ Found emails:`, data.emails);
+      return data.emails[0]; // Return first email
+    }
 
-    // Score and pick the best email
-    const brand = companyRoot.split('.')[0] || '';
-    const scoreEmail = (email: string) => {
-      const [local, domainPart] = email.split('@');
-      const domain = (domainPart || '').toLowerCase();
-      let score = 0;
-      if (domain && getDomainRoot(domain) === companyRoot) score += 100;
-      else if (isFreeEmailDomain(domain)) score -= 60;
-
-      if (/^(info|kontakt|contact|office|sales|hello|support|booking|reservations)@/i.test(email)) score += 25;
-      if (brand && local && local.includes(brand.replace(/[^a-z0-9]/gi, ''))) score += 10;
-      if (/(newsletter|marketing|noreply|no-reply|donotreply|do-not-reply)/i.test(email)) score -= 40;
-      if (/(postmaster|webmaster|admin)@/i.test(email)) score -= 50;
-
-      const meta = emailMeta.get(email);
-      if (meta?.mailto) score += 15;
-      return score;
-    };
-
-    const best = emailsArray
-      .map((e) => ({ e, s: scoreEmail(e) }))
-      .sort((a, b) => b.s - a.s)[0];
-
-    return best?.e || null;
+    return null;
   } catch (error) {
     console.error(`Error scraping email from ${website}:`, error);
     return null;
@@ -170,7 +50,7 @@ export const scrapeEmailFromWebsite = async (website: string): Promise<string | 
 };
 
 
-// Enhanced email discovery that returns emails with their sources
+// Enhanced email discovery using backend edge function
 export const enhancedEmailDiscovery = async (companyName: string, website: string): Promise<{
   emails: string[];
   socialProfiles: {
@@ -178,40 +58,42 @@ export const enhancedEmailDiscovery = async (companyName: string, website: strin
     facebook?: string;
     yellowPages?: string;
   };
-  emailSources: Record<string, string>; // email -> source mapping
+  emailSources: Record<string, string>;
 }> => {
-  const emails: string[] = [];
-  const socialProfiles = {};
-  const emailSources: Record<string, string> = {};
-  
-  // 1. Try scraping from website
-  const scrapedEmail = await scrapeEmailFromWebsite(website);
-  if (scrapedEmail) {
-    emails.push(scrapedEmail);
-    emailSources[scrapedEmail] = 'website';
-  }
-  
-  // 2. Try social media and directory lookup
   try {
-    const socialResult = await searchSocialMediaEmails(companyName);
-    for (const result of socialResult) {
-      if (result.email) {
-        emails.push(result.email);
-        emailSources[result.email] = result.source;
-      }
-      if (result.profileUrl) {
-        (socialProfiles as any)[result.source] = result.profileUrl;
-      }
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabase = createClient(
+      'https://uwtzhkdgprmrmknjrfeb.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV3dHpoa2RncHJtcm1rbmpyZmViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg3MzcxNTksImV4cCI6MjA2NDMxMzE1OX0.uck1u0Q1sDZf2aQXB9yw3FE_n2cIjZEA292YavuIDb0'
+    );
+
+    console.log(`🔍 Enhanced discovery for: ${companyName}`);
+    
+    const { data, error } = await supabase.functions.invoke('scrape-contact', {
+      body: { website, companyName }
+    });
+
+    if (error) {
+      console.error('Enhanced discovery error:', error);
+      return { emails: [], socialProfiles: {}, emailSources: {} };
     }
+
+    const emailSources: Record<string, string> = {};
+    if (data?.emails) {
+      data.emails.forEach((email: string) => {
+        emailSources[email] = 'website';
+      });
+    }
+
+    return {
+      emails: data?.emails || [],
+      socialProfiles: data?.socialProfiles || {},
+      emailSources
+    };
   } catch (error) {
-    console.error('Error searching social media:', error);
+    console.error('Enhanced discovery error:', error);
+    return { emails: [], socialProfiles: {}, emailSources: {} };
   }
-  
-  return {
-    emails: [...new Set(emails)],
-    socialProfiles,
-    emailSources
-  };
 };
 
 // Search for emails on social media platforms and directories

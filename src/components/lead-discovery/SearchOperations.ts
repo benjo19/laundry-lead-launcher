@@ -166,7 +166,7 @@ export const performLeadSearch = async (
         if (lead.website) {
           console.log(`📧 Scraping email from: ${lead.website}`);
           try {
-            const email = await scrapeEmailFromWebsite(lead.website);
+            const email = await scrapeEmailFromWebsite(lead.website, lead.name);
             if (email) {
               lead.email = email;
               lead.emailScraped = true;
@@ -185,7 +185,7 @@ export const performLeadSearch = async (
               lead.website = discovered.website;
               console.log(`🌍 Discovered website via ${discovered.source}: ${lead.website}`);
               // Now scrape email from discovered website
-              const email = await scrapeEmailFromWebsite(lead.website);
+              const email = await scrapeEmailFromWebsite(lead.website, lead.name);
               if (email) {
                 lead.email = email;
                 lead.emailScraped = true;
