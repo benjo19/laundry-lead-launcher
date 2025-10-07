@@ -125,33 +125,47 @@ export const useSupabaseLeads = () => {
       }
 
       console.log('Adding lead to Supabase:', newLeadData);
-      const { error } = await supabase
+      console.log('User ID:', user.id);
+      
+      const insertData = {
+        user_id: user.id,
+        company: newLeadData.company,
+        location: newLeadData.location || null,
+        employees: newLeadData.employees || null,
+        phone: newLeadData.phone || null,
+        email: newLeadData.email || null,
+        website: newLeadData.website || null,
+        status: newLeadData.status || 'Nova',
+        potential: newLeadData.potential || 'Srednji',
+        notes: newLeadData.notes || null,
+        source: 'Manual',
+        industry: newLeadData.industry || null
+      };
+      
+      console.log('Insert data:', JSON.stringify(insertData, null, 2));
+      
+      const { data: insertedData, error } = await supabase
         .from('leads')
-        .insert({
-          user_id: user.id,
-          company: newLeadData.company,
-          location: newLeadData.location || null,
-          employees: newLeadData.employees || null,
-          phone: newLeadData.phone || null,
-          email: newLeadData.email || null,
-          website: newLeadData.website || null,
-          status: newLeadData.status || 'Nova',
-          potential: newLeadData.potential || 'Srednji',
-          notes: newLeadData.notes || null,
-          source: 'Manual',
-          industry: newLeadData.industry || null
-        });
+        .insert(insertData)
+        .select();
+
+      console.log('Insert result - data:', insertedData);
+      console.log('Insert result - error:', error);
 
       if (error) {
         console.error('Error adding lead to Supabase:', error);
         console.error('Error details:', JSON.stringify(error, null, 2));
+        console.error('Error code:', error.code);
+        console.error('Error hint:', error.hint);
         toast({
-          title: "Greška",
-          description: `Greška prilikom dodavanja: ${error.message}`,
+          title: "Greška pri dodavanju",
+          description: `Dogodila se greška pri dodavanju lead-a. Molimo pokušajte ponovno.`,
           variant: "destructive",
         });
         return false;
       }
+      
+      console.log('Lead successfully inserted:', insertedData);
 
       await fetchLeads(); // Refresh the list
       
