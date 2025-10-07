@@ -162,7 +162,7 @@ export const useContentBooster = () => {
     setGeneratedImageUrl('');
   };
 
-  const publishNow = () => {
+  const publishNow = async () => {
     console.log('publishNow: Starting publish process', { content, platform });
 
     if (!content || !platform) {
@@ -176,44 +176,44 @@ export const useContentBooster = () => {
     }
 
     try {
-      // Import the social media utility dynamically
-      import('@/utils/socialMediaUtils').then(async ({ openSocialMedia }) => {
-        // Open the social media platform with pre-filled content
-        openSocialMedia(platform as any, content, generatedImageUrl || undefined);
-        
-        // Add to local posts list
-        const newPost: ContentPost = {
-          id: Date.now(),
-          platform: platform as ContentPost['platform'],
-          content,
-          contentType: contentType as ContentPost['contentType'] || 'promotional',
-          date: new Date().toISOString().split('T')[0],
-          status: 'Published'
-        };
+      // Add to local posts list
+      const newPost: ContentPost = {
+        id: Date.now(),
+        platform: platform as ContentPost['platform'],
+        content,
+        contentType: contentType as ContentPost['contentType'] || 'promotional',
+        date: new Date().toISOString().split('T')[0],
+        status: 'Published',
+        imageUrl: generatedImageUrl || undefined
+      };
 
-        setPosts([newPost, ...posts]);
+      setPosts([newPost, ...posts]);
 
-        // Trigger webhooks for Make.com and Zapier
-        const webhookData = {
-          platform,
-          content,
-          contentType,
-          date: newPost.date,
-          companyName,
-          industry,
-          imageUrl: generatedImageUrl || undefined
-        };
+      // Trigger webhooks for Make.com and Zapier
+      const webhookData = {
+        platform,
+        content,
+        contentType,
+        date: newPost.date,
+        companyName,
+        industry,
+        imageUrl: generatedImageUrl || undefined
+      };
 
-        // Trigger both webhooks in parallel
-        await Promise.all([
-          triggerWebhook('content_published', webhookData),
-          triggerContentCreated(webhookData)
-        ]);
+      // Trigger both webhooks in parallel
+      await Promise.all([
+        triggerWebhook('content_published', webhookData),
+        triggerContentCreated(webhookData)
+      ]);
 
-        resetForm();
+      resetForm();
 
-        console.log('publishNow: Process completed successfully');
+      toast({
+        title: "Webhook pokrenut",
+        description: `Sadržaj je poslan na ${platform} putem webhook-a.`,
       });
+
+      console.log('publishNow: Webhook triggered successfully');
     } catch (error) {
       console.error('publishNow: Error during publish process:', error);
       toast({
