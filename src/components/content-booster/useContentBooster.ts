@@ -8,6 +8,8 @@ import { AIProvider } from '@/services/aiEmailService';
 import { useSocialService } from '@/hooks/useSocialService';
 import { useAISettings } from '@/hooks/useAISettings';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { useMakeIntegration } from '@/hooks/useMakeIntegration';
+import { useZapierIntegration } from '@/hooks/useZapierIntegration';
 
 export const useContentBooster = () => {
   const [content, setContent] = useState('');
@@ -58,6 +60,8 @@ export const useContentBooster = () => {
 
   const { toast } = useToast();
   const { postToSocial } = useSocialService();
+  const { triggerWebhook } = useMakeIntegration();
+  const { triggerContentCreated } = useZapierIntegration();
 
   const generateContent = async () => {
     if (!platform || !contentType || !industry) {
@@ -173,7 +177,7 @@ export const useContentBooster = () => {
 
     try {
       // Import the social media utility dynamically
-      import('@/utils/socialMediaUtils').then(({ openSocialMedia }) => {
+      import('@/utils/socialMediaUtils').then(async ({ openSocialMedia }) => {
         // Open the social media platform with pre-filled content
         openSocialMedia(platform as any, content, generatedImageUrl || undefined);
         
@@ -188,6 +192,24 @@ export const useContentBooster = () => {
         };
 
         setPosts([newPost, ...posts]);
+
+        // Trigger webhooks for Make.com and Zapier
+        const webhookData = {
+          platform,
+          content,
+          contentType,
+          date: newPost.date,
+          companyName,
+          industry,
+          imageUrl: generatedImageUrl || undefined
+        };
+
+        // Trigger both webhooks in parallel
+        await Promise.all([
+          triggerWebhook('content_published', webhookData),
+          triggerContentCreated(webhookData)
+        ]);
+
         resetForm();
 
         console.log('publishNow: Process completed successfully');
