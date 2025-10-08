@@ -193,8 +193,9 @@ const MakeIntegration = () => {
         imageUrl: 'https://example.com/test-image.jpg'
       };
 
-      console.log('Testing Content Booster webhook:', settings.content_booster_webhook_url);
-      console.log('Test data:', testData);
+      console.log('=== CONTENT BOOSTER WEBHOOK TEST ===');
+      console.log('Webhook URL:', settings.content_booster_webhook_url);
+      console.log('Sending data:', JSON.stringify(testData, null, 2));
 
       const response = await fetch(settings.content_booster_webhook_url, {
         method: 'POST',
@@ -205,17 +206,21 @@ const MakeIntegration = () => {
         body: JSON.stringify(testData),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Request sent successfully (no-cors mode - cannot see response)');
+
       setLastTestResult('success');
       toast({
-        title: "Test uspješan",
-        description: "Content Booster webhook je uspješno pozvan. Provjerite Make.com scenario logs.",
+        title: "Zahtjev poslan",
+        description: "Podaci su poslani na Make.com. Ako scenario nije aktivan ili ne čeka podatke, neće biti zabilježeno u logu. Provjerite da je scenario AKTIVAN i da webhook kaže 'Waiting for data'.",
+        duration: 8000,
       });
     } catch (error) {
       console.error('Error testing Content Booster webhook:', error);
       setLastTestResult('error');
       toast({
         title: "Test neuspješan",
-        description: "Dogodila se greška prilikom testiranja webhook-a.",
+        description: "Dogodila se greška prilikom slanja: " + (error instanceof Error ? error.message : 'Nepoznata greška'),
         variant: "destructive",
       });
     } finally {
