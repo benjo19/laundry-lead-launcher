@@ -132,15 +132,17 @@ const MakeIntegration = () => {
     setLastTestResult(null);
 
     try {
-      const testData = {
-        test: true,
-        timestamp: new Date().toISOString(),
-        user_id: user?.id,
-        event_type: 'test_connection',
-        data: {
-          message: 'Test konekcije s Make.com',
-          application: 'Marketing Agent'
-        }
+      const testLeadData = {
+        company: 'Test Tvrtka d.o.o.',
+        email: 'test@example.com',
+        phone: '+385 99 123 4567',
+        website: 'https://www.test-company.com',
+        location: 'Zagreb, Hrvatska',
+        country: 'Hrvatska',
+        status: 'Nova',
+        potential: 'Visoki',
+        industry: 'IT & Tehnologija',
+        dateAdded: new Date().toISOString()
       };
 
       const response = await fetch(settings.webhook_url, {
@@ -149,13 +151,14 @@ const MakeIntegration = () => {
           'Content-Type': 'application/json',
         },
         mode: 'no-cors',
-        body: JSON.stringify(testData),
+        body: JSON.stringify(testLeadData),
       });
 
       setLastTestResult('success');
       toast({
         title: "Test uspješan",
-        description: "Webhook je uspješno pozvan. Provjerite Make.com scenario logs.",
+        description: "Test lead podaci poslani na Make.com. Provjerite scenario da li ste primili podatke.",
+        duration: 6000,
       });
     } catch (error) {
       console.error('Error testing webhook:', error);
@@ -437,7 +440,7 @@ const MakeIntegration = () => {
               ) : (
                 <>
                   <TestTube className="h-4 w-4 mr-2" />
-                  {t('test_connection')}
+                  Testiraj Lead Webhook
                 </>
               )}
             </Button>
