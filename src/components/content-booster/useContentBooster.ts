@@ -205,16 +205,10 @@ export const useContentBooster = () => {
 
       setPosts([newPost, ...posts]);
 
-      // Convert image to base64 if present
-      let imageBase64 = null;
-      if (generatedImageUrl) {
-        imageBase64 = await convertImageToBase64(generatedImageUrl);
-      }
-
       // Trigger webhooks for Make.com and Zapier with simple format
       const webhookData = {
         text: content,
-        image: imageBase64 || generatedImageUrl || ""
+        image: generatedImageUrl || ""
       };
 
       // Trigger both webhooks in parallel
@@ -227,10 +221,10 @@ export const useContentBooster = () => {
 
       toast({
         title: "Webhook pokrenut",
-        description: `Sadržaj je poslan na ${platform} putem webhook-a${imageBase64 ? ' sa slikom' : ''}.`,
+        description: `Sadržaj je poslan na ${platform} putem webhook-a${generatedImageUrl ? ' sa slikom' : ''}.`,
       });
 
-      console.log('publishNow: Webhook triggered successfully', { hasImage: !!imageBase64 });
+      console.log('publishNow: Webhook triggered successfully', { hasImage: !!generatedImageUrl });
     } catch (error) {
       console.error('publishNow: Error during publish process:', error);
       toast({
