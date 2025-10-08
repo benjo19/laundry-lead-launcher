@@ -30,6 +30,7 @@ const MakeIntegration = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
   const [lastTestResult, setLastTestResult] = useState<'success' | 'error' | null>(null);
+  const [testLog, setTestLog] = useState<string>('');
   
   const [settings, setSettings] = useState<MakeSettings>({
     webhook_url: '',
@@ -181,6 +182,7 @@ const MakeIntegration = () => {
 
     setIsTesting(true);
     setLastTestResult(null);
+    setTestLog('');
 
     try {
       const testData = {
@@ -193,6 +195,9 @@ const MakeIntegration = () => {
         imageUrl: 'https://example.com/test-image.jpg'
       };
 
+      const logMessage = `📤 Šaljem podatke na:\n${settings.content_booster_webhook_url}\n\n📦 Podaci:\n${JSON.stringify(testData, null, 2)}`;
+      setTestLog(logMessage);
+      
       console.log('=== CONTENT BOOSTER WEBHOOK TEST ===');
       console.log('Webhook URL:', settings.content_booster_webhook_url);
       console.log('Sending data:', JSON.stringify(testData, null, 2));
@@ -210,17 +215,22 @@ const MakeIntegration = () => {
       console.log('Request sent successfully (no-cors mode - cannot see response)');
 
       setLastTestResult('success');
+      setTestLog(prev => `${prev}\n\n✅ Zahtjev uspješno poslan!`);
+      
       toast({
         title: "Zahtjev poslan",
-        description: "Podaci su poslani na Make.com. Ako scenario nije aktivan ili ne čeka podatke, neće biti zabilježeno u logu. Provjerite da je scenario AKTIVAN i da webhook kaže 'Waiting for data'.",
+        description: "Podaci su poslani na Make.com. Provjerite da je scenario AKTIVAN i da webhook čeka podatke.",
         duration: 8000,
       });
     } catch (error) {
       console.error('Error testing Content Booster webhook:', error);
       setLastTestResult('error');
+      const errorMsg = error instanceof Error ? error.message : 'Nepoznata greška';
+      setTestLog(prev => `${prev}\n\n❌ Greška: ${errorMsg}`);
+      
       toast({
         title: "Test neuspješan",
-        description: "Dogodila se greška prilikom slanja: " + (error instanceof Error ? error.message : 'Nepoznata greška'),
+        description: "Dogodila se greška prilikom slanja: " + errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -395,6 +405,13 @@ const MakeIntegration = () => {
                 </>
               )}
             </Button>
+
+            {testLog && (
+              <div className="mt-4 p-4 bg-slate-100 rounded-lg border border-slate-200">
+                <h5 className="font-medium text-sm mb-2">Test Log:</h5>
+                <pre className="text-xs whitespace-pre-wrap font-mono text-slate-700">{testLog}</pre>
+              </div>
+            )}
           </div>
 
           <div className="flex items-center space-x-2">
