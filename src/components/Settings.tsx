@@ -3,7 +3,7 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Settings as SettingsIcon, User, Mail, Share2, Bot, Zap, Calendar } from 'lucide-react';
+import { ArrowLeft, Settings as SettingsIcon, User, Mail, Share2, Bot, Zap, Calendar, Webhook } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BusinessProfileSettings from './BusinessProfileSettings';
 import AISettings from './AISettings';
@@ -12,6 +12,7 @@ import SocialSettings from './SocialSettings';
 import MakeIntegration from './MakeIntegration';
 import ZapierIntegration from './ZapierIntegration';
 import GoogleCalendarIntegration from './GoogleCalendarIntegration';
+import ContentBoosterWebhook from './ContentBoosterWebhook';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 const Settings = () => {
@@ -46,7 +47,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-7 gap-1 p-1 mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-8 gap-1 p-1 mb-6 h-auto">
                 <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <User className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Profil</span>
@@ -74,6 +75,10 @@ const Settings = () => {
                 <TabsTrigger value="calendar" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <Calendar className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Kalendar</span>
+                </TabsTrigger>
+                <TabsTrigger value="content-webhook" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <Webhook className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">Content</span>
                 </TabsTrigger>
               </TabsList>
 
@@ -103,6 +108,10 @@ const Settings = () => {
 
               <TabsContent value="calendar">
                 <GoogleCalendarIntegration />
+              </TabsContent>
+
+              <TabsContent value="content-webhook">
+                <ContentBoosterWebhook />
               </TabsContent>
             </Tabs>
           </CardContent>
