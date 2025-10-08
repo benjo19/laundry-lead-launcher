@@ -185,41 +185,49 @@ const MakeIntegration = () => {
     setTestLog('');
 
     try {
-      const testData = {
-        platform: 'LinkedIn',
-        content: 'Test objava iz Marketing Agent aplikacije',
-        contentType: 'promotional',
-        date: new Date().toISOString().split('T')[0],
-        companyName: 'Test Company',
-        industry: 'Marketing',
-        imageUrl: 'https://example.com/test-image.jpg'
-      };
+      // Create a small test image blob
+      const canvas = document.createElement('canvas');
+      canvas.width = 100;
+      canvas.height = 100;
+      const ctx = canvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = '#4F46E5';
+        ctx.fillRect(0, 0, 100, 100);
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = '20px Arial';
+        ctx.fillText('Test', 25, 55);
+      }
+      
+      const imageBlob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.9);
+      });
 
-      const logMessage = `📤 Šaljem podatke na:\n${settings.content_booster_webhook_url}\n\n📦 Podaci:\n${JSON.stringify(testData, null, 2)}`;
+      // Prepare FormData with image file
+      const formData = new FormData();
+      formData.append('text', 'Test objava iz Marketing Agent aplikacije');
+      formData.append('image', imageBlob, 'image.jpg');
+
+      const logMessage = `📤 Šaljem podatke na:\n${settings.content_booster_webhook_url}\n\n📦 Podaci:\n- text: "Test objava iz Marketing Agent aplikacije"\n- image: test-image.jpg (${imageBlob.size} bytes)`;
       setTestLog(logMessage);
       
       console.log('=== CONTENT BOOSTER WEBHOOK TEST ===');
       console.log('Webhook URL:', settings.content_booster_webhook_url);
-      console.log('Sending data:', JSON.stringify(testData, null, 2));
+      console.log('Sending FormData with image file');
 
       const response = await fetch(settings.content_booster_webhook_url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
         mode: 'no-cors',
-        body: JSON.stringify(testData),
+        body: formData,
       });
 
-      console.log('Response status:', response.status);
       console.log('Request sent successfully (no-cors mode - cannot see response)');
 
       setLastTestResult('success');
-      setTestLog(prev => `${prev}\n\n✅ Zahtjev uspješno poslan!`);
+      setTestLog(prev => `${prev}\n\n✅ Zahtjev uspješno poslan sa .jpg slikom!`);
       
       toast({
         title: "Zahtjev poslan",
-        description: "Podaci su poslani na Make.com. Provjerite da je scenario AKTIVAN i da webhook čeka podatke.",
+        description: "Podaci sa slikom su poslani na Make.com. Provjerite da je scenario AKTIVAN i da webhook čeka podatke.",
         duration: 8000,
       });
     } catch (error) {
