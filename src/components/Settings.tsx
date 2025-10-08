@@ -3,12 +3,11 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Settings as SettingsIcon, User, Mail, Share2, Bot, Zap, Calendar, Webhook } from 'lucide-react';
+import { ArrowLeft, Settings as SettingsIcon, User, Mail, Bot, Zap, Calendar, Webhook } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BusinessProfileSettings from './BusinessProfileSettings';
 import AISettings from './AISettings';
 import EmailSettings from './EmailSettings';
-import SocialSettings from './SocialSettings';
 import MakeIntegration from './MakeIntegration';
 import ZapierIntegration from './ZapierIntegration';
 import GoogleCalendarIntegration from './GoogleCalendarIntegration';
@@ -47,7 +46,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-8 gap-1 p-1 mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-7 gap-1 p-1 mb-6 h-auto">
                 <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <User className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Profil</span>
@@ -59,10 +58,6 @@ const Settings = () => {
                 <TabsTrigger value="email" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <Mail className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Email</span>
-                </TabsTrigger>
-                <TabsTrigger value="social" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
-                  <Share2 className="h-4 w-4 mb-1" />
-                  <span className="truncate w-full text-center">Social</span>
                 </TabsTrigger>
                 <TabsTrigger value="make" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <Zap className="h-4 w-4 mb-1" />
@@ -92,10 +87,6 @@ const Settings = () => {
 
               <TabsContent value="email">
                 <EmailSettings />
-              </TabsContent>
-
-              <TabsContent value="social">
-                <SocialSettings />
               </TabsContent>
 
               <TabsContent value="make">

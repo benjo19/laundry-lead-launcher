@@ -1,10 +1,8 @@
 
-import { Facebook, Linkedin, Instagram } from 'lucide-react';
+import { Linkedin, Instagram } from 'lucide-react';
 
 export const platforms = [
   { value: 'LinkedIn', label: 'LinkedIn', icon: Linkedin, color: 'text-blue-600' },
-  { value: 'Facebook', label: 'Facebook', icon: Facebook, color: 'text-blue-800' },
-  { value: 'Instagram', label: 'Instagram', icon: Instagram, color: 'text-pink-600' },
   { value: 'TikTok', label: 'TikTok', icon: Instagram, color: 'text-black' },
 ];
 

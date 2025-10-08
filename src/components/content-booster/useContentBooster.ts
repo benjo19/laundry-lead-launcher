@@ -5,7 +5,6 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
 import { AIContentService } from '@/services/aiContentService';
 import { AIProvider } from '@/services/aiEmailService';
-import { useSocialService } from '@/hooks/useSocialService';
 import { useAISettings } from '@/hooks/useAISettings';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { useMakeIntegration } from '@/hooks/useMakeIntegration';
@@ -59,7 +58,6 @@ export const useContentBooster = () => {
   ]);
 
   const { toast } = useToast();
-  const { postToSocial } = useSocialService();
   const { triggerWebhook } = useMakeIntegration();
   const { triggerContentCreated } = useZapierIntegration();
 
