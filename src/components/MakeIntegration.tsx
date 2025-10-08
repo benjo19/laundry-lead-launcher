@@ -169,6 +169,60 @@ const MakeIntegration = () => {
     }
   };
 
+  const testContentBoosterWebhook = async () => {
+    if (!settings.content_booster_webhook_url) {
+      toast({
+        title: "Greška",
+        description: "Molimo unesite Content Booster Webhook URL prije testiranja.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTesting(true);
+    setLastTestResult(null);
+
+    try {
+      const testData = {
+        platform: 'LinkedIn',
+        content: 'Test objava iz Marketing Agent aplikacije',
+        contentType: 'promotional',
+        date: new Date().toISOString().split('T')[0],
+        companyName: 'Test Company',
+        industry: 'Marketing',
+        imageUrl: 'https://example.com/test-image.jpg'
+      };
+
+      console.log('Testing Content Booster webhook:', settings.content_booster_webhook_url);
+      console.log('Test data:', testData);
+
+      const response = await fetch(settings.content_booster_webhook_url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify(testData),
+      });
+
+      setLastTestResult('success');
+      toast({
+        title: "Test uspješan",
+        description: "Content Booster webhook je uspješno pozvan. Provjerite Make.com scenario logs.",
+      });
+    } catch (error) {
+      console.error('Error testing Content Booster webhook:', error);
+      setLastTestResult('error');
+      toast({
+        title: "Test neuspješan",
+        description: "Dogodila se greška prilikom testiranja webhook-a.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const triggerWebhook = async (eventType: string, data: any) => {
     if (!settings.webhook_url || !settings.auto_trigger) return;
 
@@ -307,6 +361,25 @@ const MakeIntegration = () => {
               />
               <Label htmlFor="content_booster_auto_trigger">Automatski šalji objave na Make.com</Label>
             </div>
+
+            <Button
+              onClick={testContentBoosterWebhook}
+              disabled={isTesting || !settings.content_booster_webhook_url}
+              variant="outline"
+              className="w-full mt-4"
+            >
+              {isTesting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Testiranje...
+                </>
+              ) : (
+                <>
+                  <TestTube className="h-4 w-4 mr-2" />
+                  Testiraj Content Booster Webhook
+                </>
+              )}
+            </Button>
           </div>
 
           <div className="flex items-center space-x-2">
