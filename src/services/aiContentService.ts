@@ -57,32 +57,27 @@ export class AIContentService {
   }
 
   private async generateImage(prompt: string): Promise<string> {
-    if (this.provider !== 'openai') {
-      throw new Error('Image generation is only supported with OpenAI');
-    }
-
-    const response = await fetch('https://api.openai.com/v1/images/generations', {
+    // Use Lovable AI Gateway with Gemini image model
+    const LOVABLE_API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+    
+    const response = await fetch('https://uwtzhkdgprmrmknjrfeb.supabase.co/functions/v1/generate-image', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'dall-e-3',
         prompt: prompt,
-        n: 1,
-        size: '1024x1024',
-        quality: 'standard',
       }),
     });
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to generate image');
+      throw new Error(errorData.error || 'Failed to generate image');
     }
 
     const data = await response.json();
-    return data.data[0]?.url || '';
+    return data.imageUrl || '';
   }
 
   private async generateWithOpenAI(systemPrompt: string, userPrompt: string): Promise<GeneratedContent> {
