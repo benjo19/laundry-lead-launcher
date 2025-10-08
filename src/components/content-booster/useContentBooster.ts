@@ -211,16 +211,10 @@ export const useContentBooster = () => {
         imageBase64 = await convertImageToBase64(generatedImageUrl);
       }
 
-      // Trigger webhooks for Make.com and Zapier with base64 image
+      // Trigger webhooks for Make.com and Zapier with simple format
       const webhookData = {
-        platform,
-        content,
-        contentType,
-        date: newPost.date,
-        companyName,
-        industry,
-        imageUrl: generatedImageUrl || undefined,
-        imageBase64: imageBase64 || undefined
+        text: content,
+        image: imageBase64 || generatedImageUrl || ""
       };
 
       // Trigger both webhooks in parallel
