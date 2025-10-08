@@ -77,17 +77,30 @@ export const useMakeIntegration = () => {
 
       // Format data based on event type
       let webhookData;
+      const hasImageBlob = data.image instanceof Blob;
+
       if (isContentEvent) {
-        // Content Booster data
-        webhookData = {
-          platform: data.platform || '',
-          content: data.content || '',
-          contentType: data.contentType || '',
-          date: data.date || '',
-          companyName: data.companyName || '',
-          industry: data.industry || '',
-          imageUrl: data.imageUrl || ''
-        };
+        if (hasImageBlob) {
+          // Use FormData for content with image file
+          const formData = new FormData();
+          formData.append('text', data.text || '');
+          formData.append('image', data.image, 'image.jpg');
+
+          const response = await fetch(webhookUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: formData,
+          });
+
+          console.log(`Make.com webhook triggered for ${eventType} with image file`);
+          return true;
+        } else {
+          // Content Booster data without image
+          webhookData = {
+            text: data.text || '',
+            image: data.image || ''
+          };
+        }
       } else {
         // Lead data for Google Sheets
         webhookData = {

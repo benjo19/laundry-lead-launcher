@@ -205,11 +205,24 @@ export const useContentBooster = () => {
 
       setPosts([newPost, ...posts]);
 
-      // Trigger webhooks for Make.com and Zapier with simple format
-      const webhookData = {
-        text: content,
-        image: generatedImageUrl || ""
+      // Prepare webhook data with image file
+      let webhookData: any = {
+        text: content
       };
+
+      // If image exists, fetch it and prepare as blob
+      if (generatedImageUrl) {
+        try {
+          const imageResponse = await fetch(generatedImageUrl);
+          const imageBlob = await imageResponse.blob();
+          webhookData.image = imageBlob;
+        } catch (error) {
+          console.error('Error fetching image for webhook:', error);
+          webhookData.image = generatedImageUrl; // Fallback to URL
+        }
+      } else {
+        webhookData.image = "";
+      }
 
       // Trigger both webhooks in parallel
       await Promise.all([
