@@ -267,14 +267,24 @@ const MakeIntegration = () => {
       </CardHeader>
       <CardContent className="space-y-6">
         <div className="bg-blue-50 p-4 rounded-lg">
-          <h4 className="font-medium text-blue-900 mb-2">Kako postaviti Make.com integraciju</h4>
-          <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
-            <li>Idite na <a href="https://make.com" target="_blank" rel="noopener noreferrer" className="underline">Make.com</a> i kreirajte scenario</li>
-            <li>Dodajte "Webhooks" trigger na početak scenarija</li>
-            <li>Kopirajte Webhook URL iz Make.com-a i zalijepite ga ispod</li>
-            <li>Testirajte konekciju klikom na "Test Connection"</li>
-            <li>Spremite postavke i aktivirajte scenario u Make.com</li>
+          <h4 className="font-medium text-blue-900 mb-2">📋 Kako postaviti Make.com integraciju - VAŽNO!</h4>
+          <ol className="text-sm text-blue-800 space-y-2 list-decimal list-inside">
+            <li>Idite na <a href="https://make.com" target="_blank" rel="noopener noreferrer" className="underline font-medium">Make.com</a> i kreirajte novi scenario</li>
+            <li>Dodajte <strong>"Webhooks" &gt; "Custom webhook"</strong> modul na početak</li>
+            <li>Kliknite na webhook i kreirajte novi webhook (dajte mu ime)</li>
+            <li>Kopirajte webhook URL i zalijepite ga u polje ispod</li>
+            <li>
+              <strong className="text-red-700">KRITIČNO:</strong> Kliknite "Re-determine data structure" u webhook modulu i ODMAH nakon toga kliknite "Test" dugme ispod
+            </li>
+            <li>Make.com će sada primiti test podatke i automatski postaviti strukturu</li>
+            <li>Dodajte module koje želite nakon webhook-a (npr. Google Sheets, Email, itd.)</li>
+            <li>Spremite scenario i <strong>AKTIVIRAJTE GA</strong> (prekidač mora biti ON)</li>
           </ol>
+          <div className="mt-3 p-2 bg-yellow-100 border border-yellow-300 rounded">
+            <p className="text-xs text-yellow-900">
+              ⚠️ Ako ne vidite podatke: Provjerite da je scenario AKTIVAN i da webhook modul kaže "Waiting for data"
+            </p>
+          </div>
         </div>
 
         <div className="space-y-4">
