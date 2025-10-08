@@ -12,7 +12,6 @@ import { useZapierIntegration } from '@/hooks/useZapierIntegration';
 
 export const useContentBooster = () => {
   const [content, setContent] = useState('');
-  const [platform, setPlatform] = useState('');
   const [contentType, setContentType] = useState('');
   const [industry, setIndustry] = useState('');
   const [companyName, setCompanyName] = useState('');
@@ -62,10 +61,10 @@ export const useContentBooster = () => {
   const { triggerContentCreated } = useZapierIntegration();
 
   const generateContent = async () => {
-    if (!platform || !contentType || !industry) {
+    if (!contentType || !industry) {
       toast({
         title: "Nedostaju podaci",
-        description: "Molimo odaberite platformu, tip sadržaja i industriju.",
+        description: "Molimo odaberite tip sadržaja i industriju.",
         variant: "destructive"
       });
       return;
@@ -117,7 +116,7 @@ export const useContentBooster = () => {
       }
       
       const result = await aiService.generateContent({
-        platform,
+        platform: 'Social Media',
         contentType,
         industry,
         companyName: companyName || 'Marketing Agent',
@@ -150,7 +149,6 @@ export const useContentBooster = () => {
 
   const resetForm = () => {
     setContent('');
-    setPlatform('');
     setContentType('');
     // Don't reset industry and companyName as they come from business profile
     setTopic('');
@@ -177,13 +175,13 @@ export const useContentBooster = () => {
   };
 
   const publishNow = async () => {
-    console.log('publishNow: Starting publish process', { content, platform });
+    console.log('publishNow: Starting publish process', { content });
 
-    if (!content || !platform) {
-      console.log('publishNow: Missing content or platform');
+    if (!content) {
+      console.log('publishNow: Missing content');
       toast({
         title: "Nedostaju podaci",
-        description: "Molimo unesite sadržaj i odaberite platformu.",
+        description: "Molimo unesite sadržaj.",
         variant: "destructive"
       });
       return;
@@ -193,7 +191,7 @@ export const useContentBooster = () => {
       // Add to local posts list
       const newPost: ContentPost = {
         id: Date.now(),
-        platform: platform as ContentPost['platform'],
+        platform: 'LinkedIn',
         content,
         contentType: contentType as ContentPost['contentType'] || 'promotional',
         date: new Date().toISOString().split('T')[0],
@@ -232,7 +230,7 @@ export const useContentBooster = () => {
 
       toast({
         title: "Webhook pokrenut",
-        description: `Sadržaj je poslan na ${platform} putem webhook-a${generatedImageUrl ? ' sa slikom' : ''}.`,
+        description: `Sadržaj je poslan putem webhook-a${generatedImageUrl ? ' sa slikom' : ''}.`,
       });
 
       console.log('publishNow: Webhook triggered successfully', { hasImage: !!generatedImageUrl });
@@ -247,7 +245,7 @@ export const useContentBooster = () => {
   };
 
   const schedulePost = () => {
-    if (!content || !platform || !scheduledDate || !scheduledTime) {
+    if (!content || !scheduledDate || !scheduledTime) {
       toast({
         title: "Nedostaju podaci",
         description: "Molimo unesite sve podatke za zakazivanje objave.",
@@ -258,7 +256,7 @@ export const useContentBooster = () => {
 
     const newPost: ContentPost = {
       id: Date.now(),
-      platform: platform as ContentPost['platform'],
+      platform: 'LinkedIn',
       content,
       contentType: contentType as ContentPost['contentType'] || 'promotional',
       date: scheduledDate,
@@ -286,8 +284,6 @@ export const useContentBooster = () => {
   return {
     content,
     setContent,
-    platform,
-    setPlatform,
     contentType,
     setContentType,
     industry,

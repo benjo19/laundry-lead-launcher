@@ -11,8 +11,6 @@ const ContentBooster = () => {
   const {
     content,
     setContent,
-    platform,
-    setPlatform,
     contentType,
     setContentType,
     industry,
@@ -64,12 +62,10 @@ const ContentBooster = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ContentForm
-          content={content}
-          setContent={setContent}
-          platform={platform}
-          setPlatform={setPlatform}
-          contentType={contentType}
+      <ContentForm
+        content={content}
+        setContent={setContent}
+        contentType={contentType}
           setContentType={setContentType}
           industry={industry}
           setIndustry={setIndustry}

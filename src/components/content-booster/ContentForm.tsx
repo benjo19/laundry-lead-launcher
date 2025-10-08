@@ -8,14 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Sparkles, Share2, Calendar, Bot, Image, Settings, CheckCircle, AlertTriangle } from 'lucide-react';
 import { AIProvider } from '@/services/aiEmailService';
-import { platforms, contentTypes, industries, contentFormats } from './constants';
+import { contentTypes, industries, contentFormats } from './constants';
 import { useNavigate } from 'react-router-dom';
 
 interface ContentFormProps {
   content: string;
   setContent: (content: string) => void;
-  platform: string;
-  setPlatform: (platform: string) => void;
   contentType: string;
   setContentType: (contentType: string) => void;
   industry: string;
@@ -49,8 +47,6 @@ interface ContentFormProps {
 const ContentForm: React.FC<ContentFormProps> = ({
   content,
   setContent,
-  platform,
-  setPlatform,
   contentType,
   setContentType,
   industry,
@@ -172,30 +168,6 @@ const ContentForm: React.FC<ContentFormProps> = ({
                   {ind.label}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Platforma *
-          </label>
-          <Select value={platform} onValueChange={setPlatform}>
-            <SelectTrigger>
-              <SelectValue placeholder="Odaberite platformu" />
-            </SelectTrigger>
-            <SelectContent>
-              {platforms.map((plat) => {
-                const Icon = plat.icon;
-                return (
-                  <SelectItem key={plat.value} value={plat.value}>
-                    <div className="flex items-center">
-                      <Icon className={`h-4 w-4 mr-2 ${plat.color}`} />
-                      {plat.label}
-                    </div>
-                  </SelectItem>
-                );
-              })}
             </SelectContent>
           </Select>
         </div>
