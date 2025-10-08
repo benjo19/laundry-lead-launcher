@@ -18,6 +18,8 @@ interface MakeSettings {
   scenario_name?: string;
   auto_trigger: boolean;
   trigger_events: string[];
+  content_booster_webhook_url?: string;
+  content_booster_auto_trigger?: boolean;
 }
 
 const MakeIntegration = () => {
@@ -35,7 +37,9 @@ const MakeIntegration = () => {
     team_id: '',
     scenario_name: '',
     auto_trigger: false,
-    trigger_events: ['email_sent', 'lead_added', 'reminder_created']
+    trigger_events: ['email_sent', 'lead_added', 'reminder_created'],
+    content_booster_webhook_url: '',
+    content_booster_auto_trigger: false
   });
 
   useEffect(() => {
@@ -220,6 +224,13 @@ const MakeIntegration = () => {
         </div>
 
         <div className="space-y-4">
+          <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4">
+            <h4 className="font-medium text-amber-900 mb-2">📋 Općenita integracija (Leadovi)</h4>
+            <p className="text-sm text-amber-800">
+              Ovaj webhook se koristi za slanje podataka o leadovima u Google Sheets ili drugu destinaciju.
+            </p>
+          </div>
+
           <div>
             <Label htmlFor="webhook_url">{t('webhook_url')} *</Label>
             <Input
@@ -262,7 +273,40 @@ const MakeIntegration = () => {
               onChange={(e) => setSettings({ ...settings, auto_trigger: e.target.checked })}
               className="rounded"
             />
-            <Label htmlFor="auto_trigger">Automatski pokreni webhook za eventi</Label>
+            <Label htmlFor="auto_trigger">Automatski pokreni webhook za leadove</Label>
+          </div>
+
+          {/* Content Booster Integration Section */}
+          <div className="border-t pt-6 mt-6">
+            <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg mb-4">
+              <h4 className="font-medium text-purple-900 mb-2">🚀 Content Booster integracija</h4>
+              <p className="text-sm text-purple-800">
+                Odvojeni webhook za objave iz Content Booster modula. Šalje podatke o platformi, sadržaju, slici i drugim detaljima.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="content_booster_webhook_url">Content Booster Webhook URL</Label>
+              <Input
+                id="content_booster_webhook_url"
+                type="url"
+                value={settings.content_booster_webhook_url || ''}
+                onChange={(e) => setSettings({ ...settings, content_booster_webhook_url: e.target.value })}
+                placeholder="https://hook.eu1.make.com/xxxxxxxx"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 mt-4">
+              <input
+                type="checkbox"
+                id="content_booster_auto_trigger"
+                checked={settings.content_booster_auto_trigger || false}
+                onChange={(e) => setSettings({ ...settings, content_booster_auto_trigger: e.target.checked })}
+                className="rounded"
+              />
+              <Label htmlFor="content_booster_auto_trigger">Automatski šalji objave na Make.com</Label>
+            </div>
           </div>
 
           <div className="flex items-center space-x-2">
@@ -310,13 +354,27 @@ const MakeIntegration = () => {
 
         <div className="border-t pt-4">
           <h4 className="font-medium mb-2">Dostupni eventi za webhook:</h4>
-          <ul className="text-sm text-slate-600 space-y-1">
-            <li>• <code>email_sent</code> - Kada se pošalje email</li>
-            <li>• <code>lead_added</code> - Kada se doda novi lead</li>
-            <li>• <code>reminder_created</code> - Kada se kreira novi podsjetnik</li>
-            <li>• <code>reminder_completed</code> - Kada se završi podsjetnik</li>
-            <li>• <code>test_connection</code> - Test konekcije</li>
-          </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <h5 className="text-sm font-medium text-slate-700 mb-2">Općeniti eventi:</h5>
+              <ul className="text-sm text-slate-600 space-y-1">
+                <li>• <code>email_sent</code> - Kada se pošalje email</li>
+                <li>• <code>lead_added</code> - Kada se doda novi lead</li>
+                <li>• <code>reminder_created</code> - Kada se kreira novi podsjetnik</li>
+                <li>• <code>reminder_completed</code> - Kada se završi podsjetnik</li>
+                <li>• <code>test_connection</code> - Test konekcije</li>
+              </ul>
+            </div>
+            <div>
+              <h5 className="text-sm font-medium text-purple-700 mb-2">Content Booster eventi:</h5>
+              <ul className="text-sm text-purple-600 space-y-1">
+                <li>• <code>content_published</code> - Kada se objavi sadržaj</li>
+              </ul>
+              <p className="text-xs text-purple-500 mt-2">
+                Šalje: platform, content, contentType, date, companyName, industry, imageUrl
+              </p>
+            </div>
+          </div>
         </div>
       </CardContent>
     </Card>

@@ -14,6 +14,8 @@ interface MakeWebhookData {
 interface MakeSettings {
   webhook_url?: string;
   auto_trigger?: boolean;
+  content_booster_webhook_url?: string;
+  content_booster_auto_trigger?: boolean;
 }
 
 export const useMakeIntegration = () => {
@@ -54,31 +56,55 @@ export const useMakeIntegration = () => {
       const settings = await getMakeSettings();
       console.log('Make.com settings:', settings);
       
-      if (!settings?.webhook_url) {
-        console.log('Make.com: Webhook URL not configured');
+      // Determine which webhook to use based on event type
+      const isContentEvent = eventType === 'content_published';
+      const webhookUrl = isContentEvent 
+        ? settings?.content_booster_webhook_url 
+        : settings?.webhook_url;
+      const autoTrigger = isContentEvent
+        ? settings?.content_booster_auto_trigger
+        : settings?.auto_trigger;
+      
+      if (!webhookUrl) {
+        console.log(`Make.com: Webhook URL not configured for ${eventType}`);
         return false;
       }
       
-      if (!settings?.auto_trigger) {
-        console.log('Make.com: Auto trigger disabled');
+      if (!autoTrigger) {
+        console.log(`Make.com: Auto trigger disabled for ${eventType}`);
         return false;
       }
 
-      // Send only essential lead data for Google Sheets
-      const webhookData = {
-        company: data.company || '',
-        email: data.email || '',
-        phone: data.phone || '',
-        website: data.website || '',
-        location: data.location || '',
-        country: data.country || '',
-        status: data.status || '',
-        potential: data.potential || '',
-        industry: data.industry || '',
-        dateAdded: data.dateAdded || ''
-      };
+      // Format data based on event type
+      let webhookData;
+      if (isContentEvent) {
+        // Content Booster data
+        webhookData = {
+          platform: data.platform || '',
+          content: data.content || '',
+          contentType: data.contentType || '',
+          date: data.date || '',
+          companyName: data.companyName || '',
+          industry: data.industry || '',
+          imageUrl: data.imageUrl || ''
+        };
+      } else {
+        // Lead data for Google Sheets
+        webhookData = {
+          company: data.company || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          website: data.website || '',
+          location: data.location || '',
+          country: data.country || '',
+          status: data.status || '',
+          potential: data.potential || '',
+          industry: data.industry || '',
+          dateAdded: data.dateAdded || ''
+        };
+      }
 
-      const response = await fetch(settings.webhook_url, {
+      const response = await fetch(webhookUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
