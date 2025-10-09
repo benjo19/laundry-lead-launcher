@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -7,18 +6,12 @@ const corsHeaders = {
 };
 
 interface EmailGenerationRequest {
+  recipientName: string;
   recipientCompany: string;
-  recipientEmail: string;
-  emailType: 'intro' | 'follow-up' | 'proposal' | 'reminder';
+  recipientIndustry?: string;
+  emailType: 'cold' | 'follow-up' | 'proposal' | 'introduction';
   additionalContext?: string;
-  industry?: string;
   businessContext?: string;
-  companyInfo?: {
-    location?: string;
-    website?: string;
-    rating?: number;
-    businessType?: string;
-  };
 }
 
 interface GeneratedEmailContent {
@@ -32,78 +25,18 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
-
-    // Get user from authorization header
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader) {
-      throw new Error('Missing authorization header');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('AI service not configured');
     }
-
-    const token = authHeader.replace('Bearer ', '');
-    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
-    
-    if (authError || !user) {
-      throw new Error('Invalid authorization token');
-    }
-
-    console.log('Generating email for user:', user.id);
-
-    // Get user's AI settings
-    const { data: userSettings, error: settingsError } = await supabase
-      .from('user_settings')
-      .select('ai_settings')
-      .eq('user_id', user.id)
-      .single();
-
-    if (settingsError || !userSettings?.ai_settings) {
-      throw new Error('AI settings not configured. Please set up your AI API key in Settings.');
-    }
-
-    const aiSettings = userSettings.ai_settings as any;
-    const customSystemPrompt = aiSettings.custom_system_prompt;
-    
-    // Get provider (default to gemini since it's free)
-    let aiProvider = aiSettings.provider || 'gemini';
-    
-    // Get the correct API key based on provider
-    let apiKey: string;
-    if (aiProvider === 'gemini') {
-      apiKey = aiSettings.gemini_api_key || aiSettings.api_key;
-    } else if (aiProvider === 'openai') {
-      apiKey = aiSettings.openai_api_key || aiSettings.api_key;
-    } else {
-      apiKey = aiSettings.api_key;
-    }
-
-    // Auto-detect provider if still unclear
-    if (!apiKey || (!apiKey.startsWith('AIzaSy') && !apiKey.startsWith('sk-'))) {
-      // Try to find any valid key
-      if (aiSettings.gemini_api_key?.startsWith('AIzaSy')) {
-        apiKey = aiSettings.gemini_api_key;
-        aiProvider = 'gemini';
-      } else if (aiSettings.openai_api_key?.startsWith('sk-')) {
-        apiKey = aiSettings.openai_api_key;
-        aiProvider = 'openai';
-      }
-    }
-
-    if (!apiKey) {
-      throw new Error('AI API key not found in settings. Please configure it in Settings.');
-    }
-
-    console.log(`Using AI provider: ${aiProvider}, API key starts with: ${apiKey.substring(0, 10)}`);
 
     // Parse request
     const params: EmailGenerationRequest = await req.json();
 
-    console.log(`About to generate with provider: ${aiProvider}, API key starts with: ${apiKey.substring(0, 10)}...`);
+    console.log('Generating email with Lovable AI');
 
-    // Generate email using AI
-    const generatedEmail = await generatePersonalizedEmail(params, apiKey, aiProvider, customSystemPrompt);
+    // Generate email using Lovable AI
+    const generatedEmail = await generatePersonalizedEmail(params, LOVABLE_API_KEY);
 
     return new Response(
       JSON.stringify(generatedEmail),
@@ -117,7 +50,7 @@ serve(async (req) => {
     console.error('Error in generate-email function:', error);
     return new Response(
       JSON.stringify({ 
-        error: error.message || 'Failed to generate email' 
+        error: error instanceof Error ? error.message : 'Failed to generate email'
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -129,210 +62,158 @@ serve(async (req) => {
 
 async function generatePersonalizedEmail(
   params: EmailGenerationRequest, 
-  apiKey: string, 
-  provider: string,
-  customSystemPrompt?: string
+  apiKey: string
 ): Promise<GeneratedEmailContent> {
-  const systemPrompt = buildSystemPrompt(params.businessContext, customSystemPrompt);
+  const systemPrompt = buildSystemPrompt(params.businessContext);
   const userPrompt = buildUserPrompt(params);
 
   try {
-    if (provider === 'gemini') {
-      return await generateWithGemini(systemPrompt, userPrompt, apiKey);
-    } else {
-      return await generateWithOpenAI(systemPrompt, userPrompt, apiKey);
-    }
+    return await generateWithLovableAI(systemPrompt, userPrompt, apiKey);
   } catch (error) {
     console.error('AI Email generation error:', error);
     throw error;
   }
 }
 
-async function generateWithOpenAI(systemPrompt: string, userPrompt: string, apiKey: string): Promise<GeneratedEmailContent> {
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+async function generateWithLovableAI(
+  systemPrompt: string, 
+  userPrompt: string, 
+  apiKey: string
+): Promise<GeneratedEmailContent> {
+  const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${apiKey}`,
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini',
+      model: 'google/gemini-2.5-flash',
       messages: [
-        {
-          role: 'system',
-          content: systemPrompt
-        },
-        {
-          role: 'user',
-          content: userPrompt
-        }
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt }
       ],
       temperature: 0.7,
-      max_tokens: 1000,
     }),
   });
 
   if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'Failed to generate email with OpenAI');
+    const errorData = await response.text();
+    console.error('Lovable AI error:', response.status, errorData);
+    
+    if (response.status === 429) {
+      throw new Error('Rate limit exceeded. Please try again later.');
+    }
+    
+    if (response.status === 402) {
+      throw new Error('AI service requires payment. Please contact support.');
+    }
+    
+    throw new Error('Failed to generate email with AI');
   }
 
   const data = await response.json();
-  const generatedText = data.choices[0]?.message?.content;
+  const generatedText = data.choices?.[0]?.message?.content;
 
   if (!generatedText) {
-    throw new Error('No content generated from OpenAI');
+    throw new Error('No content generated from AI');
   }
 
   return parseGeneratedEmail(generatedText);
 }
 
-async function generateWithGemini(systemPrompt: string, userPrompt: string, apiKey: string): Promise<GeneratedEmailContent> {
-  const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      contents: [
-        {
-          parts: [
-            {
-              text: `${systemPrompt}\n\n${userPrompt}`
-            }
-          ]
-        }
-      ],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 1,
-        topP: 1,
-        maxOutputTokens: 1000,
-      },
-      safetySettings: [
-        {
-          category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_MEDIUM_AND_ABOVE"
-        },
-        {
-          category: "HARM_CATEGORY_HATE_SPEECH",
-          threshold: "BLOCK_MEDIUM_AND_ABOVE"
-        },
-        {
-          category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-          threshold: "BLOCK_MEDIUM_AND_ABOVE"
-        },
-        {
-          category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-          threshold: "BLOCK_MEDIUM_AND_ABOVE"
-        }
-      ]
-    }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json();
-    throw new Error(errorData.error?.message || 'Failed to generate email with Gemini');
-  }
-
-  const data = await response.json();
-  const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-  if (!generatedText) {
-    throw new Error('No content generated from Gemini');
-  }
-
-  return parseGeneratedEmail(generatedText);
-}
-
-function buildSystemPrompt(businessContext?: string, customSystemPrompt?: string): string {
-  let systemPrompt = `Ti si ekspert za B2B marketing i prodaju. Tvoj zadatak je kreiranje personaliziranih, profesionalnih emailova na hrvatskom jeziku.
+function buildSystemPrompt(businessContext?: string): string {
+  let prompt = `Ti si stručnjak za B2B marketing i prodaju. Tvoj zadatak je kreiranje profesionalnih, personaliziranih emailova na hrvatskom jeziku.
 
 VAŽNE SMJERNICE:
 - Uvijek piši na hrvatskom jeziku
-- Budi profesionalan ali pristupačan
-- Fokusiraj se na koristi za klijenta, ne na funkcionalnosti
-- Koristi konkretne brojke i primjere kad god možeš
-- Prilagodi ton prema vrsti emaila
-- Email treba biti kratak i direktan (maksimalno 200 riječi)
-- Uvijek završi jasnim pozivom na akciju
+- Email treba biti profesionalan ali prijateljski ton
+- Fokusiraj se na korist za primatelja
+- Izbjegavaj klišeje i generičke fraze
+- Poruka treba biti jasna i koncizna (max 200 riječi)
+- Završi s jasnim pozivom na akciju`;
 
-STRUKTURA ODGOVORA:
-Odgovori u sljedećem formatu:
+  if (businessContext) {
+    prompt += `\n\nKONTEKST POŠILJATELJA:\n${businessContext}`;
+  }
+
+  prompt += `\n\nODGOVOR FORMATIRAJ U TOČNO 2 DIJELA:
 SUBJECT: [naslov emaila]
 CONTENT: [sadržaj emaila]`;
 
-  if (customSystemPrompt) {
-    systemPrompt += `\n\nDODATNE INSTRUKCIJE ZA PONAŠANJE:\n${customSystemPrompt}`;
-  }
-
-  if (businessContext) {
-    systemPrompt += `\n\nINFORMACIJE O POŠILJATELJU:\n${businessContext}`;
-  }
-
-  return systemPrompt;
+  return prompt;
 }
 
 function buildUserPrompt(params: EmailGenerationRequest): string {
-  const { recipientCompany, recipientEmail, emailType, additionalContext, industry, companyInfo } = params;
+  let prompt = `Generiraj ${getEmailTypeDescription(params.emailType)}.
 
-  let prompt = `Generiraj ${getEmailTypeDescription(emailType)} email za:
+INFORMACIJE O PRIMATELJU:`;
 
-TVRTKA: ${recipientCompany}
-EMAIL: ${recipientEmail}`;
+  if (params.recipientName) {
+    prompt += `\nIme: ${params.recipientName}`;
+  }
+  
+  prompt += `\nTvrtka: ${params.recipientCompany}`;
 
-  if (industry) {
-    prompt += `\nINDUSTRIJA: ${industry}`;
+  if (params.recipientIndustry) {
+    prompt += `\nIndustrija: ${params.recipientIndustry}`;
   }
 
-  if (companyInfo) {
-    if (companyInfo.location) prompt += `\nLOKACIJA: ${companyInfo.location}`;
-    if (companyInfo.website) prompt += `\nWEBSITE: ${companyInfo.website}`;
-    if (companyInfo.rating) prompt += `\nREJTING: ${companyInfo.rating}/5`;
-    if (companyInfo.businessType) prompt += `\nTIP POSLOVANJA: ${companyInfo.businessType}`;
+  if (params.additionalContext) {
+    prompt += `\n\nDODATNI KONTEKST:\n${params.additionalContext}`;
   }
-
-  if (additionalContext) {
-    prompt += `\nDODATNE INFORMACIJE: ${additionalContext}`;
-  }
-
-  prompt += `\n\nPersonaliziraj email specifično za ${recipientCompany} koristeći dostupne informacije o pošiljatelju i primatelju.`;
 
   return prompt;
 }
 
 function getEmailTypeDescription(type: string): string {
   const descriptions = {
-    'intro': 'uvodnu prezentaciju',
-    'follow-up': 'follow-up',
-    'proposal': 'poslovni prijedlog',
-    'reminder': 'podsjetnik'
+    'cold': 'uvodni cold email',
+    'follow-up': 'follow-up email',
+    'proposal': 'email s prijedlogom suradnje',
+    'introduction': 'email za predstavljanje'
   };
-  return descriptions[type as keyof typeof descriptions] || 'personalizirani';
+  return descriptions[type as keyof typeof descriptions] || 'personalizirani email';
 }
 
 function parseGeneratedEmail(text: string): GeneratedEmailContent {
   const lines = text.split('\n');
   let subject = '';
   let content = '';
-  let isContent = false;
+  let inContent = false;
 
   for (const line of lines) {
-    if (line.startsWith('SUBJECT:')) {
-      subject = line.replace('SUBJECT:', '').trim();
-    } else if (line.startsWith('CONTENT:')) {
-      isContent = true;
-      content = line.replace('CONTENT:', '').trim();
-    } else if (isContent && line.trim()) {
-      content += '\n' + line;
+    const trimmedLine = line.trim();
+    
+    if (trimmedLine.startsWith('SUBJECT:')) {
+      subject = trimmedLine.replace('SUBJECT:', '').trim();
+    } else if (trimmedLine.startsWith('CONTENT:')) {
+      inContent = true;
+      const contentStart = trimmedLine.replace('CONTENT:', '').trim();
+      if (contentStart) {
+        content = contentStart;
+      }
+    } else if (inContent && trimmedLine) {
+      content += (content ? '\n' : '') + trimmedLine;
     }
   }
 
-  // Fallback ako parsing ne radi kako treba
+  if (!subject || !content) {
+    const subjectMatch = text.match(/(?:subject|naslov|predmet):\s*(.+?)(?:\n|$)/i);
+    const contentMatch = text.match(/(?:content|sadržaj|poruka):\s*([\s\S]+)/i);
+    
+    if (subjectMatch) subject = subjectMatch[1].trim();
+    if (contentMatch) content = contentMatch[1].trim();
+  }
+
   if (!subject || !content) {
     const parts = text.split('\n\n');
-    subject = parts[0]?.replace('SUBJECT:', '').trim() || 'Personalizirani prijedlog - Marketing Agent';
-    content = parts.slice(1).join('\n\n').replace('CONTENT:', '').trim() || text;
+    if (parts.length >= 2) {
+      subject = parts[0].replace(/^(SUBJECT|Naslov|Predmet):\s*/i, '').trim();
+      content = parts.slice(1).join('\n\n').replace(/^(CONTENT|Sadržaj|Poruka):\s*/i, '').trim();
+    } else {
+      subject = 'Upit za suradnju';
+      content = text;
+    }
   }
 
   return { subject, content };

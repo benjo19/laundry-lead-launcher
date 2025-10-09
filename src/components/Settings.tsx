@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft, Settings as SettingsIcon, User, Mail, Bot, Zap, Calendar, Webhook } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import BusinessProfileSettings from './BusinessProfileSettings';
-import AISettings from './AISettings';
 import EmailSettings from './EmailSettings';
 import MakeIntegration from './MakeIntegration';
 import ZapierIntegration from './ZapierIntegration';
@@ -46,14 +45,10 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-7 gap-1 p-1 mb-6 h-auto">
+              <TabsList className="grid w-full grid-cols-6 gap-1 p-1 mb-6 h-auto">
                 <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <User className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Profil</span>
-                </TabsTrigger>
-                <TabsTrigger value="ai" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
-                  <Bot className="h-4 w-4 mb-1" />
-                  <span className="truncate w-full text-center">AI</span>
                 </TabsTrigger>
                 <TabsTrigger value="email" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <Mail className="h-4 w-4 mb-1" />
@@ -79,10 +74,6 @@ const Settings = () => {
 
               <TabsContent value="business">
                 <BusinessProfileSettings />
-              </TabsContent>
-
-              <TabsContent value="ai">
-                <AISettings />
               </TabsContent>
 
               <TabsContent value="email">

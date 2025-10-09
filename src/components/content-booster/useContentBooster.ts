@@ -101,7 +101,7 @@ export const useContentBooster = () => {
         ? (aiSettings!.openai_api_key || aiSettings!.api_key || '')
         : (aiSettings!.gemini_api_key || aiSettings!.api_key || '');
 
-      const aiService = new AIContentService(selectedKey, providerForThis as AIProvider);
+      const aiService = new AIContentService();
       
       // Get business context for better content generation (now async)
       const businessContext = await getContextForAI();

@@ -1,5 +1,5 @@
 
-import { AIProvider } from './aiEmailService';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ContentGenerationParams {
   platform: string;
@@ -18,12 +18,8 @@ interface GeneratedContent {
 }
 
 export class AIContentService {
-  private apiKey: string;
-  private provider: AIProvider;
-
-  constructor(apiKey: string, provider: AIProvider = 'openai') {
-    this.apiKey = apiKey;
-    this.provider = provider;
+  constructor() {
+    // No API key needed - using Lovable AI Gateway
   }
 
   async generateContent(params: ContentGenerationParams): Promise<GeneratedContent> {
@@ -31,13 +27,18 @@ export class AIContentService {
     const userPrompt = this.buildUserPrompt(params);
 
     try {
-      let result: GeneratedContent;
-      
-      if (this.provider === 'gemini') {
-        result = await this.generateWithGemini(systemPrompt, userPrompt);
-      } else {
-        result = await this.generateWithOpenAI(systemPrompt, userPrompt);
-      }
+      // Use Lovable AI Gateway through edge function
+      const { data, error } = await supabase.functions.invoke('ai-chat', {
+        body: { 
+          message: `${systemPrompt}\n\n${userPrompt}`,
+          language: 'hr'
+        }
+      });
+
+      if (error) throw error;
+
+      const generatedText = data.response || '';
+      let result = this.parseGeneratedContent(generatedText);
 
       // Generate image if requested
       if (params.format === 'text-with-image' && result.imagePrompt) {
@@ -57,124 +58,15 @@ export class AIContentService {
   }
 
   private async generateImage(prompt: string): Promise<string> {
-    // Use Lovable AI Gateway with Gemini image model
-    const LOVABLE_API_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
-    
-    const response = await fetch('https://uwtzhkdgprmrmknjrfeb.supabase.co/functions/v1/generate-image', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        prompt: prompt,
-      }),
+    const { data, error } = await supabase.functions.invoke('generate-image', {
+      body: { prompt }
     });
 
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || 'Failed to generate image');
+    if (error) {
+      throw new Error(error.message || 'Failed to generate image');
     }
 
-    const data = await response.json();
-    return data.imageUrl || '';
-  }
-
-  private async generateWithOpenAI(systemPrompt: string, userPrompt: string): Promise<GeneratedContent> {
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: systemPrompt
-          },
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 500,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to generate content with OpenAI');
-    }
-
-    const data = await response.json();
-    const generatedText = data.choices[0]?.message?.content;
-
-    if (!generatedText) {
-      throw new Error('No content generated from OpenAI');
-    }
-
-    return this.parseGeneratedContent(generatedText);
-  }
-
-  private async generateWithGemini(systemPrompt: string, userPrompt: string): Promise<GeneratedContent> {
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${this.apiKey}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [
-          {
-            parts: [
-              {
-                text: `${systemPrompt}\n\n${userPrompt}`
-              }
-            ]
-          }
-        ],
-        generationConfig: {
-          temperature: 0.7,
-          topK: 1,
-          topP: 1,
-          maxOutputTokens: 500,
-        },
-        safetySettings: [
-          {
-            category: "HARM_CATEGORY_HARASSMENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_HATE_SPEECH",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          },
-          {
-            category: "HARM_CATEGORY_DANGEROUS_CONTENT",
-            threshold: "BLOCK_MEDIUM_AND_ABOVE"
-          }
-        ]
-      }),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error?.message || 'Failed to generate content with Gemini');
-    }
-
-    const data = await response.json();
-    const generatedText = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-    if (!generatedText) {
-      throw new Error('No content generated from Gemini');
-    }
-
-    return this.parseGeneratedContent(generatedText);
+    return data?.imageUrl || '';
   }
 
   private parseGeneratedContent(text: string): GeneratedContent {
@@ -241,7 +133,6 @@ INDUSTRIJA: ${industry}`;
 
     if (format === 'text-with-image') {
       prompt += `\nFORMAT: Generiraj tekst s prijedlogom za sliku.`;
-      // Specifične upute za IMAGE_PROMPT kako bi slika pratila industriju/temu/kontekst
       prompt += `\nZA [IMAGE_PROMPT]: koristite engleski jezik, opišite ključne vizualne elemente (subjekt, okruženje, stil, svjetlo).`;
       prompt += `\nObavezno ugradite industriju: ${industry}.`;
       if (companyName) {
@@ -253,13 +144,11 @@ INDUSTRIJA: ${industry}`;
       if (additionalContext) {
         prompt += `\nDodatni vizualni kontekst/ključne riječi: ${additionalContext}.`;
       }
-      // Stil slike prema platformi
       prompt += `\nUskladite vizualni stil s platformom (${platform}).`;
       prompt += `\n- LinkedIn: clean, corporate, minimalistic, neutral colors, professional lighting.`;
       prompt += `\n- Facebook: friendly lifestyle, relatable people, warm tones, approachable.`;
       prompt += `\n- Instagram: vibrant, aesthetic, shallow depth of field, trending look.`;
       prompt += `\n- TikTok: dynamic, fun, bold colors, energetic composition.`;
-      // Aspect ratio / orientation per platform
       prompt += `\nKadriranje i omjer stranica (aspect ratio) prilagodite platformi.`;
       prompt += `\n- LinkedIn: 1.91:1 (npr. 1200x627), landscape composition.`;
       prompt += `\n- Facebook: 4:5 (npr. 1080x1350), portrait composition.`;
