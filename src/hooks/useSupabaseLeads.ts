@@ -181,7 +181,7 @@ export const useSupabaseLeads = () => {
         status: newLeadData.status || 'Nova',
         potential: newLeadData.potential || 'Srednji',
         industry: newLeadData.industry || '',
-        notes: newLeadData.notes || '',
+        biljeske: newLeadData.notes || '',
         dateAdded: new Date().toISOString().split('T')[0],
         action: 'ADDED'
       });
@@ -241,7 +241,7 @@ export const useSupabaseLeads = () => {
         status: newStatus,
         potential: leadToUpdate.potential,
         industry: leadToUpdate.industry,
-        notes: leadToUpdate.notes,
+        biljeske: leadToUpdate.notes,
         dateAdded: leadToUpdate.dateAdded,
         action: 'STATUS_UPDATED',
         oldStatus: leadToUpdate.status,
@@ -299,7 +299,7 @@ export const useSupabaseLeads = () => {
         status: leadToDelete.status,
         potential: leadToDelete.potential,
         industry: leadToDelete.industry,
-        notes: leadToDelete.notes,
+        biljeske: leadToDelete.notes,
         dateAdded: leadToDelete.dateAdded,
         action: 'DELETED'
       });
