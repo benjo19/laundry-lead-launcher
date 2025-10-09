@@ -113,6 +113,7 @@ export const useMakeIntegration = () => {
           status: data.status || '',
           potential: data.potential || '',
           industry: data.industry || '',
+          biljeske: data.biljeske || '',
           dateAdded: data.dateAdded || ''
         };
       }
