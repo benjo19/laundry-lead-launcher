@@ -9,10 +9,7 @@ import { useLeadDiscovery } from '@/hooks/useLeadDiscovery';
 import { useLeadAddition } from '@/hooks/useLeadAddition';
 import { useLeadDiscoverySearch } from './lead-discovery/LeadDiscoverySearch';
 import { useAuth } from '@/hooks/useAuth';
-import { useGoogleWebLeadSearch } from './lead-discovery/GoogleWebLeadSearch';
 import WebSearchTab from './lead-discovery/WebSearchTab';
-
-type SearchSource = 'maps' | 'web';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => Promise<boolean>;
@@ -45,8 +42,6 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     isAIConfigured
   } = useLeadDiscovery();
 
-  const [source, setSource] = React.useState<SearchSource>('maps');
-
   const { addDiscoveredLead } = useLeadAddition({ onAddLead, setDiscoveredLeads, industry });
 
   const { searchLeads } = useLeadDiscoverySearch({
@@ -62,23 +57,6 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     setDiscoveredLeads,
     toast
   });
-
-  const { searchWebLeads } = useGoogleWebLeadSearch({
-    searchQuery,
-    location,
-    country,
-    industry,
-    setIsSearching,
-    setDiscoveredLeads,
-    toast
-  });
-
-  const handleSearch = () => {
-    if (source === 'maps') {
-      return searchLeads();
-    }
-    return searchWebLeads();
-  };
 
   return (
     <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
@@ -102,11 +80,9 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
         isSearching={isSearching}
         isAnalyzing={isAnalyzing}
         discoveredLeads={discoveredLeads}
-        onSearchLeads={handleSearch}
+        onSearchLeads={searchLeads}
         onAnalyzeWithAI={analyzeWithAI}
-        showApiKeyInput={source === 'maps' && !savedGoogleMapsApiKey}
-        source={source}
-        setSource={setSource}
+        showApiKeyInput={!savedGoogleMapsApiKey}
       />
 
       <LeadList 
