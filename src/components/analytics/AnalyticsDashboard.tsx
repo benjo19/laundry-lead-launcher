@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
@@ -8,22 +8,72 @@ import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useSupabaseLeads } from '@/hooks/useSupabaseLeads';
 import { useSupabaseReminders } from '@/hooks/useSupabaseReminders';
 import { useZapierIntegration } from '@/hooks/useZapierIntegration';
+import { supabase } from '@/integrations/supabase/client';
 import { Lead, Email, Reminder, ContentPost } from '@/types';
 
 const AnalyticsDashboard = () => {
   // Prioritize Supabase data, fallback to localStorage
-  const { leads: supabaseLeads, loading: leadsLoading } = useSupabaseLeads();
-  const { reminders: supabaseReminders, loading: remindersLoading } = useSupabaseReminders();
+  const { leads: supabaseLeads, loading: leadsLoading, refreshLeads } = useSupabaseLeads();
+  const { reminders: supabaseReminders, loading: remindersLoading, refreshReminders } = useSupabaseReminders();
   const { isConfigured: zapierConfigured } = useZapierIntegration();
   
   const [localLeads] = useLocalStorage<Lead[]>('leads', []);
   const [emails] = useLocalStorage<Email[]>('emails', []);
   const [localReminders] = useLocalStorage<Reminder[]>('reminders', []);
   const [posts] = useLocalStorage<ContentPost[]>('contentPosts', []);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   
   // Use Supabase data if available, otherwise fallback to localStorage
   const leads = supabaseLeads.length > 0 ? supabaseLeads : localLeads;
   const reminders = supabaseReminders.length > 0 ? supabaseReminders : localReminders;
+
+  // Real-time updates for leads
+  useEffect(() => {
+    const channel = supabase
+      .channel('analytics-leads-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'leads'
+        },
+        () => {
+          console.log('Lead data changed, refreshing...');
+          refreshLeads();
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshLeads]);
+
+  // Real-time updates for reminders
+  useEffect(() => {
+    const channel = supabase
+      .channel('analytics-reminders-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'reminders'
+        },
+        () => {
+          console.log('Reminder data changed, refreshing...');
+          refreshReminders();
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshReminders]);
 
   // Generate monthly performance data
   const generatePerformanceData = () => {
@@ -151,6 +201,12 @@ const AnalyticsDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Live Update Indicator */}
+      <div className="flex items-center justify-end gap-2 text-sm text-green-600">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <span>Live analitika • Zadnje ažuriranje: {lastUpdate.toLocaleTimeString('hr-HR')}</span>
+      </div>
+
       {/* KPI Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
