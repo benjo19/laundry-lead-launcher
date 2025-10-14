@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Sparkles, Share2, Calendar, Bot, Image, Settings, CheckCircle, AlertTriangle } from 'lucide-react';
 import { AIProvider } from '@/services/aiEmailService';
-import { contentTypes, industries, contentFormats } from './constants';
+import { contentTypes, industries, contentFormats, platforms } from './constants';
 import { useNavigate } from 'react-router-dom';
 
 interface ContentFormProps {
@@ -37,6 +37,8 @@ interface ContentFormProps {
   setContentFormat: (format: string) => void;
   generatedImageUrl: string;
   canGenerateImages: boolean;
+  platform: 'LinkedIn' | 'Facebook' | 'Instagram' | 'TikTok';
+  setPlatform: (platform: 'LinkedIn' | 'Facebook' | 'Instagram' | 'TikTok') => void;
   onGenerateContent: () => void;
   onPublishNow: () => void;
   onSchedulePost: () => void;
@@ -72,6 +74,8 @@ const ContentForm: React.FC<ContentFormProps> = ({
   onSchedulePost,
   isAIConfigured,
   businessProfile,
+  platform,
+  setPlatform,
 }) => {
   const navigate = useNavigate();
 
@@ -168,6 +172,30 @@ const ContentForm: React.FC<ContentFormProps> = ({
                   {ind.label}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">
+            Platforma za objavu *
+          </label>
+          <Select value={platform} onValueChange={(value) => setPlatform(value as any)}>
+            <SelectTrigger>
+              <SelectValue placeholder="Odaberite platformu" />
+            </SelectTrigger>
+            <SelectContent>
+              {platforms.map((p) => {
+                const Icon = p.icon;
+                return (
+                  <SelectItem key={p.value} value={p.value}>
+                    <div className="flex items-center gap-2">
+                      <Icon className={`h-4 w-4 ${p.color}`} />
+                      {p.label}
+                    </div>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>

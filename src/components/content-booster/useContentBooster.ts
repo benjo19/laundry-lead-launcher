@@ -22,6 +22,7 @@ export const useContentBooster = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [contentFormat, setContentFormat] = useState('text');
   const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+  const [platform, setPlatform] = useState<'LinkedIn' | 'Facebook' | 'Instagram' | 'TikTok'>('LinkedIn');
 
   // Use AI settings and business profile hooks
   const { aiSettings, isAIConfigured } = useAISettings();
@@ -191,7 +192,7 @@ export const useContentBooster = () => {
       // Add to local posts list
       const newPost: ContentPost = {
         id: Date.now(),
-        platform: 'LinkedIn',
+        platform: platform,
         content,
         contentType: contentType as ContentPost['contentType'] || 'promotional',
         date: new Date().toISOString().split('T')[0],
@@ -256,7 +257,7 @@ export const useContentBooster = () => {
 
     const newPost: ContentPost = {
       id: Date.now(),
-      platform: 'LinkedIn',
+      platform: platform,
       content,
       contentType: contentType as ContentPost['contentType'] || 'promotional',
       date: scheduledDate,
@@ -308,6 +309,8 @@ export const useContentBooster = () => {
     contentFormat,
     setContentFormat,
     generatedImageUrl,
+    platform,
+    setPlatform,
     posts,
     generateContent,
     publishNow,
