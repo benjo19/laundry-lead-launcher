@@ -29,6 +29,7 @@ export const industries = [
   { value: 'nekretnine', label: 'Nekretnine' },
   { value: 'fitness', label: 'Fitness i wellness' },
   { value: 'praone', label: 'Profesionalne praone rublja' },
+  { value: 'privatni', label: 'Privatni korisnici' },
   { value: 'općenito', label: 'Općenito poslovanje' },
 ];
 

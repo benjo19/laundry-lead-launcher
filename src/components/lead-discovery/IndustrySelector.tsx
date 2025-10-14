@@ -90,6 +90,9 @@ export const industries: Industry[] = [
   { value: 'automotive-manufacturing', label: 'Automobilska industrija', query: '"automotive manufacturing" "car production" "auto parts manufacturing"' },
   { value: 'machinery-manufacturing', label: 'Proizvodnja strojeva', query: '"machinery manufacturing" "industrial equipment" "manufacturing equipment"' },
 
+  // Privatni korisnici
+  { value: 'privatni', label: 'Privatni korisnici', query: '"private individual" "personal services" "residential services"' },
+
   // Ostale specifične usluge
   { value: 'cleaning-service', label: 'Usluge čišćenja', query: '"cleaning service" "housekeeping" "office cleaning" -laundry' },
   { value: 'photography', label: 'Foto studiji', query: '"photography studio" "wedding photographer" "portrait photography"' },
