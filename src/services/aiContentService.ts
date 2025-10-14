@@ -87,11 +87,44 @@ export class AIContentService {
 
 VAŽNE SMJERNICE:
 - Uvijek piši na hrvatskom jeziku
-- Prilagodi ton i stil prema platformi (LinkedIn profesionalno, Facebook opuštenо, Instagram vizualno, TikTok trendi i zabavno)
+- Sadržaj MORA biti prilagođen specifično za odabranu platformu
 - Koristi relevantne hashtag-ove i emoji-je
-- Sadržaj treba biti kratak i direktan (maksimalno 200 riječi za LinkedIn, 150 za Facebook, 100 za Instagram/TikTok)
 - Fokusiraj se na vrijednost za čitatelje
-- Koristi konkretne primjere i savjete kada god možeš`;
+- Koristi konkretne primjere i savjete kada god možeš
+
+PLATFORMSKI SPECIFIČNE SMJERNICE:
+
+LINKEDIN:
+- Profesionalan i formalan ton
+- Fokus na B2B vrijednost, industriju, stručno znanje
+- Duži sadržaj (150-200 riječi)
+- 3-5 relevantnih hashtag-ova na kraju
+- Manji broj emoji-a (povremeno, profesionalni)
+- Struktura: Uvod > Glavni sadržaj > Call-to-action ili pitanje za angažman
+
+FACEBOOK:
+- Prijateljski i topao ton
+- Fokus na priče, emotivnu povezanost, zajednicu
+- Srednja duljina (100-150 riječi)
+- 2-4 hashtag-ova
+- Umjerena upotreba emoji-a
+- Struktura: Privlačan uvod > Priča ili savjet > Poziv na akciju
+
+INSTAGRAM:
+- Kreativan i vizualan ton
+- Kratki, snažni stavovi
+- Kratki sadržaj (50-100 riječi)
+- 5-10 hashtag-ova na kraju
+- Slobodna upotreba emoji-a
+- Struktura: Hook u prvom redu > Sadržaj > Hashtag-ovi
+
+TIKTOK:
+- Zabavan, energičan, trendi ton
+- Razgovorni stil, kao da pričaš prijatelju
+- Vrlo kratak sadržaj (30-80 riječi)
+- 3-5 trendi hashtag-ova
+- Puno emoji-a i kreativnih znakova
+- Struktura: Hook > Brzi savjet/zanimljivost > CTA`;
 
     if (includeImage) {
       prompt += `
@@ -115,7 +148,8 @@ Generiraj SAMO sadržaj objave, bez dodatnih objašnjenja.`;
   private buildUserPrompt(params: ContentGenerationParams): string {
     const { platform, contentType, industry, companyName, topic, additionalContext, format } = params;
 
-    let prompt = `Generiraj ${this.getContentTypeDescription(contentType)} za ${platform} socijalnu mrežu.
+    let prompt = `PLATFORMA: ${platform}
+Generiraj ${this.getContentTypeDescription(contentType)} STRIKTNO PRILAGOĐEN za ${platform}.
 
 INDUSTRIJA: ${industry}`;
 
@@ -129,6 +163,40 @@ INDUSTRIJA: ${industry}`;
 
     if (additionalContext) {
       prompt += `\nDODATNE INFORMACIJE: ${additionalContext}`;
+    }
+
+    // Add platform-specific instructions
+    prompt += `\n\nIMPERATIV: Sadržaj MORA biti napisan za ${platform}:`;
+    
+    switch(platform.toLowerCase()) {
+      case 'linkedin':
+        prompt += `\n- Profesionalan i formalan jezik
+- Fokus na poslovne koristi i stručnost
+- 150-200 riječi
+- Završi sa 3-5 profesionalnih hashtag-ova
+- Minimalna upotreba emoji-a`;
+        break;
+      case 'facebook':
+        prompt += `\n- Prijateljski i topao ton
+- Ispričaj priču koja se povezuje s ljudima
+- 100-150 riječi
+- Dodaj 2-4 hashtag-a
+- Umjereno koristi emoji-je`;
+        break;
+      case 'instagram':
+        prompt += `\n- Kreativan i vizualan jezik
+- Prvi red mora biti jak i privlačan
+- 50-100 riječi
+- Završi sa 5-10 relevantnih hashtag-ova
+- Slobodno koristi emoji-je`;
+        break;
+      case 'tiktok':
+        prompt += `\n- Zabavan, energičan, razgovorni ton
+- Piši kao da pričaš prijatelju
+- 30-80 riječi
+- 3-5 trendi hashtag-a (#foryou, #viral, itd.)
+- Puno emoji-a i energije`;
+        break;
     }
 
     if (format === 'text-with-image') {
