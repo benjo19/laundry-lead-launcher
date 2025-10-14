@@ -23,7 +23,7 @@ export class AIContentService {
   }
 
   async generateContent(params: ContentGenerationParams): Promise<GeneratedContent> {
-    const systemPrompt = this.buildSystemPrompt(params.format === 'text-with-image');
+    const systemPrompt = this.buildSystemPrompt(params.format === 'text-with-image', params.platform);
     const userPrompt = this.buildUserPrompt(params);
 
     try {
@@ -82,49 +82,57 @@ export class AIContentService {
     return { content: text };
   }
 
-  private buildSystemPrompt(includeImage: boolean = false): string {
-    let prompt = `Ti si ekspert za marketing sadržaj i društvene mreže. Tvoj zadatak je kreiranje angažirajućeg sadržaja na hrvatskom jeziku za različite industrije i platforme.
+  private buildSystemPrompt(includeImage: boolean = false, platform?: string): string {
+    let prompt = `Ti si ekspert za marketing sadržaj i društvene mreže. Tvoj zadatak je kreiranje angažirajućeg sadržaja na hrvatskom jeziku.
 
-VAŽNE SMJERNICE:
+OSNOVNE SMJERNICE:
 - Uvijek piši na hrvatskom jeziku
-- Sadržaj MORA biti prilagođen specifično za odabranu platformu
-- Koristi relevantne hashtag-ove i emoji-je
 - Fokusiraj se na vrijednost za čitatelje
-- Koristi konkretne primjere i savjete kada god možeš
+- Koristi konkretne primjere i savjete kada god možeš`;
 
-PLATFORMSKI SPECIFIČNE SMJERNICE:
-
-LINKEDIN:
+    // Add platform-specific guidelines only for selected platform
+    if (platform) {
+      prompt += `\n\nPLATFORMA: ${platform}\n`;
+      
+      switch(platform.toLowerCase()) {
+        case 'linkedin':
+          prompt += `SMJERNICE ZA LINKEDIN:
 - Profesionalan i formalan ton
 - Fokus na B2B vrijednost, industriju, stručno znanje
 - Duži sadržaj (150-200 riječi)
 - 3-5 relevantnih hashtag-ova na kraju
 - Manji broj emoji-a (povremeno, profesionalni)
-- Struktura: Uvod > Glavni sadržaj > Call-to-action ili pitanje za angažman
-
-FACEBOOK:
+- Struktura: Uvod > Glavni sadržaj > Call-to-action ili pitanje za angažman`;
+          break;
+        case 'facebook':
+          prompt += `SMJERNICE ZA FACEBOOK:
 - Prijateljski i topao ton
 - Fokus na priče, emotivnu povezanost, zajednicu
 - Srednja duljina (100-150 riječi)
 - 2-4 hashtag-ova
 - Umjerena upotreba emoji-a
-- Struktura: Privlačan uvod > Priča ili savjet > Poziv na akciju
-
-INSTAGRAM:
+- Struktura: Privlačan uvod > Priča ili savjet > Poziv na akciju`;
+          break;
+        case 'instagram':
+          prompt += `SMJERNICE ZA INSTAGRAM:
 - Kreativan i vizualan ton
 - Kratki, snažni stavovi
 - Kratki sadržaj (50-100 riječi)
 - 5-10 hashtag-ova na kraju
 - Slobodna upotreba emoji-a
-- Struktura: Hook u prvom redu > Sadržaj > Hashtag-ovi
-
-TIKTOK:
+- Struktura: Hook u prvom redu > Sadržaj > Hashtag-ovi`;
+          break;
+        case 'tiktok':
+          prompt += `SMJERNICE ZA TIKTOK:
 - Zabavan, energičan, trendi ton
 - Razgovorni stil, kao da pričaš prijatelju
 - Vrlo kratak sadržaj (30-80 riječi)
 - 3-5 trendi hashtag-ova
 - Puno emoji-a i kreativnih znakova
 - Struktura: Hook > Brzi savjet/zanimljivost > CTA`;
+          break;
+      }
+    }
 
     if (includeImage) {
       prompt += `
