@@ -16,7 +16,7 @@ export interface ContentPost {
   id: number;
   platform: 'LinkedIn' | 'Facebook' | 'Instagram' | 'TikTok' | 'Twitter/X' | 'facebook' | 'instagram' | 'linkedin' | 'twitter';
   content: string;
-  contentType?: 'tip' | 'case-study' | 'news' | 'promotional' | 'educational' | 'behind-scenes';
+  contentType?: 'tip' | 'case-study' | 'news' | 'promotional' | 'educational' | 'behind-scenes' | 'dostavljaci';
   status: 'Draft' | 'Scheduled' | 'Published';
   date: string;
   createdAt?: string;

@@ -15,6 +15,7 @@ export const contentTypes = [
   { value: 'promotional', label: 'Promocijski sadržaj' },
   { value: 'educational', label: 'Edukacijski sadržaj' },
   { value: 'behind-scenes', label: 'Iza kulisa' },
+  { value: 'dostavljaci', label: 'Dostavljači' },
 ];
 
 export const industries = [
