@@ -14,6 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      business_profiles: {
+        Row: {
+          ai_goals: string[] | null
+          ai_tone: string | null
+          business_description: string | null
+          company_name: string | null
+          company_values: string | null
+          created_at: string
+          email_signature: string | null
+          id: string
+          industry: string | null
+          is_default: boolean | null
+          location: string | null
+          name: string
+          target_audience: string | null
+          updated_at: string
+          user_id: string
+          website: string | null
+        }
+        Insert: {
+          ai_goals?: string[] | null
+          ai_tone?: string | null
+          business_description?: string | null
+          company_name?: string | null
+          company_values?: string | null
+          created_at?: string
+          email_signature?: string | null
+          id?: string
+          industry?: string | null
+          is_default?: boolean | null
+          location?: string | null
+          name: string
+          target_audience?: string | null
+          updated_at?: string
+          user_id: string
+          website?: string | null
+        }
+        Update: {
+          ai_goals?: string[] | null
+          ai_tone?: string | null
+          business_description?: string | null
+          company_name?: string | null
+          company_values?: string | null
+          created_at?: string
+          email_signature?: string | null
+          id?: string
+          industry?: string | null
+          is_default?: boolean | null
+          location?: string | null
+          name?: string
+          target_audience?: string | null
+          updated_at?: string
+          user_id?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
       emails: {
         Row: {
           click_rate: string | null

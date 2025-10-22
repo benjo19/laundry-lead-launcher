@@ -4,6 +4,8 @@ import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 
 export interface BusinessProfile {
+  id?: string;
+  name: string;
   company_name: string;
   industry: string;
   business_description: string;
@@ -14,45 +16,49 @@ export interface BusinessProfile {
   email_signature: string;
   website: string;
   location: string;
+  is_default?: boolean;
 }
 
 export const useBusinessProfile = () => {
-  const [profile, setProfile] = useState<BusinessProfile | null>(null);
+  const [profiles, setProfiles] = useState<BusinessProfile[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { user } = useAuth();
   const { toast } = useToast();
 
+  const selectedProfile = profiles.find(p => p.id === selectedProfileId) || profiles.find(p => p.is_default) || profiles[0] || null;
+
   useEffect(() => {
     if (user) {
-      loadProfile();
+      loadProfiles();
     }
   }, [user]);
 
-  const loadProfile = async () => {
+  const loadProfiles = async () => {
     try {
       const { data, error } = await supabase
-        .from('user_settings')
-        .select('business_profile')
+        .from('business_profiles')
+        .select('*')
         .eq('user_id', user?.id)
-        .maybeSingle();
+        .order('created_at', { ascending: false });
 
       if (error) {
         throw error;
       }
 
-      if (data?.business_profile) {
-        const businessData = data.business_profile;
-        if (businessData && typeof businessData === 'object' && !Array.isArray(businessData)) {
-          // Ensure ai_goals is always an array
-          const profileWithDefaults = {
-            ...businessData,
-            ai_goals: Array.isArray(businessData.ai_goals) ? businessData.ai_goals : []
-          };
-          setProfile(profileWithDefaults as unknown as BusinessProfile);
+      if (data) {
+        setProfiles(data as BusinessProfile[]);
+        
+        // Set default selected profile
+        const defaultProfile = data.find(p => p.is_default);
+        if (defaultProfile) {
+          setSelectedProfileId(defaultProfile.id);
+        } else if (data.length > 0) {
+          setSelectedProfileId(data[0].id);
         }
       }
     } catch (error) {
-      console.error('Error loading business profile:', error);
+      console.error('Error loading business profiles:', error);
     } finally {
       setIsLoading(false);
     }
@@ -62,59 +68,123 @@ export const useBusinessProfile = () => {
     if (!user) return;
 
     try {
-      console.log('Attempting to save profile for user:', user.id);
-      
-      // First, check if user_settings record exists
-      const { data: existingRecord, error: checkError } = await supabase
-        .from('user_settings')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (checkError) {
-        console.error('Error checking existing record:', checkError);
-        throw checkError;
-      }
+      const dataToSave = {
+        user_id: user.id,
+        name: profileData.name,
+        company_name: profileData.company_name,
+        industry: profileData.industry,
+        business_description: profileData.business_description,
+        target_audience: profileData.target_audience,
+        company_values: profileData.company_values,
+        ai_tone: profileData.ai_tone,
+        ai_goals: profileData.ai_goals,
+        email_signature: profileData.email_signature,
+        website: profileData.website,
+        location: profileData.location,
+        is_default: profileData.is_default || false
+      };
 
       let result;
       
-      if (existingRecord) {
-        // Update existing record
-        console.log('Updating existing record');
+      if (profileData.id) {
+        // Update existing profile
         result = await supabase
-          .from('user_settings')
-          .update({
-            business_profile: profileData as any,
-            updated_at: new Date().toISOString()
-          })
-          .eq('user_id', user.id);
+          .from('business_profiles')
+          .update(dataToSave)
+          .eq('id', profileData.id)
+          .select()
+          .single();
       } else {
-        // Insert new record
-        console.log('Inserting new record');
+        // Insert new profile
         result = await supabase
-          .from('user_settings')
-          .insert({
-            user_id: user.id,
-            business_profile: profileData as any,
-            updated_at: new Date().toISOString()
-          });
+          .from('business_profiles')
+          .insert(dataToSave)
+          .select()
+          .single();
       }
 
       if (result.error) {
-        console.error('Database operation error:', result.error);
         throw result.error;
       }
 
-      setProfile(profileData);
+      await loadProfiles();
+      
       toast({
         title: "Profil spremljen",
-        description: "Vaš poslovni profil je uspješno ažuriran.",
+        description: "Poslovni profil je uspješno spremljen.",
       });
     } catch (error) {
       console.error('Error saving business profile:', error);
       toast({
         title: "Greška",
         description: "Dogodila se greška prilikom spremanja profila.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const deleteProfile = async (profileId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from('business_profiles')
+        .delete()
+        .eq('id', profileId);
+
+      if (error) {
+        throw error;
+      }
+
+      await loadProfiles();
+      
+      toast({
+        title: "Profil izbrisan",
+        description: "Poslovni profil je uspješno izbrisan.",
+      });
+    } catch (error) {
+      console.error('Error deleting business profile:', error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška prilikom brisanja profila.",
+        variant: "destructive",
+      });
+      throw error;
+    }
+  };
+
+  const setDefaultProfile = async (profileId: string) => {
+    if (!user) return;
+
+    try {
+      // First, remove default from all profiles
+      await supabase
+        .from('business_profiles')
+        .update({ is_default: false })
+        .eq('user_id', user.id);
+
+      // Then set the selected profile as default
+      const { error } = await supabase
+        .from('business_profiles')
+        .update({ is_default: true })
+        .eq('id', profileId);
+
+      if (error) {
+        throw error;
+      }
+
+      await loadProfiles();
+      
+      toast({
+        title: "Zadani profil postavljen",
+        description: "Profil je postavljen kao zadani.",
+      });
+    } catch (error) {
+      console.error('Error setting default profile:', error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška prilikom postavljanja zadanog profila.",
         variant: "destructive",
       });
       throw error;
@@ -164,7 +234,11 @@ export const useBusinessProfile = () => {
     }
   };
 
-  const getContextForAI = async (): Promise<string> => {
+  const getContextForAI = async (profileId?: string): Promise<string> => {
+    const profile = profileId 
+      ? profiles.find(p => p.id === profileId) 
+      : selectedProfile;
+      
     if (!profile) return '';
     
     // Ensure all fields have default values to prevent undefined errors
@@ -199,10 +273,15 @@ Website: ${safeProfile.website}
   };
 
   return {
-    profile,
+    profiles,
+    selectedProfile,
+    selectedProfileId,
     isLoading,
     saveProfile,
-    loadProfile,
+    deleteProfile,
+    setDefaultProfile,
+    loadProfiles,
+    setSelectedProfileId,
     getContextForAI
   };
 };

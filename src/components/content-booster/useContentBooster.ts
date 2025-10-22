@@ -26,15 +26,15 @@ export const useContentBooster = () => {
 
   // Use AI settings and business profile hooks
   const { aiSettings, isAIConfigured } = useAISettings();
-  const { profile, getContextForAI } = useBusinessProfile();
+  const { selectedProfile, selectedProfileId, setSelectedProfileId, profiles, getContextForAI } = useBusinessProfile();
 
   // Initialize form fields from business profile
   useEffect(() => {
-    if (profile) {
-      setIndustry(profile.industry || '');
-      setCompanyName(profile.company_name || '');
+    if (selectedProfile) {
+      setIndustry(selectedProfile.industry || '');
+      setCompanyName(selectedProfile.company_name || '');
     }
-  }, [profile]);
+  }, [selectedProfile]);
 
   const [posts, setPosts] = useLocalStorage<ContentPost[]>('contentPosts', [
     {
@@ -318,7 +318,10 @@ export const useContentBooster = () => {
     deletePost,
     // Add new properties for checking AI configuration
     isAIConfigured,
-    businessProfile: profile,
+    businessProfile: selectedProfile,
     canGenerateImages: !!(aiSettings?.openai_api_key || aiSettings?.api_key),
+    profiles,
+    selectedProfileId,
+    setSelectedProfileId,
   };
 };

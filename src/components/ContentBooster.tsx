@@ -43,6 +43,9 @@ const ContentBooster = () => {
     isAIConfigured,
     businessProfile,
     canGenerateImages,
+    profiles,
+    selectedProfileId,
+    setSelectedProfileId,
   } = useContentBooster();
 
   return (
@@ -97,6 +100,9 @@ const ContentBooster = () => {
           businessProfile={businessProfile}
           platform={platform}
           setPlatform={setPlatform}
+          profiles={profiles}
+          selectedProfileId={selectedProfileId}
+          setSelectedProfileId={setSelectedProfileId}
         />
 
         <PostsList

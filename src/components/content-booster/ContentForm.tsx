@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Sparkles, Share2, Calendar, Bot, Image, Settings, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Sparkles, Share2, Calendar, Bot, Image, Settings, CheckCircle, AlertTriangle, Building2 } from 'lucide-react';
 import { AIProvider } from '@/services/aiEmailService';
 import { contentTypes, industries, contentFormats, platforms } from './constants';
 import { useNavigate } from 'react-router-dom';
@@ -44,6 +44,9 @@ interface ContentFormProps {
   onSchedulePost: () => void;
   isAIConfigured: () => boolean;
   businessProfile: any;
+  profiles: any[];
+  selectedProfileId: string | null;
+  setSelectedProfileId: (id: string) => void;
 }
 
 const ContentForm: React.FC<ContentFormProps> = ({
@@ -76,6 +79,9 @@ const ContentForm: React.FC<ContentFormProps> = ({
   businessProfile,
   platform,
   setPlatform,
+  profiles,
+  selectedProfileId,
+  setSelectedProfileId,
 }) => {
   const navigate = useNavigate();
 
@@ -113,14 +119,31 @@ const ContentForm: React.FC<ContentFormProps> = ({
           </Alert>
         )}
 
-        {/* Business Profile Status */}
-        {businessProfile ? (
-          <Alert className="border-blue-200 bg-blue-50">
-            <CheckCircle className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-blue-800">
-              Poslovni profil konfiguriran: {businessProfile.company_name} ({businessProfile.industry})
-            </AlertDescription>
-          </Alert>
+        {/* Business Profile Selection */}
+        {profiles.length > 0 ? (
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              <Building2 className="h-4 w-4 inline mr-1" />
+              Odaberi poslovni profil
+            </label>
+            <Select value={selectedProfileId || ''} onValueChange={setSelectedProfileId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Odaberite profil" />
+              </SelectTrigger>
+              <SelectContent>
+                {profiles.map((profile) => (
+                  <SelectItem key={profile.id} value={profile.id}>
+                    {profile.name} - {profile.company_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {businessProfile && (
+              <p className="text-xs text-slate-500 mt-1">
+                Odabran: {businessProfile.company_name} ({businessProfile.industry})
+              </p>
+            )}
+          </div>
         ) : (
           <Alert className="border-yellow-200 bg-yellow-50">
             <AlertTriangle className="h-4 w-4 text-yellow-600" />

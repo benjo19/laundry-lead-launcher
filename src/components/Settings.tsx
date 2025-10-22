@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Settings as SettingsIcon, User, Mail, Bot, Zap, Calendar, Webhook } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import BusinessProfileSettings from './BusinessProfileSettings';
+import BusinessProfileManager from './BusinessProfileManager';
 import EmailSettings from './EmailSettings';
 import MakeIntegration from './MakeIntegration';
 import ZapierIntegration from './ZapierIntegration';
@@ -73,7 +73,7 @@ const Settings = () => {
               </TabsList>
 
               <TabsContent value="business">
-                <BusinessProfileSettings />
+                <BusinessProfileManager />
               </TabsContent>
 
               <TabsContent value="email">
