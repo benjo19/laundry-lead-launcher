@@ -156,17 +156,18 @@ const BusinessProfileManager = () => {
     const safeAiGoals = Array.isArray(editingProfile.ai_goals) ? editingProfile.ai_goals : [];
 
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center justify-between">
-            <span className="flex items-center gap-2">
-              <Building2 className="h-5 w-5" />
-              {editingProfile.id ? 'Uredi Poslovni Profil' : 'Novi Poslovni Profil'}
-            </span>
-            <Button variant="outline" onClick={() => setIsEditing(false)}>
-              Odustani
-            </Button>
-          </CardTitle>
+      <>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <Building2 className="h-5 w-5" />
+                {editingProfile.id ? 'Uredi Poslovni Profil' : 'Novi Poslovni Profil'}
+              </span>
+              <Button variant="outline" onClick={() => setIsEditing(false)}>
+                Odustani
+              </Button>
+            </CardTitle>
           {validationErrors.length > 0 && (
             <div className="bg-red-50 border border-red-200 rounded-md p-3 mt-4">
               <div className="flex items-center gap-2 text-red-800 mb-2">
@@ -342,6 +343,9 @@ const BusinessProfileManager = () => {
           </div>
         </CardContent>
       </Card>
+
+      <BusinessDocuments profileId={editingProfile.id} />
+    </>
     );
   }
 
@@ -435,7 +439,7 @@ const BusinessProfileManager = () => {
         </CardContent>
       </Card>
 
-      <BusinessDocuments />
+      {selectedProfile?.id && <BusinessDocuments profileId={selectedProfile.id} />}
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>

@@ -13,7 +13,7 @@ export interface BusinessDocument {
   uploadedAt: string;
 }
 
-export const useBusinessDocuments = () => {
+export const useBusinessDocuments = (profileId?: string | null) => {
   const [documents, setDocuments] = useState<BusinessDocument[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isUploading, setIsUploading] = useState(false);
@@ -21,18 +21,22 @@ export const useBusinessDocuments = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (user) {
+    if (user && profileId) {
       loadDocuments();
+    } else {
+      setDocuments([]);
+      setIsLoading(false);
     }
-  }, [user]);
+  }, [user, profileId]);
 
   const loadDocuments = async () => {
-    if (!user) return;
+    if (!user || !profileId) return;
     
     try {
+      const folderPath = `${user.id}/${profileId}`;
       const { data, error } = await supabase.storage
         .from('business-documents')
-        .list(user.id, {
+        .list(folderPath, {
           limit: 100,
           offset: 0,
         });
@@ -43,7 +47,7 @@ export const useBusinessDocuments = () => {
         (data || []).map(async (file) => {
           const { data: urlData } = await supabase.storage
             .from('business-documents')
-            .createSignedUrl(`${user.id}/${file.name}`, 3600);
+            .createSignedUrl(`${folderPath}/${file.name}`, 3600);
 
           return {
             id: file.id || file.name,
@@ -70,7 +74,7 @@ export const useBusinessDocuments = () => {
   };
 
   const uploadDocument = async (file: File): Promise<boolean> => {
-    if (!user) return false;
+    if (!user || !profileId) return false;
 
     // Check file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
@@ -106,7 +110,7 @@ export const useBusinessDocuments = () => {
 
     try {
       const fileName = `${Date.now()}-${file.name}`;
-      const filePath = `${user.id}/${fileName}`;
+      const filePath = `${user.id}/${profileId}/${fileName}`;
 
       const { error } = await supabase.storage
         .from('business-documents')
@@ -163,12 +167,12 @@ export const useBusinessDocuments = () => {
   };
 
   const deleteDocument = async (documentName: string) => {
-    if (!user) return;
+    if (!user || !profileId) return;
 
     try {
       const { error } = await supabase.storage
         .from('business-documents')
-        .remove([`${user.id}/${documentName}`]);
+        .remove([`${user.id}/${profileId}/${documentName}`]);
 
       if (error) throw error;
 

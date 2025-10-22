@@ -6,14 +6,36 @@ import { Badge } from '@/components/ui/badge';
 import { useBusinessDocuments } from '@/hooks/useBusinessDocuments';
 import { Upload, FileText, Trash2, Download, Loader2 } from 'lucide-react';
 
-const BusinessDocuments = () => {
+interface BusinessDocumentsProps {
+  profileId?: string | null;
+}
+
+const BusinessDocuments: React.FC<BusinessDocumentsProps> = ({ profileId }) => {
   const { 
     documents, 
     isLoading, 
     isUploading, 
     uploadDocument, 
     deleteDocument 
-  } = useBusinessDocuments();
+  } = useBusinessDocuments(profileId);
+  
+  if (!profileId) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Poslovni dokumenti
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground text-center py-4">
+            Odaberite ili spremite profil za upravljanje dokumentima
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 

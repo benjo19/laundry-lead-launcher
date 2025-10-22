@@ -191,13 +191,14 @@ export const useBusinessProfile = () => {
     }
   };
 
-  const getDocumentsContent = async (): Promise<string> => {
-    if (!user) return '';
+  const getDocumentsContent = async (profileId?: string): Promise<string> => {
+    if (!user || !profileId) return '';
     
     try {
+      const folderPath = `${user.id}/${profileId}`;
       const { data: files, error } = await supabase.storage
         .from('business-documents')
-        .list(user.id, { limit: 10 });
+        .list(folderPath, { limit: 10 });
 
       if (error || !files || files.length === 0) {
         return '';
@@ -209,7 +210,7 @@ export const useBusinessProfile = () => {
         try {
           const { data: urlData } = await supabase.storage
             .from('business-documents')
-            .createSignedUrl(`${user.id}/${file.name}`, 300); // 5 min expiry
+            .createSignedUrl(`${folderPath}/${file.name}`, 300); // 5 min expiry
 
           if (urlData?.signedUrl) {
             const response = await fetch(urlData.signedUrl);
@@ -239,7 +240,7 @@ export const useBusinessProfile = () => {
       ? profiles.find(p => p.id === profileId) 
       : selectedProfile;
       
-    if (!profile) return '';
+    if (!profile || !profile.id) return '';
     
     // Ensure all fields have default values to prevent undefined errors
     const safeProfile = {
@@ -254,8 +255,8 @@ export const useBusinessProfile = () => {
       website: profile.website || ''
     };
     
-    // Get documents content
-    const documentsContent = await getDocumentsContent();
+    // Get documents content for this specific profile
+    const documentsContent = await getDocumentsContent(profile.id);
     
     const baseContext = `
 Tvrtka: ${safeProfile.company_name}
