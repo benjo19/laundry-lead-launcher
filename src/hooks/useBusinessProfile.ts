@@ -79,6 +79,7 @@ export const useBusinessProfile = () => {
         company_values: profileData.company_values,
         ai_tone: profileData.ai_tone,
         ai_goals: profileData.ai_goals,
+        ai_system_prompt: profileData.ai_system_prompt,
         email_signature: profileData.email_signature,
         website: profileData.website,
         location: profileData.location,
