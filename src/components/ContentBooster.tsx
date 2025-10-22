@@ -33,8 +33,6 @@ const ContentBooster = () => {
     contentFormat,
     setContentFormat,
     generatedImageUrl,
-    platform,
-    setPlatform,
     posts,
     generateContent,
     publishNow,
@@ -98,8 +96,6 @@ const ContentBooster = () => {
           onSchedulePost={schedulePost}
           isAIConfigured={() => Boolean(isAIConfigured())}
           businessProfile={businessProfile}
-          platform={platform}
-          setPlatform={setPlatform}
           profiles={profiles}
           selectedProfileId={selectedProfileId}
           setSelectedProfileId={setSelectedProfileId}
