@@ -13,6 +13,7 @@ export interface BusinessProfile {
   company_values: string;
   ai_tone: 'professional' | 'friendly' | 'casual' | 'authoritative';
   ai_goals: string[];
+  ai_system_prompt?: string;
   email_signature: string;
   website: string;
   location: string;
@@ -251,6 +252,7 @@ export const useBusinessProfile = () => {
       company_values: profile.company_values || '',
       ai_tone: profile.ai_tone || 'professional',
       ai_goals: Array.isArray(profile.ai_goals) ? profile.ai_goals : [],
+      ai_system_prompt: profile.ai_system_prompt || '',
       location: profile.location || '',
       website: profile.website || ''
     };
@@ -258,7 +260,7 @@ export const useBusinessProfile = () => {
     // Get documents content for this specific profile
     const documentsContent = await getDocumentsContent(profile.id);
     
-    const baseContext = `
+    let baseContext = `
 Tvrtka: ${safeProfile.company_name}
 Industrija: ${safeProfile.industry}
 Opis poslovanja: ${safeProfile.business_description}
@@ -269,6 +271,10 @@ Ciljevi AI asistenta: ${safeProfile.ai_goals.join(', ')}
 Lokacija: ${safeProfile.location}
 Website: ${safeProfile.website}
     `.trim();
+
+    if (safeProfile.ai_system_prompt) {
+      baseContext += `\n\nPrilagođene AI upute: ${safeProfile.ai_system_prompt}`;
+    }
 
     return documentsContent ? `${baseContext}\n\nDodatni dokumenti:${documentsContent}` : baseContext;
   };

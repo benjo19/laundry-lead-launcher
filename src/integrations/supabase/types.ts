@@ -17,6 +17,7 @@ export type Database = {
       business_profiles: {
         Row: {
           ai_goals: string[] | null
+          ai_system_prompt: string | null
           ai_tone: string | null
           business_description: string | null
           company_name: string | null
@@ -35,6 +36,7 @@ export type Database = {
         }
         Insert: {
           ai_goals?: string[] | null
+          ai_system_prompt?: string | null
           ai_tone?: string | null
           business_description?: string | null
           company_name?: string | null
@@ -53,6 +55,7 @@ export type Database = {
         }
         Update: {
           ai_goals?: string[] | null
+          ai_system_prompt?: string | null
           ai_tone?: string | null
           business_description?: string | null
           company_name?: string | null

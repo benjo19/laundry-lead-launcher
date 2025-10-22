@@ -40,6 +40,7 @@ const BusinessProfileManager = () => {
     company_values: '',
     ai_tone: 'professional',
     ai_goals: [],
+    ai_system_prompt: '',
     email_signature: '',
     website: '',
     location: ''
@@ -302,6 +303,21 @@ const BusinessProfileManager = () => {
                 </div>
               ))}
             </div>
+          </div>
+
+          <div>
+            <Label htmlFor="ai_system_prompt">Prilagođene AI upute</Label>
+            <Textarea
+              id="ai_system_prompt"
+              value={editingProfile.ai_system_prompt}
+              onChange={(e) => setEditingProfile({ ...editingProfile, ai_system_prompt: e.target.value })}
+              placeholder="Opcionalno: Detaljne upute za AI ponašanje (npr. 'Uvijek koristi formalni stil', 'Fokusiraj se na prednosti ekološkog pristupa', itd.)"
+              rows={4}
+              className="text-sm"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Ove upute će AI pratiti pri generiranju sadržaja za ovaj poslovni profil.
+            </p>
           </div>
 
           <div>
