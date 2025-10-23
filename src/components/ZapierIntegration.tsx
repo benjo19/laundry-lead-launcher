@@ -1,20 +1,48 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { ExternalLink, Zap, Send, TestTube, CheckCircle, AlertCircle } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { ExternalLink, Zap, Send, TestTube, CheckCircle, AlertCircle, Info } from 'lucide-react';
+import { migrateLocalStorageToDatabase } from '@/utils/migrateLocalStorageToDatabase';
+
+interface ZapierSettings {
+  webhook_url?: string;
+  enabled?: boolean;
+  last_test?: string;
+  last_updated?: string;
+}
 
 const ZapierIntegration = () => {
-  const [webhookUrl, setWebhookUrl] = useLocalStorage('zapier_webhook_url', '');
+  const { value: zapierSettings, setValue: setZapierSettings, isLoading: settingsLoading } = useUserSettings<ZapierSettings>(
+    'zapier_settings',
+    {}
+  );
+  const [webhookUrl, setWebhookUrl] = useState('');
   const [testData, setTestData] = useState('{"message": "Test from Marketing Agent", "timestamp": ""}');
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const { toast } = useToast();
+
+  // Load webhook URL from settings
+  useEffect(() => {
+    if (zapierSettings?.webhook_url) {
+      setWebhookUrl(zapierSettings.webhook_url);
+      if (zapierSettings.enabled) {
+        setConnectionStatus('success');
+      }
+    }
+  }, [zapierSettings]);
+
+  // Migrate localStorage data on mount
+  useEffect(() => {
+    migrateLocalStorageToDatabase();
+  }, []);
 
   const handleSaveWebhook = async () => {
     if (!webhookUrl || !validateWebhookUrl(webhookUrl)) {
@@ -126,36 +154,68 @@ const ZapierIntegration = () => {
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-orange-500" />
-            Zapier Integracija
-            {connectionStatus === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
-            {connectionStatus === 'error' && <AlertCircle className="h-5 w-5 text-red-500" />}
-          </CardTitle>
+          <div className="flex items-start justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <Zap className="h-5 w-5 text-orange-500" />
+                Zapier Integracija
+                {connectionStatus === 'success' && <CheckCircle className="h-5 w-5 text-green-500" />}
+                {connectionStatus === 'error' && <AlertCircle className="h-5 w-5 text-red-500" />}
+              </CardTitle>
+            </div>
+            {zapierSettings?.enabled && (
+              <Badge variant="default" className="flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" />
+                Connected to YOUR account
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent className="space-y-4">
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertDescription>
+              Your webhook URL is private and only sends data to YOUR Zapier account. Each user configures their own integrations.
+            </AlertDescription>
+          </Alert>
+
           <div>
-            <Label htmlFor="webhook-url">Zapier Webhook URL</Label>
-            <Input
-              id="webhook-url"
-              type="url"
-              placeholder="https://hooks.zapier.com/hooks/catch/..."
-              value={webhookUrl}
-              onChange={(e) => {
-                setWebhookUrl(e.target.value);
-                setConnectionStatus('idle');
-              }}
-              className={`mt-1 ${
-                webhookUrl && !validateWebhookUrl(webhookUrl) 
-                  ? 'border-red-500' 
-                  : webhookUrl && validateWebhookUrl(webhookUrl)
-                  ? 'border-green-500'
-                  : ''
-              }`}
-            />
+            <Label htmlFor="webhook-url">Your Zapier Webhook URL</Label>
+            <div className="flex gap-2 mt-1">
+              <Input
+                id="webhook-url"
+                type="url"
+                placeholder="https://hooks.zapier.com/hooks/catch/..."
+                value={webhookUrl}
+                onChange={(e) => {
+                  setWebhookUrl(e.target.value);
+                  setConnectionStatus('idle');
+                }}
+                className={`${
+                  webhookUrl && !validateWebhookUrl(webhookUrl) 
+                    ? 'border-red-500' 
+                    : webhookUrl && validateWebhookUrl(webhookUrl)
+                    ? 'border-green-500'
+                    : ''
+                }`}
+                disabled={settingsLoading}
+              />
+              <Button
+                onClick={handleSaveWebhook}
+                disabled={!webhookUrl || !validateWebhookUrl(webhookUrl) || settingsLoading}
+                variant="outline"
+              >
+                Save
+              </Button>
+            </div>
             {webhookUrl && !validateWebhookUrl(webhookUrl) && (
               <p className="text-sm text-red-600 mt-1">
                 URL treba počinjati s "https://hooks.zapier.com"
+              </p>
+            )}
+            {zapierSettings?.last_test && (
+              <p className="text-xs text-muted-foreground mt-1">
+                Last tested: {new Date(zapierSettings.last_test).toLocaleString()}
               </p>
             )}
             <p className="text-sm text-muted-foreground mt-1">

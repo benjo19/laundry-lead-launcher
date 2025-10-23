@@ -1,10 +1,23 @@
-
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { useUserSettings } from './useUserSettings';
+import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 
+interface ZapierSettings {
+  webhook_url?: string;
+  enabled?: boolean;
+  last_test?: string;
+}
+
 export const useZapierIntegration = () => {
-  const [webhookUrl] = useLocalStorage('zapier_webhook_url', '');
+  const { value: zapierSettings } = useUserSettings<ZapierSettings>('zapier_settings', {});
+  const [webhookUrl, setWebhookUrl] = useState('');
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (zapierSettings?.webhook_url) {
+      setWebhookUrl(zapierSettings.webhook_url);
+    }
+  }, [zapierSettings]);
 
   const triggerZap = async (data: any, type: string = 'general') => {
     if (!webhookUrl) {

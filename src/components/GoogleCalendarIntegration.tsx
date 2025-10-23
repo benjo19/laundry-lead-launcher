@@ -1,15 +1,33 @@
 import React, { useState, useEffect } from 'react';
+import { useUserSettings } from '@/hooks/useUserSettings';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Calendar, Settings, TestTube, Loader2, ExternalLink, CheckCircle, AlertCircle, Wifi, WifiOff, Copy, Plus } from 'lucide-react';
+import { Calendar, Settings, TestTube, Loader2, ExternalLink, CheckCircle, AlertCircle, Wifi, WifiOff, Copy, Plus, Info } from 'lucide-react';
+import { migrateLocalStorageToDatabase } from '@/utils/migrateLocalStorageToDatabase';
+
+interface GoogleCalendarSettings {
+  integration_type?: 'simple' | 'api';
+  enabled?: boolean;
+  api_key?: string;
+  client_id?: string;
+  calendar_id?: string;
+  auto_sync?: boolean;
+  last_test?: string;
+  last_connected?: string;
+}
 
 const GoogleCalendarIntegration = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  const { value: gcalSettings, setValue: setGcalSettings, isLoading: settingsLoading } = useUserSettings<GoogleCalendarSettings>(
+    'google_calendar_settings',
+    {}
+  );
   const [isConnected, setIsConnected] = useState(false);
   const [calendarSettings, setCalendarSettings] = useState({
     apiKey: '',
@@ -18,22 +36,33 @@ const GoogleCalendarIntegration = () => {
     calendarId: 'primary'
   });
 
-  // Check connection status on component mount
   useEffect(() => {
-    const savedConnection = localStorage.getItem('googleCalendarConnected');
-    const savedSettings = localStorage.getItem('googleCalendarSettings');
-    
-    if (savedConnection === 'true') {
+    // Load from database settings
+    if (gcalSettings?.enabled) {
       setIsConnected(true);
-      if (savedSettings) {
-        try {
-          setCalendarSettings(JSON.parse(savedSettings));
-        } catch (e) {
-          console.error('Error parsing saved calendar settings:', e);
-        }
-      }
+      setCalendarSettings({
+        apiKey: gcalSettings.api_key || '',
+        clientId: gcalSettings.client_id || '',
+        calendarId: gcalSettings.calendar_id || 'primary',
+        autoSync: gcalSettings.auto_sync !== false,
+      });
     }
+  }, [gcalSettings]);
+
+  // Migrate localStorage data on mount
+  useEffect(() => {
+    migrateLocalStorageToDatabase();
   }, []);
+
+  const loadGoogleAPI = (): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://apis.google.com/js/api.js';
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Google API'));
+      document.head.appendChild(script);
+    });
+  };
 
   const handleConnect = async () => {
     if (!calendarSettings.apiKey || !calendarSettings.clientId) {
@@ -82,9 +111,16 @@ const GoogleCalendarIntegration = () => {
       console.log('Google Calendar successfully connected!');
       setIsConnected(true);
       
-      // Store connection state in localStorage
-      localStorage.setItem('googleCalendarConnected', 'true');
-      localStorage.setItem('googleCalendarSettings', JSON.stringify(calendarSettings));
+      // Save to database
+      await setGcalSettings({
+        integration_type: 'api',
+        enabled: true,
+        api_key: calendarSettings.apiKey,
+        client_id: calendarSettings.clientId,
+        calendar_id: calendarSettings.calendarId,
+        auto_sync: calendarSettings.autoSync,
+        last_connected: new Date().toISOString(),
+      });
       
       toast({
         title: "Google Calendar povezan",
@@ -104,16 +140,6 @@ const GoogleCalendarIntegration = () => {
     }
   };
 
-  const loadGoogleAPI = (): Promise<void> => {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = 'https://apis.google.com/js/api.js';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error('Failed to load Google API'));
-      document.head.appendChild(script);
-    });
-  };
-
   const testConnection = async () => {
     if (!isConnected) {
       toast({
@@ -125,8 +151,7 @@ const GoogleCalendarIntegration = () => {
     }
 
     // Check if this is simple integration (no API keys)
-    const savedSettings = localStorage.getItem('googleCalendarSettings');
-    if (!savedSettings || !JSON.parse(savedSettings).apiKey) {
+    if (!gcalSettings?.api_key) {
       toast({
         title: "Jednostavna integracija",
         description: "Koristite jednostavnu integraciju - nema API-ja za testiranje. Google Calendar linkovi će se generirati automatski.",
@@ -155,11 +180,10 @@ const GoogleCalendarIntegration = () => {
         });
 
         // Re-initialize client with saved settings
-        const settings = JSON.parse(savedSettings);
         console.log('Initializing client with saved settings...');
         await window.gapi.client.init({
-          apiKey: settings.apiKey,
-          clientId: settings.clientId,
+          apiKey: gcalSettings.api_key,
+          clientId: gcalSettings.client_id,
           discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
           scope: 'https://www.googleapis.com/auth/calendar.events',
         });
@@ -184,6 +208,13 @@ const GoogleCalendarIntegration = () => {
       const response = await window.gapi.client.calendar.calendarList.list();
       if (response.status === 200) {
         console.log('Test successful');
+        
+        // Update last test time
+        await setGcalSettings({
+          ...gcalSettings,
+          last_test: new Date().toISOString(),
+        });
+        
         toast({
           title: "Test uspješan",
           description: "Google Calendar konekcija radi ispravno.",
@@ -201,17 +232,13 @@ const GoogleCalendarIntegration = () => {
     }
   };
 
-  const handleDisconnect = () => {
+  const handleDisconnect = async () => {
     if (window.gapi && window.gapi.auth2) {
       const authInstance = window.gapi.auth2.getAuthInstance();
       if (authInstance) {
         authInstance.signOut();
       }
     }
-    
-    // Clear connection state from localStorage
-    localStorage.removeItem('googleCalendarConnected');
-    localStorage.removeItem('googleCalendarSettings');
     
     setIsConnected(false);
     setCalendarSettings({
@@ -220,6 +247,16 @@ const GoogleCalendarIntegration = () => {
       autoSync: true,
       calendarId: 'primary'
     });
+
+    // Clear from database
+    await setGcalSettings({
+      integration_type: 'api',
+      enabled: false,
+      api_key: '',
+      client_id: '',
+      calendar_id: 'primary',
+      auto_sync: true,
+    });
     
     toast({
       title: "Odjavljeno",
@@ -227,26 +264,18 @@ const GoogleCalendarIntegration = () => {
     });
   };
 
-  // Funkcija za kreiranje Google Calendar link-a
-  const createGoogleCalendarLink = () => {
-    const calendarUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE';
-    const title = encodeURIComponent('CRM Podsjetnik - {{naziv}}');
-    const details = encodeURIComponent('Kreiran iz Marketing Agent CRM-a\\n\\nTvrtka: {{tvrtka}}\\nPrioritet: {{prioritet}}\\nOpis: {{opis}}');
-    const dates = '{{datum}}T{{vrijeme}}/{{datum}}T{{vrijeme_kraj}}';
-    
-    const fullUrl = `${calendarUrl}&text=${title}&details=${details}&dates=${dates}`;
-    
-    navigator.clipboard.writeText(fullUrl).then(() => {
-      toast({
-        title: "Link kopiran",
-        description: "Google Calendar template link je kopiran u clipboard. Zamijenite {{placeholders}} s vašim podacima.",
-      });
-    });
-  };
-
-  const handleSimpleConnect = () => {
+  const handleSimpleConnect = async () => {
     setIsConnected(true);
-    localStorage.setItem('googleCalendarConnected', 'true');
+
+    // Save to database
+    await setGcalSettings({
+      integration_type: 'simple',
+      enabled: true,
+      calendar_id: calendarSettings.calendarId,
+      auto_sync: calendarSettings.autoSync,
+      last_connected: new Date().toISOString(),
+    });
+
     toast({
       title: "Jednostavna integracija aktivirana",
       description: "Koristit ćete manuelne Google Calendar linkove za podsjetnike.",
@@ -256,34 +285,32 @@ const GoogleCalendarIntegration = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between gap-2">
-          <div className="flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Google Calendar Integracija
+        <div className="flex items-start justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Google Calendar Integracija
+            </CardTitle>
+            <p className="text-muted-foreground text-sm mt-1">
+              Sync your reminders with Google Calendar
+            </p>
           </div>
-          <Badge 
-            variant={isConnected ? "default" : "secondary"} 
-            className={`flex items-center gap-1 ${
-              isConnected 
-                ? "bg-green-100 text-green-800 border-green-200" 
-                : "bg-gray-100 text-gray-600 border-gray-200"
-            }`}
-          >
-            {isConnected ? (
-              <>
-                <Wifi className="h-3 w-3" />
-                Povezan
-              </>
-            ) : (
-              <>
-                <WifiOff className="h-3 w-3" />
-                Nije povezan
-              </>
-            )}
-          </Badge>
-        </CardTitle>
+          {gcalSettings?.enabled && (
+            <Badge variant="default" className="flex items-center gap-1">
+              <CheckCircle className="h-3 w-3" />
+              Connected to YOUR calendar
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        <Alert>
+          <Info className="h-4 w-4" />
+          <AlertDescription>
+            Your calendar integration is private and only syncs to YOUR Google Calendar. Each user configures their own calendar.
+          </AlertDescription>
+        </Alert>
+
         {/* Jednostavna opcija bez API konfiguracije */}
         <div className="bg-green-50 p-4 rounded-lg border border-green-200">
           <h4 className="font-medium text-green-900 mb-2 flex items-center gap-2">
@@ -323,6 +350,7 @@ const GoogleCalendarIntegration = () => {
                 onChange={(e) => setCalendarSettings({...calendarSettings, apiKey: e.target.value})}
                 placeholder="Unesite Google API ključ"
                 className="mt-1"
+                disabled={settingsLoading}
               />
             </div>
 
@@ -334,6 +362,7 @@ const GoogleCalendarIntegration = () => {
                 onChange={(e) => setCalendarSettings({...calendarSettings, clientId: e.target.value})}
                 placeholder="Unesite OAuth 2.0 Client ID"
                 className="mt-1"
+                disabled={settingsLoading}
               />
             </div>
 
@@ -350,7 +379,7 @@ const GoogleCalendarIntegration = () => {
 
             <Button 
               onClick={handleConnect} 
-              disabled={isLoading || !calendarSettings.apiKey || !calendarSettings.clientId}
+              disabled={isLoading || !calendarSettings.apiKey || !calendarSettings.clientId || settingsLoading}
               className="w-full"
             >
               {isLoading ? (
@@ -377,6 +406,12 @@ const GoogleCalendarIntegration = () => {
                 Odspoji
               </Button>
             </div>
+
+            {gcalSettings?.last_test && (
+              <p className="text-xs text-muted-foreground">
+                Last tested: {new Date(gcalSettings.last_test).toLocaleString()}
+              </p>
+            )}
 
             <div className="flex gap-2">
               <Button onClick={testConnection} variant="outline" className="flex-1">
