@@ -83,7 +83,9 @@ serve(async (req) => {
 
     const runData = await runResponse.json();
     const runId = runData.data.id;
+    const defaultDatasetId = runData.data.defaultDatasetId;
     console.log('Apify run started:', runId);
+    console.log('Default dataset ID:', defaultDatasetId);
 
     // Wait for the run to finish (with timeout)
     let status = 'RUNNING';
@@ -112,10 +114,10 @@ serve(async (req) => {
       throw new Error(`Apify run did not succeed. Status: ${status}`);
     }
 
-    // Get the results
-    console.log('Fetching results from dataset...');
+    // Get the results using the dataset ID
+    console.log('Fetching results from dataset:', defaultDatasetId);
     const resultsResponse = await fetch(
-      `https://api.apify.com/v2/acts/${actorId}/runs/${runId}/dataset/items?token=${APIFY_API_KEY}`
+      `https://api.apify.com/v2/datasets/${defaultDatasetId}/items?token=${APIFY_API_KEY}`
     );
 
     if (!resultsResponse.ok) {
