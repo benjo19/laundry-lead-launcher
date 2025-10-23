@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import Dashboard from '@/components/Dashboard';
 import LeadHunter from '@/components/LeadHunter';
@@ -10,6 +10,7 @@ import Analytics from '@/components/Analytics';
 import Settings from '@/components/Settings';
 import KnowledgeBase from '@/components/KnowledgeBase';
 import AIKnowledgeChat from '@/components/AIKnowledgeChat';
+import AdminDashboard from '@/components/AdminDashboard';
 import { EmailScrapingTest } from '@/components/EmailScrapingTest';
 import MobileHeader from '@/components/MobileHeader';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -20,9 +21,11 @@ import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { SubscriptionPlans } from '@/components/SubscriptionPlans';
+import { useLocation } from 'react-router-dom';
 
 const Index = () => {
   console.log('Index: Component starting to render');
+  const location = useLocation();
   const [activeModule, setActiveModule] = useState('dashboard');
   console.log('Index: Active module state set:', activeModule);
   const { addLead } = useLeadManagement();
@@ -32,6 +35,13 @@ const Index = () => {
   console.log('Index: isMobile:', isMobile);
   const { t } = useLanguage();
   console.log('Index: useLanguage hook called');
+
+  // Check if coming from /admin route and set admin-dashboard as active module
+  useEffect(() => {
+    if (location.pathname === '/admin') {
+      setActiveModule('admin-dashboard');
+    }
+  }, [location]);
   
   // State for passing email data to EmailGenerator
   const [emailGeneratorData, setEmailGeneratorData] = useState<{
@@ -70,6 +80,7 @@ const Index = () => {
       case 'analytics': return t('analytics');
       case 'settings': return t('settings');
       case 'subscription': return 'Subscription';
+      case 'admin-dashboard': return 'Admin Dashboard';
       default: return t('marketing_agent');
     }
   };
@@ -119,6 +130,9 @@ const Index = () => {
         case 'subscription':
           console.log('Index: Rendering SubscriptionPlans');
           return <SubscriptionPlans />;
+        case 'admin-dashboard':
+          console.log('Index: Rendering AdminDashboard');
+          return <AdminDashboard />;
         default:
           console.log('Index: Rendering default Dashboard');
           return <Dashboard onNavigateToModule={handleNavigateToModule} />;

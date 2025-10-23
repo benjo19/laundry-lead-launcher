@@ -37,7 +37,7 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
   const { t } = useLanguage();
   const { isAdmin } = useAdminStatus();
 
-  const menuItems = [
+  const baseMenuItems = [
     { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { id: 'lead-hunter', label: t('lead_hunter'), icon: Search },
     { id: 'lead-discovery', label: t('lead_discovery'), icon: Compass },
@@ -50,6 +50,11 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
     { id: 'analytics', label: t('analytics'), icon: BarChart3 },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },
   ];
+
+  // Add Admin Dashboard for admin users
+  const menuItems = isAdmin 
+    ? [...baseMenuItems, { id: 'admin-dashboard', label: 'Admin Dashboard', icon: Shield }]
+    : baseMenuItems;
 
   const handleSignOut = async () => {
     await signOut();
@@ -105,23 +110,13 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-foreground truncate">
               {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0]}
+              {isAdmin && <span className="ml-2 text-xs text-primary">(Admin)</span>}
             </p>
             <p className="text-xs text-muted-foreground truncate">
               {user?.email}
             </p>
           </div>
         </div>
-        
-        {isAdmin && (
-          <Button
-            variant="ghost"
-            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent-hover text-sm p-3 h-11 rounded-lg transition-all duration-200"
-            onClick={() => navigate('/admin')}
-          >
-            <Shield className="h-4 w-4 mr-3 shrink-0" />
-            <span className="truncate">Admin Panel</span>
-          </Button>
-        )}
         
         <Button
           variant="ghost"

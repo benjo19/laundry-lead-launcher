@@ -96,7 +96,7 @@ const AppContent: React.FC = () => {
                     <Route path="/admin" element={
                       <ProtectedRoute>
                         <ProtectedAdminRoute>
-                          <AdminDashboard />
+                          <Index />
                         </ProtectedAdminRoute>
                       </ProtectedRoute>
                     } />
