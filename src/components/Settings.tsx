@@ -48,7 +48,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1 p-1 mb-6 h-auto`}>
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 p-1 mb-6 h-auto">
                 <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <User className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Profil</span>
@@ -61,12 +61,10 @@ const Settings = () => {
                   <Mail className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Email</span>
                 </TabsTrigger>
-                {isAdmin && (
-                  <TabsTrigger value="calendar" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
-                    <Calendar className="h-4 w-4 mb-1" />
-                    <span className="truncate w-full text-center">Kalendar</span>
-                  </TabsTrigger>
-                )}
+                <TabsTrigger value="integrations" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <Webhook className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">Integracije</span>
+                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="business">
@@ -81,11 +79,54 @@ const Settings = () => {
                 <EmailSettings />
               </TabsContent>
 
-              {isAdmin && (
-                <TabsContent value="calendar">
-                  <GoogleCalendarIntegration />
-                </TabsContent>
-              )}
+              <TabsContent value="integrations" className="space-y-6">
+                <div className="space-y-6">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Webhook className="h-5 w-5" />
+                        Webhook Integracije
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-8">
+                      {/* Make.com Integration */}
+                      <div>
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Zap className="h-5 w-5 text-blue-500" />
+                          Make.com
+                        </h3>
+                        <MakeIntegration />
+                      </div>
+
+                      <div className="border-t pt-8">
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Zap className="h-5 w-5 text-orange-500" />
+                          Zapier
+                        </h3>
+                        <ZapierIntegration />
+                      </div>
+
+                      <div className="border-t pt-8">
+                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                          <Webhook className="h-5 w-5 text-green-500" />
+                          Content Booster Webhook
+                        </h3>
+                        <ContentBoosterWebhook />
+                      </div>
+
+                      {isAdmin && (
+                        <div className="border-t pt-8">
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Calendar className="h-5 w-5 text-purple-500" />
+                            Google Calendar
+                          </h3>
+                          <GoogleCalendarIntegration />
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
