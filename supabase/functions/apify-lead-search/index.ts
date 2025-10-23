@@ -113,29 +113,59 @@ serve(async (req) => {
     }
 
     // Get the results
+    console.log('Fetching results from dataset...');
     const resultsResponse = await fetch(
       `https://api.apify.com/v2/acts/${actorId}/runs/${runId}/dataset/items?token=${APIFY_API_KEY}`
     );
 
     if (!resultsResponse.ok) {
-      throw new Error('Failed to fetch results');
+      const errorText = await resultsResponse.text();
+      console.error('Failed to fetch results:', resultsResponse.status, errorText);
+      throw new Error(`Failed to fetch results: ${resultsResponse.status}`);
     }
 
     const results = await resultsResponse.json();
+    console.log('Raw Apify response:', JSON.stringify(results, null, 2));
+    
+    if (!Array.isArray(results)) {
+      console.error('Results is not an array:', typeof results);
+      return new Response(
+        JSON.stringify({ 
+          leads: [],
+          totalResults: 0,
+          source: 'apify',
+          error: 'No results returned from Apify'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+    
     console.log(`Retrieved ${results.length} results from Apify`);
 
     // Transform Apify results to our Lead format
-    const leads: Lead[] = results.map((item: any) => ({
-      company: item.title || item.name || 'Unknown',
-      location: item.address || item.neighborhood || item.city || location,
-      phone: item.phone || item.phoneNumber || null,
-      email: item.email || (item.emails && item.emails[0]) || null,
-      website: item.website || item.url || null,
-      industry: item.categoryName || item.mainCategory || query,
-      rating: item.totalScore || item.rating || null,
-      reviews: item.reviewsCount || item.reviews || null,
-      address: item.address || null,
-    }));
+    const leads: Lead[] = results
+      .filter((item: any) => item && (item.title || item.name)) // Filter out invalid items
+      .map((item: any) => {
+        console.log('Processing Apify item:', {
+          title: item.title,
+          name: item.name,
+          address: item.address,
+          phone: item.phone,
+          email: item.email
+        });
+        
+        return {
+          company: item.title || item.name || 'Unknown',
+          location: item.address || item.neighborhood || item.city || location,
+          phone: item.phone || item.phoneNumber || null,
+          email: item.email || (item.emails && item.emails[0]) || null,
+          website: item.website || item.url || null,
+          industry: item.categoryName || item.mainCategory || query,
+          rating: item.totalScore || item.rating || null,
+          reviews: item.reviewsCount || item.reviews || null,
+          address: item.address || null,
+        };
+      });
 
     console.log('Apify lead search completed successfully');
 
