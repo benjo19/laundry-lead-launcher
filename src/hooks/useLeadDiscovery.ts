@@ -20,13 +20,15 @@ export const useLeadDiscovery = () => {
     location: '',
     country: '',
     industry: 'laundry',
-    tempApiKey: ''
+    tempApiKey: '',
+    searchMethod: 'apify' as 'google' | 'apify'
   });
 
   const [searchQuery, setSearchQuery] = useState(savedFormData.searchQuery || '');
   const [location, setLocation] = useState(savedFormData.location || '');
   const [country, setCountry] = useState(savedFormData.country || '');
   const [industry, setIndustry] = useState(savedFormData.industry || 'laundry');
+  const [searchMethod, setSearchMethod] = useState<'google' | 'apify'>(savedFormData.searchMethod || 'apify');
   const [isSearching, setIsSearching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [discoveredLeads, setDiscoveredLeads] = useLocalStorage<AnalyzedLead[]>('discoveredLeads', []);
@@ -36,15 +38,16 @@ export const useLeadDiscovery = () => {
   // Save form data to localStorage whenever fields change
   useEffect(() => {
     console.log('=== SAVING FORM DATA ===');
-    console.log('Form data:', { searchQuery, location, country, industry, hasApiKey: !!tempApiKey });
+    console.log('Form data:', { searchQuery, location, country, industry, searchMethod, hasApiKey: !!tempApiKey });
     setSavedFormData({
       searchQuery,
       location,
       country,
       industry,
-      tempApiKey
+      tempApiKey,
+      searchMethod
     });
-  }, [searchQuery, location, country, industry, tempApiKey, setSavedFormData]);
+  }, [searchQuery, location, country, industry, tempApiKey, searchMethod, setSavedFormData]);
 
   useEffect(() => {
     if (user) {
@@ -206,6 +209,8 @@ export const useLeadDiscovery = () => {
     setCountry,
     industry,
     setIndustry,
+    searchMethod,
+    setSearchMethod,
     isSearching,
     setIsSearching,
     isAnalyzing,

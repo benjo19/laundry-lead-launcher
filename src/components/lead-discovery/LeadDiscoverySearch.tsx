@@ -1,12 +1,13 @@
 
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
-import { performLeadSearch } from './SearchOperations';
+import { performLeadSearch, performApifyLeadSearch } from './SearchOperations';
 
 interface LeadDiscoverySearchProps {
   searchQuery: string;
   location: string;
   country: string;
   industry: string;
+  searchMethod: 'google' | 'apify';
   tempApiKey: string;
   savedGoogleMapsApiKey: string;
   saveGoogleMapsApiKey: (key: string) => Promise<void>;
@@ -21,6 +22,7 @@ export const useLeadDiscoverySearch = ({
   location,
   country,
   industry,
+  searchMethod,
   tempApiKey,
   savedGoogleMapsApiKey,
   saveGoogleMapsApiKey,
@@ -30,20 +32,23 @@ export const useLeadDiscoverySearch = ({
   toast
 }: LeadDiscoverySearchProps) => {
   const searchLeads = async () => {
-    const currentApiKey = tempApiKey || savedGoogleMapsApiKey;
-    
-    if (!currentApiKey) {
-      toast({
-        title: "API ključ potreban",
-        description: "Molimo unesite Google Maps API ključ ili ga postavite u Settings.",
-        variant: "destructive",
-      });
-      return;
-    }
+    // Only require API key for Google Maps method
+    if (searchMethod === 'google') {
+      const currentApiKey = tempApiKey || savedGoogleMapsApiKey;
+      
+      if (!currentApiKey) {
+        toast({
+          title: "API ključ potreban",
+          description: "Molimo unesite Google Maps API ključ ili ga postavite u Settings.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    // Save the API key if it's entered manually and different from saved one
-    if (tempApiKey && tempApiKey !== savedGoogleMapsApiKey) {
-      await saveGoogleMapsApiKey(tempApiKey);
+      // Save the API key if it's entered manually and different from saved one
+      if (tempApiKey && tempApiKey !== savedGoogleMapsApiKey) {
+        await saveGoogleMapsApiKey(tempApiKey);
+      }
     }
 
     if (!location) {
@@ -61,14 +66,28 @@ export const useLeadDiscoverySearch = ({
       const searchLocation = country && country !== "all" && country !== location 
         ? `${location}, ${country}` 
         : location;
-        
-      const detailedLeads = await performLeadSearch(
-        searchQuery,
-        searchLocation,
-        industry,
-        currentApiKey,
-        getPlaceDetails
-      );
+      
+      let detailedLeads;
+      
+      if (searchMethod === 'apify') {
+        console.log('🔥 Using Apify search method');
+        detailedLeads = await performApifyLeadSearch(
+          searchQuery,
+          searchLocation,
+          industry,
+          20 // maxResults
+        );
+      } else {
+        console.log('🗺️ Using Google Maps search method');
+        const currentApiKey = tempApiKey || savedGoogleMapsApiKey;
+        detailedLeads = await performLeadSearch(
+          searchQuery,
+          searchLocation,
+          industry,
+          currentApiKey,
+          getPlaceDetails
+        );
+      }
       
       setDiscoveredLeads(detailedLeads);
       

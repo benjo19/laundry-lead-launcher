@@ -27,6 +27,8 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     setCountry,
     industry,
     setIndustry,
+    searchMethod,
+    setSearchMethod,
     isSearching,
     setIsSearching,
     isAnalyzing,
@@ -49,6 +51,7 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     location,
     country,
     industry,
+    searchMethod,
     tempApiKey,
     savedGoogleMapsApiKey,
     saveGoogleMapsApiKey,
@@ -77,6 +80,8 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
         setIndustry={setIndustry}
         apiKey={tempApiKey}
         setApiKey={setTempApiKey}
+        searchMethod={searchMethod}
+        setSearchMethod={setSearchMethod}
         isSearching={isSearching}
         isAnalyzing={isAnalyzing}
         discoveredLeads={discoveredLeads}

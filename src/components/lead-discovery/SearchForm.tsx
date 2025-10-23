@@ -3,7 +3,9 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Loader2, Key } from 'lucide-react';
+import { Search, Loader2, Key, Zap } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import IndustrySelector, { industries } from './IndustrySelector';
 import CountrySelector from './CountrySelector';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
@@ -44,6 +46,8 @@ interface SearchFormProps {
   setIndustry: (industry: string) => void;
   apiKey: string;
   setApiKey: (key: string) => void;
+  searchMethod: 'google' | 'apify';
+  setSearchMethod: (method: 'google' | 'apify') => void;
   isSearching: boolean;
   isAnalyzing: boolean;
   discoveredLeads: AnalyzedLead[];
@@ -63,6 +67,8 @@ const SearchForm = ({
   setIndustry,
   apiKey,
   setApiKey,
+  searchMethod,
+  setSearchMethod,
   isSearching,
   isAnalyzing,
   discoveredLeads,
@@ -88,6 +94,33 @@ const SearchForm = ({
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-700 mb-2">
+              Metoda pretraživanja
+            </label>
+            <RadioGroup value={searchMethod} onValueChange={setSearchMethod} className="flex gap-4">
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="apify" id="apify" />
+                <Label htmlFor="apify" className="cursor-pointer flex items-center">
+                  <Zap className="h-4 w-4 mr-1 text-orange-500" />
+                  <span>Apify (Preporučeno)</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="google" id="google" />
+                <Label htmlFor="google" className="cursor-pointer flex items-center">
+                  <Search className="h-4 w-4 mr-1 text-blue-500" />
+                  <span>Google Maps API</span>
+                </Label>
+              </div>
+            </RadioGroup>
+            <p className="text-xs text-slate-500 mt-1">
+              {searchMethod === 'apify' 
+                ? '✨ Apify daje najkvalitetnije rezultate s kontaktima i automatski pronalazi emailove'
+                : '🗺️ Google Maps API zahtijeva API ključ, ali nudi direktan pristup Google podacima'}
+            </p>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
               <label htmlFor="country" className="block text-sm font-medium text-slate-700 mb-1">
@@ -140,7 +173,7 @@ const SearchForm = ({
             </p>
           </div>
 
-          {showApiKeyInput && (
+          {showApiKeyInput && searchMethod === 'google' && (
             <div>
               <label htmlFor="apiKey" className="block text-sm font-medium text-slate-700 mb-1">
                 <Key className="inline h-4 w-4 mr-1" />

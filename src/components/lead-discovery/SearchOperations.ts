@@ -2,6 +2,7 @@
 import { industries, DiscoveredLead } from './SearchForm';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 import { scrapeEmailFromWebsite, enhancedEmailDiscovery, discoverWebsiteFromSocial } from '@/utils/emailScraper';
+import { supabase } from '@/integrations/supabase/client';
 
 // Local helpers for domain matching
 const stripWww = (host: string) => host.replace(/^www\./i, '');
@@ -280,6 +281,104 @@ export const performLeadSearch = async (
     
   } catch (error) {
     console.error('=== GOOGLE MAPS SEARCH ERROR ===');
+    console.error('❌ Error details:', error);
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
+    throw error;
+  }
+};
+
+export const performApifyLeadSearch = async (
+  searchQuery: string,
+  location: string,
+  industry: string,
+  maxResults: number = 20
+) => {
+  console.log('=== STARTING APIFY LEAD SEARCH ===');
+  console.log('Search parameters:', { 
+    searchQuery: `"${searchQuery}"`, 
+    location: `"${location}"`, 
+    industry: `"${industry}"`,
+    maxResults 
+  });
+
+  const selectedIndustry = industries.find(ind => ind.value === industry);
+  console.log('Selected industry:', selectedIndustry);
+  
+  // Build the search query properly
+  let finalQuery = '';
+  if (searchQuery && searchQuery.trim()) {
+    finalQuery = searchQuery.trim();
+  } else if (selectedIndustry) {
+    finalQuery = selectedIndustry.query;
+  } else {
+    finalQuery = 'business';
+  }
+  
+  console.log('🔍 FINAL APIFY QUERY:', `"${finalQuery}"`);
+  
+  try {
+    console.log('🚀 Calling Apify edge function...');
+    
+    const { data, error } = await supabase.functions.invoke('apify-lead-search', {
+      body: {
+        query: finalQuery,
+        location: location,
+        maxResults: maxResults,
+        language: 'hr'
+      }
+    });
+
+    if (error) {
+      console.error('❌ Apify edge function error:', error);
+      throw new Error(`Apify search failed: ${error.message}`);
+    }
+
+    console.log('=== APIFY API RESPONSE ===');
+    console.log('📊 Results count:', data?.leads?.length || 0);
+    console.log('🏢 First 3 results preview:', data?.leads?.slice(0, 3) || []);
+
+    if (!data?.leads || data.leads.length === 0) {
+      console.log('⚠️ No results returned from Apify');
+      return [];
+    }
+
+    console.log('=== PROCESSING APIFY RESULTS ===');
+
+    // Transform Apify results to DiscoveredLead format
+    const apifyLeads: DiscoveredLead[] = data.leads.map((lead: any) => ({
+      name: lead.company || 'Unknown',
+      address: lead.address || lead.location || '',
+      phone: lead.phone || '',
+      website: lead.website || '',
+      email: lead.email || '',
+      emailScraped: !!lead.email,
+      rating: lead.rating,
+      types: lead.industry ? [lead.industry] : [],
+      place_id: `apify_${Date.now()}_${Math.random()}`, // Generate unique ID
+      business_status: 'OPERATIONAL',
+      user_ratings_total: lead.reviews || 0,
+      emailSource: lead.email ? 'apify' : undefined
+    }));
+
+    console.log('=== APIFY SEARCH COMPLETED ===');
+    console.log('📊 Total leads found:', apifyLeads.length);
+    console.log('📧 Leads with emails:', apifyLeads.filter(lead => lead.email).length);
+    console.log('🏢 Final results summary:', apifyLeads.map(lead => ({ 
+      name: lead.name, 
+      address: lead.address,
+      hasEmail: !!lead.email
+    })));
+
+    if (apifyLeads.length > 0) {
+      console.log('✅ RETURNING APIFY DATA');
+    } else {
+      console.log('⚠️ RETURNING EMPTY RESULTS');
+    }
+
+    return apifyLeads;
+
+  } catch (error) {
+    console.error('=== APIFY SEARCH ERROR ===');
     console.error('❌ Error details:', error);
     console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     throw error;
