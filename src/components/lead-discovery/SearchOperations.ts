@@ -202,7 +202,7 @@ export const performLeadSearch = async (
         // Try enhanced email discovery with social media
         try {
           console.log(`🔍 Enhanced email discovery for: ${lead.name}`);
-          const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '');
+          const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '', location);
 
           // Only accept emails from the same company domain (avoid free providers)
           if (!lead.email && lead.website) {
@@ -386,7 +386,7 @@ export const performApifyLeadSearch = async (
       if (!lead.email || !lead.website) {
         try {
           console.log(`🔍 Enhanced email discovery for: ${lead.name}`);
-          const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '');
+          const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '', location);
 
           // Only accept emails from the same company domain (avoid free providers)
           if (!lead.email && lead.website) {

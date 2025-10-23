@@ -51,12 +51,13 @@ export const scrapeEmailFromWebsite = async (website: string, companyName: strin
 
 
 // Enhanced email discovery using backend edge function
-export const enhancedEmailDiscovery = async (companyName: string, website: string): Promise<{
+export const enhancedEmailDiscovery = async (companyName: string, website: string, location?: string): Promise<{
   emails: string[];
   socialProfiles: {
     linkedin?: string;
     facebook?: string;
-    yellowPages?: string;
+    instagram?: string;
+    twitter?: string;
   };
   emailSources: Record<string, string>;
 }> => {
@@ -70,7 +71,7 @@ export const enhancedEmailDiscovery = async (companyName: string, website: strin
     console.log(`🔍 Enhanced discovery for: ${companyName}`);
     
     const { data, error } = await supabase.functions.invoke('scrape-contact', {
-      body: { website, companyName }
+      body: { website, companyName, location }
     });
 
     if (error) {
@@ -79,9 +80,9 @@ export const enhancedEmailDiscovery = async (companyName: string, website: strin
     }
 
     const emailSources: Record<string, string> = {};
-    if (data?.emails) {
-      data.emails.forEach((email: string) => {
-        emailSources[email] = 'website';
+    if (data?.validatedEmails) {
+      data.validatedEmails.forEach((validated: any) => {
+        emailSources[validated.email] = validated.source;
       });
     }
 
