@@ -11,6 +11,8 @@ import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Settings from "./components/Settings";
+import AdminDashboard from "./components/AdminDashboard";
+import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import OAuthWrapper from "./components/OAuthWrapper";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AlertTriangle, Loader2 } from 'lucide-react';
@@ -89,6 +91,13 @@ const AppContent: React.FC = () => {
                     <Route path="/settings" element={
                       <ProtectedRoute>
                         <Settings />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/admin" element={
+                      <ProtectedRoute>
+                        <ProtectedAdminRoute>
+                          <AdminDashboard />
+                        </ProtectedAdminRoute>
                       </ProtectedRoute>
                     } />
                   </Routes>

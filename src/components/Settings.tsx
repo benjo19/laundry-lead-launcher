@@ -13,9 +13,11 @@ import GoogleCalendarIntegration from './GoogleCalendarIntegration';
 import ContentBoosterWebhook from './ContentBoosterWebhook';
 import AISettings from './AISettings';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 const Settings = () => {
   const { t } = useLanguage();
+  const { isAdmin } = useAdminStatus();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6">
@@ -46,7 +48,7 @@ const Settings = () => {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-7 gap-1 p-1 mb-6 h-auto">
+              <TabsList className={`grid w-full ${isAdmin ? 'grid-cols-4' : 'grid-cols-3'} gap-1 p-1 mb-6 h-auto`}>
                 <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <User className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Profil</span>
@@ -59,22 +61,12 @@ const Settings = () => {
                   <Mail className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Email</span>
                 </TabsTrigger>
-                <TabsTrigger value="make" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
-                  <Zap className="h-4 w-4 mb-1" />
-                  <span className="truncate w-full text-center">Make</span>
-                </TabsTrigger>
-                <TabsTrigger value="zapier" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
-                  <Zap className="h-4 w-4 mb-1" />
-                  <span className="truncate w-full text-center">Zapier</span>
-                </TabsTrigger>
-                <TabsTrigger value="calendar" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
-                  <Calendar className="h-4 w-4 mb-1" />
-                  <span className="truncate w-full text-center">Kalendar</span>
-                </TabsTrigger>
-                <TabsTrigger value="content-webhook" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
-                  <Webhook className="h-4 w-4 mb-1" />
-                  <span className="truncate w-full text-center">Content</span>
-                </TabsTrigger>
+                {isAdmin && (
+                  <TabsTrigger value="calendar" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                    <Calendar className="h-4 w-4 mb-1" />
+                    <span className="truncate w-full text-center">Kalendar</span>
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               <TabsContent value="business">
@@ -89,21 +81,11 @@ const Settings = () => {
                 <EmailSettings />
               </TabsContent>
 
-              <TabsContent value="make">
-                <MakeIntegration />
-              </TabsContent>
-
-              <TabsContent value="zapier">
-                <ZapierIntegration />
-              </TabsContent>
-
-              <TabsContent value="calendar">
-                <GoogleCalendarIntegration />
-              </TabsContent>
-
-              <TabsContent value="content-webhook">
-                <ContentBoosterWebhook />
-              </TabsContent>
+              {isAdmin && (
+                <TabsContent value="calendar">
+                  <GoogleCalendarIntegration />
+                </TabsContent>
+              )}
             </Tabs>
           </CardContent>
         </Card>

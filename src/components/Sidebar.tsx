@@ -1,10 +1,11 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useAdminStatus } from '@/hooks/useAdminStatus';
 import LanguageToggle from '@/components/LanguageToggle';
 import ThemeToggle from '@/components/ThemeToggle';
 import { 
@@ -21,7 +22,8 @@ import {
   Database,
   Brain,
   TestTube,
-  CreditCard
+  CreditCard,
+  Shield
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -33,6 +35,7 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
   const { user, signOut } = useAuthContext();
   const navigate = useNavigate();
   const { t } = useLanguage();
+  const { isAdmin } = useAdminStatus();
 
   const menuItems = [
     { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
@@ -108,6 +111,17 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
             </p>
           </div>
         </div>
+        
+        {isAdmin && (
+          <Button
+            variant="ghost"
+            className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent-hover text-sm p-3 h-11 rounded-lg transition-all duration-200"
+            onClick={() => navigate('/admin')}
+          >
+            <Shield className="h-4 w-4 mr-3 shrink-0" />
+            <span className="truncate">Admin Panel</span>
+          </Button>
+        )}
         
         <Button
           variant="ghost"
