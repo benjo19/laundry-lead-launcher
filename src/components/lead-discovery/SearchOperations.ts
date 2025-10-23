@@ -342,23 +342,80 @@ export const performApifyLeadSearch = async (
       return [];
     }
 
-    console.log('=== PROCESSING APIFY RESULTS ===');
+    console.log('=== PROCESSING APIFY RESULTS WITH EMAIL DISCOVERY ===');
 
-    // Transform Apify results to DiscoveredLead format
-    const apifyLeads: DiscoveredLead[] = data.leads.map((lead: any) => ({
-      name: lead.company || 'Unknown',
-      address: lead.address || lead.location || '',
-      phone: lead.phone || '',
-      website: lead.website || '',
-      email: lead.email || '',
-      emailScraped: !!lead.email,
-      rating: lead.rating,
-      types: lead.industry ? [lead.industry] : [],
-      place_id: `apify_${Date.now()}_${Math.random()}`, // Generate unique ID
-      business_status: 'OPERATIONAL',
-      user_ratings_total: lead.reviews || 0,
-      emailSource: lead.email ? 'apify' : undefined
-    }));
+    // Process each lead with email discovery
+    const apifyLeads: DiscoveredLead[] = [];
+    
+    for (let i = 0; i < data.leads.length; i++) {
+      const rawLead = data.leads[i];
+      console.log(`\n--- Processing Apify lead ${i + 1}: ${rawLead.company} ---`);
+      
+      const lead: DiscoveredLead = {
+        name: rawLead.company || 'Unknown',
+        address: rawLead.address || rawLead.location || '',
+        phone: rawLead.phone || '',
+        website: rawLead.website || '',
+        email: rawLead.email || '',
+        emailScraped: !!rawLead.email,
+        rating: rawLead.rating,
+        types: rawLead.industry ? [rawLead.industry] : [],
+        place_id: `apify_${Date.now()}_${Math.random()}`,
+        business_status: 'OPERATIONAL',
+        user_ratings_total: rawLead.reviews || 0,
+        emailSource: rawLead.email ? 'apify' : undefined
+      };
+
+      // If no email but we have a website, try to scrape it
+      if (!lead.email && lead.website) {
+        console.log(`📧 No email from Apify, scraping: ${lead.website}`);
+        try {
+          const scrapedEmail = await scrapeEmailFromWebsite(lead.website, lead.name);
+          if (scrapedEmail) {
+            lead.email = scrapedEmail;
+            lead.emailScraped = true;
+            lead.emailSource = 'website';
+            console.log(`✅ Email found via scraping: ${scrapedEmail}`);
+          }
+        } catch (emailError) {
+          console.error(`❌ Email scraping failed:`, emailError);
+        }
+      }
+
+      // Try enhanced email discovery with social media
+      if (!lead.email || !lead.website) {
+        try {
+          console.log(`🔍 Enhanced email discovery for: ${lead.name}`);
+          const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '');
+
+          // Only accept emails from the same company domain (avoid free providers)
+          if (!lead.email && lead.website) {
+            const companyRoot = getDomainRoot(new URL(lead.website).hostname);
+            const filtered = enhancedResult.emails.filter((e) => {
+              const domain = (e.split('@')[1] || '').toLowerCase();
+              return !isFreeEmailDomain(domain) && getDomainRoot(domain) === companyRoot;
+            });
+            if (filtered.length > 0) {
+              lead.email = filtered[0];
+              lead.emailSource = enhancedResult.emailSources[filtered[0]] || 'social';
+              lead.emailScraped = true;
+              console.log(`✅ Accepted domain-matching email: ${lead.email}`);
+            }
+          }
+          
+          // Store social profiles
+          if (Object.keys(enhancedResult.socialProfiles).length > 0) {
+            lead.socialProfiles = enhancedResult.socialProfiles as any;
+            console.log(`📱 Social profiles found:`, enhancedResult.socialProfiles);
+          }
+        } catch (enhancedError) {
+          console.error(`❌ Enhanced discovery failed:`, enhancedError);
+        }
+      }
+
+      apifyLeads.push(lead);
+      console.log(`✅ Processed: ${lead.name} - Email: ${lead.email || 'none'}`);
+    }
 
     console.log('=== APIFY SEARCH COMPLETED ===');
     console.log('📊 Total leads found:', apifyLeads.length);
