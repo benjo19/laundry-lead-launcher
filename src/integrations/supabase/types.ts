@@ -375,11 +375,13 @@ export type Database = {
           created_at: string | null
           email_provider: string | null
           email_settings: Json | null
+          google_calendar_settings: Json | null
           id: string
           make_settings: Json | null
           social_platforms: Json | null
           updated_at: string | null
           user_id: string
+          zapier_settings: Json | null
         }
         Insert: {
           ai_settings?: Json | null
@@ -387,11 +389,13 @@ export type Database = {
           created_at?: string | null
           email_provider?: string | null
           email_settings?: Json | null
+          google_calendar_settings?: Json | null
           id?: string
           make_settings?: Json | null
           social_platforms?: Json | null
           updated_at?: string | null
           user_id: string
+          zapier_settings?: Json | null
         }
         Update: {
           ai_settings?: Json | null
@@ -399,11 +403,13 @@ export type Database = {
           created_at?: string | null
           email_provider?: string | null
           email_settings?: Json | null
+          google_calendar_settings?: Json | null
           id?: string
           make_settings?: Json | null
           social_platforms?: Json | null
           updated_at?: string | null
           user_id?: string
+          zapier_settings?: Json | null
         }
         Relationships: []
       }

@@ -16,57 +16,101 @@ const ZapierIntegration = () => {
   const [connectionStatus, setConnectionStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const { toast } = useToast();
 
+  const handleSaveWebhook = async () => {
+    if (!webhookUrl || !validateWebhookUrl(webhookUrl)) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid Zapier webhook URL",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const success = await setZapierSettings({
+      webhook_url: webhookUrl,
+      enabled: true,
+      last_updated: new Date().toISOString(),
+    });
+
+    if (success) {
+      toast({
+        title: "Saved",
+        description: "Your Zapier webhook URL has been saved",
+      });
+    }
+  };
+
   const handleTriggerZap = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!webhookUrl) {
       toast({
-        title: "Greška",
-        description: "Molimo unesite URL vašeg Zapier webhook-a",
+        title: "Error",
+        description: "Please enter and save your Zapier webhook URL first",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!validateWebhookUrl(webhookUrl)) {
+      toast({
+        title: "Invalid URL",
+        description: "Please enter a valid Zapier webhook URL starting with https://hooks.zapier.com",
         variant: "destructive",
       });
       return;
     }
 
     setIsLoading(true);
-    setConnectionStatus('idle');
     console.log("Triggering Zapier webhook:", webhookUrl);
 
     try {
-      let dataToSend;
+      let parsedData;
       try {
-        dataToSend = JSON.parse(testData);
-        dataToSend.timestamp = new Date().toISOString();
-        dataToSend.triggered_from = window.location.origin;
+        parsedData = JSON.parse(testData);
       } catch (parseError) {
-        dataToSend = {
-          message: testData,
-          timestamp: new Date().toISOString(),
-          triggered_from: window.location.origin,
-        };
+        toast({
+          title: "Invalid JSON",
+          description: "Please enter valid JSON data",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
       }
 
-      // Try to send the webhook
-      await fetch(webhookUrl, {
+      const response = await fetch(webhookUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         mode: "no-cors",
-        body: JSON.stringify(dataToSend),
+        body: JSON.stringify({
+          ...parsedData,
+          timestamp: new Date().toISOString(),
+          triggered_from: window.location.origin,
+        }),
       });
 
       setConnectionStatus('success');
+      
+      // Update last test time
+      await setZapierSettings({
+        ...zapierSettings,
+        webhook_url: webhookUrl,
+        enabled: true,
+        last_test: new Date().toISOString(),
+      });
+
       toast({
-        title: "Zahtjev poslan",
-        description: "Zahtjev je poslan na Zapier. Provjerite historiju vašeg Zap-a da potvrdite da je pokrenut.",
+        title: "Request Sent",
+        description: "The request was sent to Zapier. Check your Zap's history to confirm it was triggered.",
       });
     } catch (error) {
       console.error("Error triggering webhook:", error);
       setConnectionStatus('error');
       toast({
-        title: "Greška",
-        description: "Neuspješno pokretanje Zapier webhook-a. Molimo provjerite URL i pokušajte ponovo.",
+        title: "Error",
+        description: "Failed to trigger the Zapier webhook. Please check the URL and try again.",
         variant: "destructive",
       });
     } finally {
