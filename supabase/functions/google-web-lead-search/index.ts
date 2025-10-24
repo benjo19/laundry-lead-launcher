@@ -1,11 +1,19 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.9';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
+
+const requestSchema = z.object({
+  q: z.string().min(1).max(500),
+  limit: z.number().int().min(1).max(50).optional().default(10),
+  gl: z.string().length(2).optional(),
+  lr: z.string().regex(/^lang_[a-z]{2}$/).optional(),
+});
 
 type Lead = {
   name: string;
@@ -153,18 +161,22 @@ serve(async (req) => {
       });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const q: string = (body.q || "").toString().trim();
-    const limit: number = Math.min(Math.max(parseInt(body.limit || "10"), 1), 10);
-    const gl: string | undefined = typeof body.gl === 'string' && /^[a-zA-Z]{2}$/.test(body.gl) ? body.gl.toLowerCase() : undefined;
-    const lr: string | undefined = typeof body.lr === 'string' && /^lang_[a-zA-Z]{2}$/.test(body.lr) ? body.lr.toLowerCase() : undefined;
-
-    if (!q) {
-      return new Response(JSON.stringify({ error: "Missing query (q)" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    // Validate and parse input
+    const rawBody = await req.json().catch(() => ({}));
+    const validationResult = requestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input',
+          details: validationResult.error.errors 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const { q, limit, gl, lr } = validationResult.data;
 
     console.log("[google-web-lead-search] Query:", q);
 

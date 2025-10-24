@@ -1,11 +1,20 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.9';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+const requestSchema = z.object({
+  provider: z.enum(['google_cse', 'serpapi']).optional().default('google_cse'),
+  q: z.string().min(1).max(500),
+  site: z.string().max(200).optional(),
+  num: z.number().int().min(1).max(100).optional().default(10),
+  page: z.number().int().min(1).max(50).optional().default(1),
+});
 
 interface SearchItem {
   title: string;
@@ -49,27 +58,20 @@ serve(async (req) => {
 
     console.log('Web search request from user:', user.id);
 
-    const url = new URL(req.url);
-
-    let provider: "google_cse" | "serpapi" = "google_cse";
-    let qRaw = "";
-    let site = "";
-    let num = 10;
-    let page = 1;
-
-    if (req.method === "GET") {
-      provider = (url.searchParams.get("provider") as "google_cse" | "serpapi") || "google_cse";
-      qRaw = url.searchParams.get("q")?.trim() || "";
-      site = url.searchParams.get("site")?.trim() || "";
-      num = Math.max(1, Math.min(parseInt(url.searchParams.get("num") || "10", 10), 10));
-      page = Math.max(1, Math.min(parseInt(url.searchParams.get("page") || "1", 10), 10));
-    } else if (req.method === "POST") {
-      const body = await req.json().catch(() => ({}));
-      provider = (body.provider as "google_cse" | "serpapi") || "google_cse";
-      qRaw = (body.q || "").toString().trim();
-      site = (body.site || "").toString().trim();
-      num = Math.max(1, Math.min(parseInt(body.num || "10", 10), 10));
-      page = Math.max(1, Math.min(parseInt(body.page || "1", 10), 50));
+    // Parse and validate input
+    let rawInput: any;
+    
+    if (req.method === 'GET') {
+      const url = new URL(req.url);
+      rawInput = {
+        provider: url.searchParams.get('provider') || 'google_cse',
+        q: url.searchParams.get('q') || '',
+        site: url.searchParams.get('site') || undefined,
+        num: url.searchParams.get('num') ? parseInt(url.searchParams.get('num')!) : 10,
+        page: url.searchParams.get('page') ? parseInt(url.searchParams.get('page')!) : 1,
+      };
+    } else if (req.method === 'POST') {
+      rawInput = await req.json().catch(() => ({}));
     } else {
       return new Response(JSON.stringify({ error: "Method not allowed" }), {
         status: 405,
@@ -77,12 +79,20 @@ serve(async (req) => {
       });
     }
 
-    if (!qRaw) {
-      return new Response(JSON.stringify({ error: "Missing q" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    const validationResult = requestSchema.safeParse(rawInput);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input',
+          details: validationResult.error.errors 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
+
+    const { provider, q: qRaw, site, num, page } = validationResult.data;
 
     // Compose query with optional site filter
     const q = site ? `${qRaw} site:${site}` : qRaw;

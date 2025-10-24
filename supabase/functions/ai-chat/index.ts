@@ -1,10 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.9';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const requestSchema = z.object({
+  message: z.string().min(1).max(5000),
+  language: z.enum(['en', 'hr']).optional().default('hr'),
+});
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -39,14 +45,22 @@ serve(async (req) => {
 
     console.log('AI chat request from user:', user.id);
 
-    const { message, language = 'hr' } = await req.json();
-
-    if (!message) {
+    // Validate and parse input
+    const rawBody = await req.json();
+    const validationResult = requestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error);
       return new Response(
-        JSON.stringify({ error: 'Message is required' }),
+        JSON.stringify({ 
+          error: 'Invalid input',
+          details: validationResult.error.errors 
+        }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const { message, language } = validationResult.data;
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {

@@ -1,10 +1,20 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.9';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+const requestSchema = z.object({
+  recipientName: z.string().max(200),
+  recipientCompany: z.string().min(1).max(200),
+  recipientIndustry: z.string().max(100).optional(),
+  emailType: z.enum(['cold', 'follow-up', 'proposal', 'introduction']),
+  additionalContext: z.string().max(2000).optional(),
+  businessContext: z.string().max(2000).optional(),
+});
 
 interface EmailGenerationRequest {
   recipientName: string;
@@ -58,8 +68,22 @@ serve(async (req) => {
       throw new Error('AI service not configured');
     }
 
-    // Parse request
-    const params: EmailGenerationRequest = await req.json();
+    // Validate and parse request
+    const rawBody = await req.json();
+    const validationResult = requestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error);
+      return new Response(
+        JSON.stringify({ 
+          error: 'Invalid input',
+          details: validationResult.error.errors 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const params: EmailGenerationRequest = validationResult.data;
 
     console.log('Generating email with Lovable AI');
 

@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.9';
+import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
+
+const requestSchema = z.object({
+  website: z.string().min(1).max(500),
+  companyName: z.string().min(1).max(200),
+  location: z.string().max(100).optional(),
+});
 
 // Helper function to scrape social media profiles for emails
 async function scrapeSocialProfile(platform: 'linkedin' | 'facebook' | 'instagram', companyName: string, location?: string): Promise<string[]> {
@@ -160,15 +167,23 @@ serve(async (req) => {
 
     console.log('Contact scraping request from user:', user.id);
 
-    const { website, companyName, location }: ScrapeRequest = await req.json();
-    console.log(`🔍 Enhanced scraping for: ${companyName} from ${website}`);
-
-    if (!website) {
+    // Validate and parse input
+    const rawBody = await req.json();
+    const validationResult = requestSchema.safeParse(rawBody);
+    
+    if (!validationResult.success) {
+      console.error('Validation error:', validationResult.error);
       return new Response(
-        JSON.stringify({ error: "Website URL is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({ 
+          error: 'Invalid input',
+          details: validationResult.error.errors 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const { website, companyName, location } = validationResult.data;
+    console.log(`🔍 Enhanced scraping for: ${companyName} from ${website}`);
 
     // Normalize URL
     const baseUrl = website.startsWith('http') ? website : `https://${website}`;
