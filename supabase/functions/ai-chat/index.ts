@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 const requestSchema = z.object({
-  message: z.string().min(1).max(5000),
+  message: z.string().min(1).max(15000),
   language: z.enum(['en', 'hr']).optional().default('hr'),
 });
 
