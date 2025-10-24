@@ -226,8 +226,6 @@ export const useContentBooster = () => {
         triggerContentCreated(webhookData)
       ]);
 
-      resetForm();
-
       toast({
         title: "Webhook pokrenut",
         description: `Sadržaj je poslan putem webhook-a${generatedImageUrl ? ' sa slikom' : ''}.`,
