@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Mail, Send, Sparkles, Trash2, Users, Settings, Edit3, Eye } from 'lucide-react';
+import { Mail, Send, Sparkles, Trash2, Users, Settings, Edit3, Eye, Building2 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { Email, Lead } from '@/types';
@@ -15,6 +15,7 @@ import { useAISettings } from '@/hooks/useAISettings';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
@@ -101,6 +102,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { toast } = useToast();
   const { generateEmail } = useIntegratedEmailService();
   const { aiSettings, isAIConfigured } = useAISettings();
+  const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
 
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
 
@@ -493,6 +495,33 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Business Profile Selection */}
+            {profiles.length > 0 && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">
+                  <Building2 className="h-4 w-4 inline mr-1" />
+                  Poslovni profil
+                </label>
+                <Select value={selectedProfile?.id || ''} onValueChange={setSelectedProfileId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Odaberite profil" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {profiles.map((profile) => (
+                      <SelectItem key={profile.id} value={profile.id}>
+                        {profile.name} - {profile.company_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedProfile && (
+                  <p className="text-xs text-slate-500">
+                    {selectedProfile.company_name} ({selectedProfile.industry})
+                  </p>
+                )}
+              </div>
+            )}
+
             {/* Recipient Selection */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700">
