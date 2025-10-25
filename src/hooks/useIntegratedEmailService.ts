@@ -63,8 +63,20 @@ export const useIntegratedEmailService = () => {
         businessContext = '';
       }
 
+      // Map emailType to match edge function schema
+      const emailTypeMap: Record<string, 'cold' | 'follow-up' | 'proposal' | 'introduction'> = {
+        'intro': 'introduction',
+        'follow-up': 'follow-up',
+        'proposal': 'proposal',
+        'reminder': 'follow-up'
+      };
+
       const enhancedParams = {
-        ...params,
+        recipientName: params.recipientCompany, // Use company name as recipient name
+        recipientCompany: params.recipientCompany,
+        recipientIndustry: params.industry || params.companyInfo?.businessType,
+        emailType: emailTypeMap[params.emailType] || 'cold',
+        additionalContext: params.additionalContext,
         businessContext: businessContext
       };
 
