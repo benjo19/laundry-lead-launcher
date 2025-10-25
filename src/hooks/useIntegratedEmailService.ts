@@ -72,9 +72,12 @@ export const useIntegratedEmailService = () => {
       };
 
       const enhancedParams = {
-        recipientName: params.recipientCompany, // Use company name as recipient name
+        recipientName: params.recipientCompany,
         recipientCompany: params.recipientCompany,
         recipientIndustry: params.industry || params.companyInfo?.businessType,
+        recipientLocation: params.companyInfo?.location,
+        recipientWebsite: params.companyInfo?.website,
+        recipientRating: params.companyInfo?.rating,
         emailType: emailTypeMap[params.emailType] || 'cold',
         additionalContext: params.additionalContext,
         businessContext: businessContext

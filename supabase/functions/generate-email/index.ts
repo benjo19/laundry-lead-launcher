@@ -11,6 +11,9 @@ const requestSchema = z.object({
   recipientName: z.string().max(200),
   recipientCompany: z.string().min(1).max(200),
   recipientIndustry: z.string().max(100).optional(),
+  recipientLocation: z.string().max(200).optional(),
+  recipientWebsite: z.string().max(300).optional(),
+  recipientRating: z.number().min(0).max(5).optional(),
   emailType: z.enum(['cold', 'follow-up', 'proposal', 'introduction']),
   additionalContext: z.string().max(2000).optional(),
   businessContext: z.string().max(2000).optional(),
@@ -20,6 +23,9 @@ interface EmailGenerationRequest {
   recipientName: string;
   recipientCompany: string;
   recipientIndustry?: string;
+  recipientLocation?: string;
+  recipientWebsite?: string;
+  recipientRating?: number;
   emailType: 'cold' | 'follow-up' | 'proposal' | 'introduction';
   additionalContext?: string;
   businessContext?: string;
@@ -210,9 +216,26 @@ INFORMACIJE O PRIMATELJU:`;
     prompt += `\nIndustrija: ${params.recipientIndustry}`;
   }
 
+  if (params.recipientLocation) {
+    prompt += `\nLokacija: ${params.recipientLocation}`;
+  }
+
+  if (params.recipientWebsite) {
+    prompt += `\nWeb stranica: ${params.recipientWebsite}`;
+  }
+
+  if (params.recipientRating !== undefined) {
+    prompt += `\nOcjena: ${params.recipientRating}/5`;
+  }
+
   if (params.additionalContext) {
     prompt += `\n\nDODATNI KONTEKST:\n${params.additionalContext}`;
   }
+
+  prompt += `\n\nPERSONALIZIRAJ EMAIL prema dostupnim podacima o primatelju:
+- Ako je lokacija poznata, spomeni geografsku blizinu ili specifičnosti tog tržišta
+- Ako postoji website, prilagodi pristup prema tipu i veličini poslovanja
+- Ako postoji ocjena, prilagodi ton prema reputaciji tvrtke`;
 
   return prompt;
 }
