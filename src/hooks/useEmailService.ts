@@ -2,10 +2,12 @@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
+import { useMakeIntegration } from './useMakeIntegration';
 
 export const useEmailService = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const { triggerWebhook } = useMakeIntegration();
 
   const sendEmail = async (to_email: string, subject: string, content: string) => {
     if (!user) {
@@ -32,6 +34,19 @@ export const useEmailService = () => {
         title: "Email poslan",
         description: `Email je uspješno poslan na ${to_email}`,
       });
+
+      // Trigger Make.com webhook for email sent event
+      try {
+        await triggerWebhook('email_sent', {
+          to_email,
+          subject,
+          content,
+          send_method: 'resend'
+        });
+      } catch (webhookError) {
+        console.error('Error triggering Make.com webhook:', webhookError);
+        // Don't throw - webhook error shouldn't block email sending
+      }
 
       return data;
     } catch (error) {

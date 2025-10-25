@@ -20,6 +20,8 @@ interface MakeSettings {
   trigger_events: string[];
   content_booster_webhook_url?: string;
   content_booster_auto_trigger?: boolean;
+  email_webhook_url?: string;
+  email_auto_trigger?: boolean;
 }
 
 const MakeIntegration = () => {
@@ -40,7 +42,9 @@ const MakeIntegration = () => {
     auto_trigger: false,
     trigger_events: ['email_sent', 'lead_added', 'reminder_created'],
     content_booster_webhook_url: '',
-    content_booster_auto_trigger: false
+    content_booster_auto_trigger: false,
+    email_webhook_url: '',
+    email_auto_trigger: false
   });
 
   useEffect(() => {
@@ -162,6 +166,63 @@ const MakeIntegration = () => {
       });
     } catch (error) {
       console.error('Error testing webhook:', error);
+      setLastTestResult('error');
+      toast({
+        title: "Test neuspješan",
+        description: "Dogodila se greška prilikom testiranja webhook-a.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
+  const testEmailWebhook = async () => {
+    if (!settings.email_webhook_url) {
+      toast({
+        title: "Greška",
+        description: "Molimo unesite Email Webhook URL prije testiranja.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTesting(true);
+    setLastTestResult(null);
+
+    try {
+      const testEmailData = {
+        to_email: 'test@example.com',
+        subject: 'Test email iz Marketing Agent aplikacije',
+        content_preview: 'Ovo je testni email poslan iz Marketing Agent aplikacije za provjeru Make.com integracije...',
+        timestamp: new Date().toISOString(),
+        send_method: 'resend',
+        status: 'sent'
+      };
+
+      console.log('=== EMAIL WEBHOOK TEST ===');
+      console.log('Webhook URL:', settings.email_webhook_url);
+      console.log('Test data:', testEmailData);
+
+      const response = await fetch(settings.email_webhook_url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify(testEmailData),
+      });
+
+      console.log('Request sent successfully (no-cors mode)');
+
+      setLastTestResult('success');
+      toast({
+        title: "Test uspješan",
+        description: "Test email podaci poslani na Make.com. Provjerite scenario da li ste primili podatke.",
+        duration: 6000,
+      });
+    } catch (error) {
+      console.error('Error testing email webhook:', error);
       setLastTestResult('error');
       toast({
         title: "Test neuspješan",
@@ -366,6 +427,72 @@ const MakeIntegration = () => {
             <Label htmlFor="auto_trigger">Automatski pokreni webhook za leadove</Label>
           </div>
 
+          {/* Email Integration Section */}
+          <div className="border-t pt-6 mt-6">
+            <div className="bg-green-50 border border-green-200 p-4 rounded-lg mb-4">
+              <h4 className="font-medium text-green-900 mb-2">📧 Email integracija</h4>
+              <p className="text-sm text-green-800">
+                Odvojeni webhook za poslane emailove. Šalje podatke o primatelju, predmetu, sadržaju i statusu.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="email_webhook_url">Email Webhook URL</Label>
+              <Input
+                id="email_webhook_url"
+                type="url"
+                value={settings.email_webhook_url || ''}
+                onChange={(e) => setSettings({ ...settings, email_webhook_url: e.target.value })}
+                placeholder="https://hook.eu1.make.com/xxxxxxxx"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 mt-4">
+              <input
+                type="checkbox"
+                id="email_auto_trigger"
+                checked={settings.email_auto_trigger || false}
+                onChange={(e) => setSettings({ ...settings, email_auto_trigger: e.target.checked })}
+                className="rounded"
+              />
+              <Label htmlFor="email_auto_trigger">Automatski šalji podatke o poslanih emailovima</Label>
+            </div>
+
+            <Button
+              onClick={testEmailWebhook}
+              disabled={isTesting || !settings.email_webhook_url}
+              variant="outline"
+              className="w-full mt-4"
+            >
+              {isTesting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Testiranje...
+                </>
+              ) : (
+                <>
+                  <TestTube className="h-4 w-4 mr-2" />
+                  Testiraj Email Webhook
+                </>
+              )}
+            </Button>
+
+            <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <h5 className="text-xs font-medium text-slate-700 mb-2">📦 Primjer podataka koji se šalju:</h5>
+              <pre className="text-xs text-slate-600 font-mono">
+{`{
+  "to_email": "test@example.com",
+  "subject": "Test email predmet",
+  "content_preview": "Prvih 200 karaktera...",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "send_method": "resend",
+  "status": "sent"
+}`}
+              </pre>
+            </div>
+          </div>
+
           {/* Content Booster Integration Section */}
           <div className="border-t pt-6 mt-6">
             <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg mb-4">
@@ -474,12 +601,20 @@ const MakeIntegration = () => {
             <div>
               <h5 className="text-sm font-medium text-slate-700 mb-2">Općeniti eventi:</h5>
               <ul className="text-sm text-slate-600 space-y-1">
-                <li>• <code>email_sent</code> - Kada se pošalje email</li>
                 <li>• <code>lead_added</code> - Kada se doda novi lead</li>
                 <li>• <code>reminder_created</code> - Kada se kreira novi podsjetnik</li>
                 <li>• <code>reminder_completed</code> - Kada se završi podsjetnik</li>
                 <li>• <code>test_connection</code> - Test konekcije</li>
               </ul>
+            </div>
+            <div>
+              <h5 className="text-sm font-medium text-green-700 mb-2">Email eventi:</h5>
+              <ul className="text-sm text-green-600 space-y-1">
+                <li>• <code>email_sent</code> - Kada se pošalje email</li>
+              </ul>
+              <p className="text-xs text-green-500 mt-2">
+                Šalje: to_email, subject, content_preview, timestamp, send_method, status
+              </p>
             </div>
             <div>
               <h5 className="text-sm font-medium text-purple-700 mb-2">Content Booster eventi:</h5>

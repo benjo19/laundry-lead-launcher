@@ -16,6 +16,8 @@ interface MakeSettings {
   auto_trigger?: boolean;
   content_booster_webhook_url?: string;
   content_booster_auto_trigger?: boolean;
+  email_webhook_url?: string;
+  email_auto_trigger?: boolean;
 }
 
 export const useMakeIntegration = () => {
@@ -58,12 +60,21 @@ export const useMakeIntegration = () => {
       
       // Determine which webhook to use based on event type
       const isContentEvent = eventType === 'content_published';
-      const webhookUrl = isContentEvent 
-        ? settings?.content_booster_webhook_url 
-        : settings?.webhook_url;
-      const autoTrigger = isContentEvent
-        ? settings?.content_booster_auto_trigger
-        : settings?.auto_trigger;
+      const isEmailEvent = eventType === 'email_sent';
+      
+      let webhookUrl: string | undefined;
+      let autoTrigger: boolean | undefined;
+      
+      if (isContentEvent) {
+        webhookUrl = settings?.content_booster_webhook_url;
+        autoTrigger = settings?.content_booster_auto_trigger;
+      } else if (isEmailEvent) {
+        webhookUrl = settings?.email_webhook_url;
+        autoTrigger = settings?.email_auto_trigger;
+      } else {
+        webhookUrl = settings?.webhook_url;
+        autoTrigger = settings?.auto_trigger;
+      }
       
       if (!webhookUrl) {
         console.log(`Make.com: Webhook URL not configured for ${eventType}`);
@@ -79,7 +90,17 @@ export const useMakeIntegration = () => {
       let webhookData;
       const hasImageBlob = data.image instanceof Blob;
 
-      if (isContentEvent) {
+      if (isEmailEvent) {
+        // Email data
+        webhookData = {
+          to_email: data.to_email || '',
+          subject: data.subject || '',
+          content_preview: data.content ? data.content.substring(0, 200) : '',
+          timestamp: new Date().toISOString(),
+          send_method: data.send_method || 'resend',
+          status: 'sent'
+        };
+      } else if (isContentEvent) {
         if (hasImageBlob) {
           // Use FormData for content with image file
           const formData = new FormData();
