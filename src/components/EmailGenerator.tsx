@@ -217,7 +217,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         content: emailContent,
         company_name: selectedCompany || '',
         template_type: template || 'custom',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        status: 'sent'
       };
 
       console.log('Sending email data to webhook:', emailData);
@@ -288,7 +289,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
-  const saveDraft = () => {
+  const saveDraft = async () => {
     if (!recipient || !subject || !emailContent) {
       toast({
         title: "Nedostaju podaci",
@@ -297,6 +298,19 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       });
       return;
     }
+
+    // Pošalji draft podatke na webhook
+    const draftData = {
+      to_email: recipient,
+      subject: subject,
+      content: emailContent,
+      company_name: selectedCompany || '',
+      template_type: template || 'custom',
+      timestamp: new Date().toISOString(),
+      status: 'draft'
+    };
+
+    await triggerWebhook('email_sent', draftData);
 
     if (editingDraftId) {
       // Update existing draft
@@ -307,7 +321,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       ));
       toast({
         title: "Draft ažuriran",
-        description: "Email draft je uspješno ažuriran.",
+        description: "Email draft je uspješno ažuriran i poslan na webhook.",
       });
     } else {
       // Create new draft
@@ -323,7 +337,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       setEmails([draft, ...emails]);
       toast({
         title: "Draft spremljen",
-        description: "Email draft je uspješno spremljen.",
+        description: "Email draft je uspješno spremljen i poslan na webhook.",
       });
     }
   };

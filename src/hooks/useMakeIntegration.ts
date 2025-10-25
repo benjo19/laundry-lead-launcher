@@ -99,7 +99,7 @@ export const useMakeIntegration = () => {
           company_name: data.company_name || '',
           template_type: data.template_type || 'custom',
           timestamp: data.timestamp || new Date().toISOString(),
-          status: 'sent'
+          status: data.status || 'sent' // 'sent' ili 'draft'
         };
       } else if (isContentEvent) {
         if (hasImageBlob) {
