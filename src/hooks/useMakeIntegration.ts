@@ -91,13 +91,14 @@ export const useMakeIntegration = () => {
       const hasImageBlob = data.image instanceof Blob;
 
       if (isEmailEvent) {
-        // Email data
+        // Email data - pošalji SVE podatke bez skraćivanja
         webhookData = {
           to_email: data.to_email || '',
           subject: data.subject || '',
-          content_preview: data.content ? data.content.substring(0, 200) : '',
-          timestamp: new Date().toISOString(),
-          send_method: data.send_method || 'resend',
+          content: data.content || '', // PUNI sadržaj, ne content_preview
+          company_name: data.company_name || '',
+          template_type: data.template_type || 'custom',
+          timestamp: data.timestamp || new Date().toISOString(),
           status: 'sent'
         };
       } else if (isContentEvent) {
