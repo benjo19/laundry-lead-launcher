@@ -197,6 +197,20 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
+  // Helper funkcija za personalizaciju email sadržaja
+  const personalizeContent = (content: string, companyName: string, recipientEmail: string): string => {
+    let personalizedContent = content;
+    
+    // Zamijeni sve moguće varijante placeholdera
+    personalizedContent = personalizedContent.replace(/\{company_name\}/gi, companyName);
+    personalizedContent = personalizedContent.replace(/\{company\}/gi, companyName);
+    personalizedContent = personalizedContent.replace(/\{recipient\}/gi, companyName);
+    personalizedContent = personalizedContent.replace(/\{to\}/gi, companyName);
+    personalizedContent = personalizedContent.replace(/\{email\}/gi, recipientEmail);
+    
+    return personalizedContent;
+  };
+
   const sendEmail = async () => {
     if (!recipient || !subject || !emailContent) {
       toast({
@@ -210,13 +224,18 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setIsSending(true);
     
     try {
+      // Personaliziraj sadržaj prije slanja
+      const personalizedContent = personalizeContent(
+        emailContent, 
+        selectedCompany || recipient.split('@')[0], // Ako nema company_name, koristi dio prije @
+        recipient
+      );
+
       // Pripremi email podatke za webhook
       const emailData = {
         to_email: recipient,
         subject: subject,
-        content: emailContent,
-        company_name: selectedCompany || '',
-        template_type: template || 'custom',
+        content: personalizedContent, // Personaliziran sadržaj
         timestamp: new Date().toISOString(),
         status: 'sent'
       };
@@ -299,13 +318,18 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
+    // Personaliziraj sadržaj prije slanja
+    const personalizedContent = personalizeContent(
+      emailContent, 
+      selectedCompany || recipient.split('@')[0],
+      recipient
+    );
+
     // Pošalji draft podatke na webhook
     const draftData = {
       to_email: recipient,
       subject: subject,
-      content: emailContent,
-      company_name: selectedCompany || '',
-      template_type: template || 'custom',
+      content: personalizedContent, // Personaliziran sadržaj
       timestamp: new Date().toISOString(),
       status: 'draft'
     };
