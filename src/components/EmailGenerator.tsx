@@ -12,6 +12,7 @@ import { Email, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useIntegratedEmailService } from '@/hooks/useIntegratedEmailService';
 import { useAISettings } from '@/hooks/useAISettings';
+import { useMakeIntegration } from '@/hooks/useMakeIntegration';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
@@ -98,11 +99,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { leads } = useLeadManagement();
   const [discoveredLeads] = useLocalStorage<any[]>('discoveredLeads', []);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSending, setIsSending] = useState(false);
 
   const { toast } = useToast();
   const { generateEmail } = useIntegratedEmailService();
   const { aiSettings, isAIConfigured } = useAISettings();
   const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
+  const { triggerWebhook } = useMakeIntegration();
 
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
 
@@ -194,7 +197,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   };
 
-  const sendEmail = () => {
+  const sendEmail = async () => {
     if (!recipient || !subject || !emailContent) {
       toast({
         title: "Nedostaju podaci",
@@ -204,74 +207,85 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
-    // Create Gmail URL with pre-filled email data
-    const gmailUrl = `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(recipient)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(emailContent)}`;
+    setIsSending(true);
     
-    // Try to open in new window
     try {
-      const gmailWindow = window.open(gmailUrl, '_blank', 'noopener,noreferrer');
-      
-      // Check if popup was blocked
-      setTimeout(() => {
-        if (!gmailWindow || gmailWindow.closed || typeof gmailWindow.closed === 'undefined') {
-          // Popup blocked - use direct navigation as fallback
-          toast({
-            title: "Otvaranje Gmaila...",
-            description: "Preusmjeravam vas na Gmail",
-          });
-          window.location.href = gmailUrl;
-          return;
-        }
-      }, 100);
-    } catch (error) {
-      // Error opening popup - use direct navigation
-      console.error('Error opening Gmail:', error);
-      window.location.href = gmailUrl;
-      return;
-    }
-
-    if (editingDraftId) {
-      // Update existing draft to sent
-      setEmails(emails.map(email => 
-        email.id === editingDraftId 
-          ? { ...email, to: recipient, subject, content: emailContent, status: 'Sent' as const, dateSent: new Date().toISOString().split('T')[0] }
-          : email
-      ));
-      setEditingDraftId(null);
-    } else {
-      // Create new sent email
-      const newEmail: Email = {
-        id: Date.now(),
-        to: recipient,
-        subject,
+      // Pripremi email podatke za webhook
+      const emailData = {
+        to_email: recipient,
+        subject: subject,
         content: emailContent,
-        template: template || 'custom',
-        dateSent: new Date().toISOString().split('T')[0],
-        status: 'Sent'
+        company_name: selectedCompany || '',
+        template_type: template || 'custom',
+        timestamp: new Date().toISOString()
       };
-      setEmails([newEmail, ...emails]);
-    }
-    
-    // Reset form and clear saved data
-    const resetData = {
-      recipient: '',
-      selectedCompany: '',
-      subject: '',
-      emailContent: '',
-      template: ''
-    };
-    
-    setRecipient('');
-    setSelectedCompany('');
-    setSubject('');
-    setEmailContent('');
-    setTemplate('');
-    setSavedFormData(resetData);
 
-    toast({
-      title: "Gmail otvoren",
-      description: `Email otvoren u Gmailu, spreman za slanje na ${recipient}`,
-    });
+      console.log('Sending email data to webhook:', emailData);
+
+      // Pošalji na Make.com webhook
+      const webhookTriggered = await triggerWebhook('email_sent', emailData);
+
+      if (!webhookTriggered) {
+        toast({
+          title: "Webhook nije konfiguriran",
+          description: "Molimo postavite Email webhook URL u postavkama Make.com integracije.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Ažuriraj ili kreiraj email zapis
+      if (editingDraftId) {
+        setEmails(emails.map(email => 
+          email.id === editingDraftId 
+            ? { ...email, to: recipient, subject, content: emailContent, status: 'Sent' as const, dateSent: new Date().toISOString().split('T')[0] }
+            : email
+        ));
+        setEditingDraftId(null);
+      } else {
+        const newEmail: Email = {
+          id: Date.now(),
+          to: recipient,
+          subject,
+          content: emailContent,
+          template: template || 'custom',
+          dateSent: new Date().toISOString().split('T')[0],
+          status: 'Sent'
+        };
+        setEmails([newEmail, ...emails]);
+      }
+      
+      // Reset forma
+      const resetData = {
+        recipient: '',
+        selectedCompany: '',
+        subject: '',
+        emailContent: '',
+        template: ''
+      };
+      
+      setRecipient('');
+      setSelectedCompany('');
+      setSubject('');
+      setEmailContent('');
+      setTemplate('');
+      setSavedFormData(resetData);
+
+      toast({
+        title: "Email poslan na webhook",
+        description: `Email podaci su poslani na Make.com za slanje na ${recipient}`,
+      });
+
+    } catch (error) {
+      console.error('Error triggering email webhook:', error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška pri slanju email podataka.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
   const saveDraft = () => {
@@ -646,9 +660,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             />
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <Button onClick={sendEmail} className="flex-1 bg-green-600 hover:bg-green-700 text-sm">
+              <Button 
+                onClick={sendEmail} 
+                className="flex-1 bg-green-600 hover:bg-green-700 text-sm"
+                disabled={isSending}
+              >
                 <Send className="h-4 w-4 mr-2" />
-                {editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email'}
+                {isSending ? 'Šaljem...' : (editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email')}
               </Button>
               <Button onClick={saveDraft} variant="outline" className="flex-1 text-sm">
                 {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
