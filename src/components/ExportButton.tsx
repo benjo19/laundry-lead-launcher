@@ -82,6 +82,21 @@ const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
     }
   };
 
+  const escapeCSVField = (field: any): string => {
+    if (field === null || field === undefined) return '';
+    
+    const stringValue = String(field);
+    
+    // Ako polje sadrži: quote, comma, ili newline → mora biti u quotes
+    if (stringValue.includes('"') || stringValue.includes(',') || stringValue.includes('\n') || stringValue.includes('\r')) {
+      // Dupliciraj sve quote znakove (RFC 4180 standard)
+      return `"${stringValue.replace(/"/g, '""')}"`;
+    }
+    
+    // Za sigurnost, sve stringove stavljamo u quotes
+    return `"${stringValue}"`;
+  };
+
   const exportToCSV = () => {
     if (data.length === 0) {
       toast({
@@ -96,18 +111,21 @@ const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
     const firstItem = getRelevantFields(data[0], type);
     const headers = Object.keys(firstItem);
     
-    const csvContent = [
-      headers.join(','),
-      ...data.map(row => {
-        const relevantData = getRelevantFields(row, type);
-        return headers.map(header => {
-          const value = relevantData[header] || '';
-          return typeof value === 'string' && value.includes(',') ? `"${value}"` : value;
-        }).join(',');
-      })
-    ].join('\n');
-
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Header row sa pravim escapingom
+    const headerRow = headers.map(h => escapeCSVField(h)).join(',');
+    
+    // Data rows sa pravim escapingom
+    const dataRows = data.map(row => {
+      const relevantData = getRelevantFields(row, type);
+      return headers.map(header => escapeCSVField(relevantData[header])).join(',');
+    });
+    
+    const csvContent = [headerRow, ...dataRows].join('\n');
+    
+    // UTF-8 BOM za Excel kompatibilnost
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    
     const link = document.createElement('a');
     const url = URL.createObjectURL(blob);
     link.setAttribute('href', url);
@@ -119,7 +137,7 @@ const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
 
     toast({
       title: "Export uspješan",
-      description: `${filename}.csv je preuzet.`,
+      description: `${filename}.csv je preuzet. Otvorite u Excelu za najbolji prikaz.`,
     });
   };
 

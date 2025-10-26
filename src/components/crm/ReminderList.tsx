@@ -15,7 +15,7 @@ interface ReminderListProps {
 
 const ReminderList = ({ reminders, onUpdateStatus, onPostpone, onDelete, onEdit }: ReminderListProps) => {
   return (
-    <Card className="lg:col-span-2">
+    <Card className="h-full">
       <CardHeader>
         <CardTitle className="flex items-center">
           <Calendar className="h-5 w-5 mr-2 text-blue-600" />
