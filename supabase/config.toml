@@ -56,3 +56,6 @@ verify_jwt = true
 
 [functions.apify-lead-search]
 verify_jwt = true
+
+[functions.export-to-excel]
+verify_jwt = true

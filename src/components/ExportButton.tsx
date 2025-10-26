@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Download, FileSpreadsheet, FileText, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ExportButtonProps {
   data: any[];
@@ -14,6 +15,7 @@ interface ExportButtonProps {
 
 const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
   const { toast } = useToast();
+  const [isExporting, setIsExporting] = useState(false);
 
   const getRelevantFields = (item: any, type: string) => {
     switch (type) {
@@ -184,6 +186,72 @@ const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
     });
   };
 
+  const exportToExcel = async () => {
+    if (data.length === 0) {
+      toast({
+        title: "Nema podataka",
+        description: "Nema podataka za export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('Morate biti prijavljeni za export');
+      }
+
+      const { data: responseData, error } = await supabase.functions.invoke('export-to-excel', {
+        body: {
+          data,
+          filename,
+          type,
+          leads
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Response data is already an ArrayBuffer, convert to Blob
+      const blob = responseData instanceof Blob 
+        ? responseData 
+        : new Blob([responseData], { 
+            type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+          });
+
+      // Download file
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${filename}.xlsx`;
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Export uspješan",
+        description: `${filename}.xlsx je preuzet. Profesionalno formatiran Excel file!`,
+      });
+
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Greška pri exportu",
+        description: error.message || "Pokušajte ponovno.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const autoExportToSheets = async () => {
     if (data.length === 0) {
       toast({
@@ -237,15 +305,23 @@ const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" className="bg-green-50 border-green-200 hover:bg-green-100">
+        <Button 
+          variant="outline" 
+          className="bg-green-50 border-green-200 hover:bg-green-100"
+          disabled={isExporting}
+        >
           <Download className="h-4 w-4 mr-2" />
-          Export
+          {isExporting ? 'Exportam...' : 'Export'}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
-        <DropdownMenuItem onClick={exportToCSV}>
-          <FileSpreadsheet className="h-4 w-4 mr-2" />
-          Preuzmi CSV
+        <DropdownMenuItem onClick={exportToExcel} disabled={isExporting}>
+          <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+          Excel (.xlsx)
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={exportToCSV} disabled={isExporting}>
+          <FileText className="h-4 w-4 mr-2 text-blue-600" />
+          CSV
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
