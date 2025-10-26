@@ -18,6 +18,8 @@ interface MakeSettings {
   content_booster_auto_trigger?: boolean;
   email_webhook_url?: string;
   email_auto_trigger?: boolean;
+  crm_export_webhook_url?: string;
+  crm_export_auto_trigger?: boolean;
 }
 
 export const useMakeIntegration = () => {
@@ -61,6 +63,7 @@ export const useMakeIntegration = () => {
       // Determine which webhook to use based on event type
       const isContentEvent = eventType === 'content_published';
       const isEmailEvent = eventType === 'email_sent';
+      const isCRMExportEvent = eventType === 'crm_export';
       
       let webhookUrl: string | undefined;
       let autoTrigger: boolean | undefined;
@@ -71,6 +74,9 @@ export const useMakeIntegration = () => {
       } else if (isEmailEvent) {
         webhookUrl = settings?.email_webhook_url;
         autoTrigger = settings?.email_auto_trigger;
+      } else if (isCRMExportEvent) {
+        webhookUrl = settings?.crm_export_webhook_url;
+        autoTrigger = settings?.crm_export_auto_trigger;
       } else {
         webhookUrl = settings?.webhook_url;
         autoTrigger = settings?.auto_trigger;
@@ -97,6 +103,15 @@ export const useMakeIntegration = () => {
           content: data.content || '', // Već personaliziran sadržaj
           timestamp: data.timestamp || new Date().toISOString(),
           status: data.status || 'sent' // 'sent' ili 'draft'
+        };
+      } else if (isCRMExportEvent) {
+        webhookData = {
+          export_type: data.type || 'reminders',
+          filename: data.filename || 'export',
+          timestamp: new Date().toISOString(),
+          total_count: data.data?.length || 0,
+          items: data.data || [],
+          leads: data.leads || []
         };
       } else if (isContentEvent) {
         if (hasImageBlob) {

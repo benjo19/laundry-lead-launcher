@@ -1,10 +1,11 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Download, FileSpreadsheet, FileText, ExternalLink } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { useMakeIntegration } from '@/hooks/useMakeIntegration';
 
 interface ExportButtonProps {
   data: any[];
@@ -16,6 +17,18 @@ interface ExportButtonProps {
 const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
   const { toast } = useToast();
   const [isExporting, setIsExporting] = useState(false);
+  const { triggerWebhook, getMakeSettings } = useMakeIntegration();
+  const [useMakeWebhook, setUseMakeWebhook] = useState(false);
+
+  useEffect(() => {
+    const checkMakeSettings = async () => {
+      const settings = await getMakeSettings();
+      if (settings?.crm_export_webhook_url && settings?.crm_export_auto_trigger) {
+        setUseMakeWebhook(true);
+      }
+    };
+    checkMakeSettings();
+  }, [getMakeSettings]);
 
   const getRelevantFields = (item: any, type: string) => {
     switch (type) {
@@ -302,6 +315,47 @@ const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
     }
   };
 
+  const exportViaMake = async () => {
+    if (data.length === 0) {
+      toast({
+        title: "Nema podataka",
+        description: "Nema podataka za export.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const success = await triggerWebhook('crm_export', {
+        type,
+        filename,
+        data,
+        leads
+      });
+
+      if (success) {
+        toast({
+          title: "Podaci poslani",
+          description: "CRM podaci su uspješno poslani na Make.com. Provjerite email ili Drive za Excel file.",
+          duration: 6000,
+        });
+      } else {
+        throw new Error('Webhook nije konfiguriran ili nije aktivan');
+      }
+    } catch (error) {
+      console.error('Make.com export error:', error);
+      toast({
+        title: "Greška pri slanju",
+        description: "Webhook nije konfiguriran. Idite u Postavke > Make.com.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -315,6 +369,17 @@ const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>
+        {useMakeWebhook && (
+          <>
+            <DropdownMenuItem onClick={exportViaMake} disabled={isExporting}>
+              <ExternalLink className="h-4 w-4 mr-2 text-purple-600" />
+              Make.com Webhook
+            </DropdownMenuItem>
+            <DropdownMenuItem disabled className="text-xs text-muted-foreground px-2 py-1">
+              ─────────────────
+            </DropdownMenuItem>
+          </>
+        )}
         <DropdownMenuItem onClick={exportToExcel} disabled={isExporting}>
           <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
           Excel (.xlsx)

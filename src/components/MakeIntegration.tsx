@@ -22,6 +22,8 @@ interface MakeSettings {
   content_booster_auto_trigger?: boolean;
   email_webhook_url?: string;
   email_auto_trigger?: boolean;
+  crm_export_webhook_url?: string;
+  crm_export_auto_trigger?: boolean;
 }
 
 const MakeIntegration = () => {
@@ -44,7 +46,9 @@ const MakeIntegration = () => {
     content_booster_webhook_url: '',
     content_booster_auto_trigger: false,
     email_webhook_url: '',
-    email_auto_trigger: false
+    email_auto_trigger: false,
+    crm_export_webhook_url: '',
+    crm_export_auto_trigger: false
   });
 
   useEffect(() => {
@@ -310,6 +314,99 @@ const MakeIntegration = () => {
     }
   };
 
+  const testCRMExportWebhook = async () => {
+    if (!settings.crm_export_webhook_url) {
+      toast({
+        title: "Greška",
+        description: "Molimo unesite CRM Export Webhook URL prije testiranja.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsTesting(true);
+    setLastTestResult(null);
+
+    try {
+      const testCRMData = {
+        export_type: 'reminders',
+        filename: 'crm-test-export',
+        timestamp: new Date().toISOString(),
+        total_count: 2,
+        items: [
+          {
+            title: 'Testni reminder',
+            description: 'Test opis za reminder',
+            company: 'Test Tvrtka d.o.o.',
+            date: '2024-01-20',
+            time: '14:00',
+            priority: 'Visok',
+            status: 'Aktivan'
+          },
+          {
+            title: 'Drugi reminder',
+            description: 'Poslati ponudu',
+            company: 'Drugi Klijent d.o.o.',
+            date: '2024-01-22',
+            time: '10:00',
+            priority: 'Srednji',
+            status: 'Aktivan'
+          }
+        ],
+        leads: [
+          {
+            company: 'Test Tvrtka d.o.o.',
+            email: 'info@test.hr',
+            phone: '+385 1 234 5678',
+            website: 'https://www.test.hr',
+            location: 'Zagreb, Hrvatska',
+            industry: 'IT & Tehnologija'
+          },
+          {
+            company: 'Drugi Klijent d.o.o.',
+            email: 'kontakt@klijent.hr',
+            phone: '+385 91 999 8888',
+            website: 'https://www.klijent.hr',
+            location: 'Split, Hrvatska',
+            industry: 'Trgovina'
+          }
+        ]
+      };
+
+      console.log('=== CRM EXPORT WEBHOOK TEST ===');
+      console.log('Webhook URL:', settings.crm_export_webhook_url);
+      console.log('Test data:', testCRMData);
+
+      const response = await fetch(settings.crm_export_webhook_url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        mode: 'no-cors',
+        body: JSON.stringify(testCRMData),
+      });
+
+      console.log('Request sent successfully (no-cors mode)');
+
+      setLastTestResult('success');
+      toast({
+        title: "Test uspješan",
+        description: "Test CRM podaci poslani na Make.com. Provjerite scenario da li ste primili podatke.",
+        duration: 6000,
+      });
+    } catch (error) {
+      console.error('Error testing CRM export webhook:', error);
+      setLastTestResult('error');
+      toast({
+        title: "Test neuspješan",
+        description: "Dogodila se greška prilikom testiranja webhook-a.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsTesting(false);
+    }
+  };
+
   const triggerWebhook = async (eventType: string, data: any) => {
     if (!settings.webhook_url || !settings.auto_trigger) return;
 
@@ -552,6 +649,102 @@ const MakeIntegration = () => {
             )}
           </div>
 
+          {/* CRM Export Integration Section */}
+          <div className="border-t pt-6 mt-6">
+            <div className="bg-cyan-50 border border-cyan-200 p-4 rounded-lg mb-4">
+              <h4 className="font-medium text-cyan-900 mb-2">📊 CRM Export integracija</h4>
+              <p className="text-sm text-cyan-800">
+                Webhook za export CRM podataka. Šalje remindere, leadove, i sve povezane informacije u JSON formatu.
+                Na Make.com možete generirati Excel, poslati email, ili uploadati na Drive.
+              </p>
+            </div>
+
+            <div>
+              <Label htmlFor="crm_export_webhook_url">CRM Export Webhook URL</Label>
+              <Input
+                id="crm_export_webhook_url"
+                type="url"
+                value={settings.crm_export_webhook_url || ''}
+                onChange={(e) => setSettings({ ...settings, crm_export_webhook_url: e.target.value })}
+                placeholder="https://hook.eu1.make.com/xxxxxxxx"
+                className="mt-1"
+              />
+            </div>
+
+            <div className="flex items-center space-x-2 mt-4">
+              <input
+                type="checkbox"
+                id="crm_export_auto_trigger"
+                checked={settings.crm_export_auto_trigger || false}
+                onChange={(e) => setSettings({ ...settings, crm_export_auto_trigger: e.target.checked })}
+                className="rounded"
+              />
+              <Label htmlFor="crm_export_auto_trigger">Automatski šalji CRM podatke na webhook kod exporta</Label>
+            </div>
+
+            <Button
+              onClick={testCRMExportWebhook}
+              disabled={isTesting || !settings.crm_export_webhook_url}
+              variant="outline"
+              className="w-full mt-4"
+            >
+              {isTesting ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Testiranje...
+                </>
+              ) : (
+                <>
+                  <TestTube className="h-4 w-4 mr-2" />
+                  Testiraj CRM Export Webhook
+                </>
+              )}
+            </Button>
+
+            <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg">
+              <h5 className="text-xs font-medium text-slate-700 mb-2">📦 Primjer podataka koji se šalju:</h5>
+              <pre className="text-xs text-slate-600 font-mono overflow-x-auto">
+{`{
+  "export_type": "reminders",
+  "filename": "crm-datoteke",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "total_count": 4,
+  "items": [
+    {
+      "title": "Nazvati klijenta",
+      "description": "Dogovor o sastanku",
+      "company": "Test d.o.o.",
+      "date": "2024-01-20",
+      "time": "14:00",
+      "priority": "Visok",
+      "status": "Aktivan"
+    }
+  ],
+  "leads": [
+    {
+      "company": "Test d.o.o.",
+      "email": "info@test.hr",
+      "phone": "+385 1 234 5678",
+      "location": "Zagreb",
+      "industry": "IT"
+    }
+  ]
+}`}
+              </pre>
+            </div>
+
+            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <h5 className="text-xs font-medium text-blue-700 mb-2">💡 Što možeš napraviti na Make.com:</h5>
+              <ul className="text-xs text-blue-600 space-y-1 list-disc list-inside">
+                <li>Generiraj Excel file sa Google Sheets ili Microsoft Excel Online modulom</li>
+                <li>Pošalji Excel kao email attachment preko Gmail/Outlook modula</li>
+                <li>Uploadaj na Google Drive / Dropbox / OneDrive</li>
+                <li>Kreiraj novi sheet u postojećem Google Sheets dokumentu</li>
+                <li>Pošalji podatke u drugi CRM (HubSpot, Salesforce, itd.)</li>
+              </ul>
+            </div>
+          </div>
+
           <div className="flex items-center space-x-2">
             <Button
               onClick={testWebhook}
@@ -623,6 +816,15 @@ const MakeIntegration = () => {
               </ul>
               <p className="text-xs text-purple-500 mt-2">
                 Šalje: platform, content, contentType, date, companyName, industry, imageUrl
+              </p>
+            </div>
+            <div>
+              <h5 className="text-sm font-medium text-cyan-700 mb-2">CRM Export eventi:</h5>
+              <ul className="text-sm text-cyan-600 space-y-1">
+                <li>• <code>crm_export</code> - Kada se exportaju CRM podaci</li>
+              </ul>
+              <p className="text-xs text-cyan-500 mt-2">
+                Šalje: export_type, filename, timestamp, total_count, items, leads
               </p>
             </div>
           </div>
