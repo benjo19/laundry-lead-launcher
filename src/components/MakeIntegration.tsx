@@ -705,28 +705,46 @@ const MakeIntegration = () => {
               <h5 className="text-xs font-medium text-slate-700 mb-2">📦 Primjer podataka koji se šalju:</h5>
               <pre className="text-xs text-slate-600 font-mono overflow-x-auto">
 {`{
-  "export_type": "reminders",
-  "filename": "crm-datoteke",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "total_count": 4,
-  "items": [
+  "event": "crm_export",
+  "export_info": {
+    "type": "reminders",
+    "filename": "crm-export",
+    "format": "excel",
+    "timestamp": "2025-10-26T10:30:00Z",
+    "user_id": "user-uuid"
+  },
+  "summary": {
+    "total_items": 4,
+    "total_leads": 10,
+    "has_leads": true,
+    "has_reminders": true
+  },
+  "reminders": [
     {
-      "title": "Nazvati klijenta",
-      "description": "Dogovor o sastanku",
-      "company": "Test d.o.o.",
-      "date": "2024-01-20",
+      "id": "uuid-123",
+      "title": "Poziv klijenta",
+      "description": "Nazvati za ponudu",
+      "company": "ABC d.o.o.",
+      "date": "2025-10-26",
       "time": "14:00",
       "priority": "Visok",
-      "status": "Aktivan"
+      "status": "Aktivan",
+      "created_at": "2025-10-20T12:00:00Z"
     }
   ],
   "leads": [
     {
-      "company": "Test d.o.o.",
-      "email": "info@test.hr",
+      "id": "uuid-456",
+      "company": "XYZ d.o.o.",
+      "email": "info@xyz.hr",
       "phone": "+385 1 234 5678",
-      "location": "Zagreb",
-      "industry": "IT"
+      "website": "www.xyz.hr",
+      "location": "Zagreb, Croatia",
+      "status": "Nova",
+      "potential": "Visok",
+      "industry": "IT",
+      "notes": "Zainteresirani za usluge",
+      "created_at": "2025-10-20T12:00:00Z"
     }
   ]
 }`}

@@ -106,12 +106,44 @@ export const useMakeIntegration = () => {
         };
       } else if (isCRMExportEvent) {
         webhookData = {
-          export_type: data.type || 'reminders',
-          filename: data.filename || 'export',
-          timestamp: new Date().toISOString(),
-          total_count: data.data?.length || 0,
-          items: data.data || [],
-          leads: data.leads || []
+          event: 'crm_export',
+          export_info: {
+            type: data.type || 'reminders',
+            filename: data.filename || 'export',
+            format: data.format || 'excel',
+            timestamp: new Date().toISOString(),
+            user_id: user.id
+          },
+          summary: {
+            total_items: data.data?.length || 0,
+            total_leads: data.leads?.length || 0,
+            has_leads: (data.leads?.length || 0) > 0,
+            has_reminders: (data.data?.length || 0) > 0
+          },
+          reminders: (data.data || []).map((item: any) => ({
+            id: item.id,
+            title: item.title,
+            description: item.description,
+            company: item.company,
+            date: item.date,
+            time: item.time,
+            priority: item.priority,
+            status: item.status,
+            created_at: item.created_at
+          })),
+          leads: (data.leads || []).map((lead: any) => ({
+            id: lead.id,
+            company: lead.company,
+            email: lead.email,
+            phone: lead.phone,
+            website: lead.website,
+            location: lead.location,
+            status: lead.status,
+            potential: lead.potential,
+            industry: lead.industry,
+            notes: lead.notes,
+            created_at: lead.created_at
+          }))
         };
       } else if (isContentEvent) {
         if (hasImageBlob) {
