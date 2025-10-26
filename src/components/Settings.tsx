@@ -3,8 +3,8 @@ import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Settings as SettingsIcon, User, Mail, Bot, Zap, Calendar, Webhook } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ArrowLeft, Settings as SettingsIcon, User, Mail, Bot, Zap, Calendar, Webhook, UserCircle } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
 import BusinessProfileManager from './BusinessProfileManager';
 import EmailSettings from './EmailSettings';
 import MakeIntegration from './MakeIntegration';
@@ -12,12 +12,15 @@ import ZapierIntegration from './ZapierIntegration';
 import GoogleCalendarIntegration from './GoogleCalendarIntegration';
 import ContentBoosterWebhook from './ContentBoosterWebhook';
 import AISettings from './AISettings';
+import { AccountSettings } from './AccountSettings';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 
 const Settings = () => {
   const { t } = useLanguage();
   const { isAdmin } = useAdminStatus();
+  const [searchParams] = useSearchParams();
+  const defaultTab = searchParams.get('tab') || 'account';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-4 sm:p-6">
@@ -47,8 +50,12 @@ const Settings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <Tabs defaultValue="business" className="w-full">
-              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 gap-1 p-1 mb-6 h-auto">
+            <Tabs defaultValue={defaultTab} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 gap-1 p-1 mb-6 h-auto">
+                <TabsTrigger value="account" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
+                  <UserCircle className="h-4 w-4 mb-1" />
+                  <span className="truncate w-full text-center">{t('account')}</span>
+                </TabsTrigger>
                 <TabsTrigger value="business" className="flex flex-col items-center justify-center p-3 h-16 text-xs">
                   <User className="h-4 w-4 mb-1" />
                   <span className="truncate w-full text-center">Profil</span>
@@ -66,6 +73,10 @@ const Settings = () => {
                   <span className="truncate w-full text-center">Integracije</span>
                 </TabsTrigger>
               </TabsList>
+
+              <TabsContent value="account">
+                <AccountSettings />
+              </TabsContent>
 
               <TabsContent value="business">
                 <BusinessProfileManager />
