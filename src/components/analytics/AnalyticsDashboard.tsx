@@ -7,18 +7,19 @@ import { TrendingUp, TrendingDown, Users, Mail, Calendar, Target, Activity, Doll
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useSupabaseLeads } from '@/hooks/useSupabaseLeads';
 import { useSupabaseReminders } from '@/hooks/useSupabaseReminders';
+import { useSupabaseEmails } from '@/hooks/useSupabaseEmails';
 import { useZapierIntegration } from '@/hooks/useZapierIntegration';
 import { supabase } from '@/integrations/supabase/client';
-import { Lead, Email, Reminder, ContentPost } from '@/types';
+import { Lead, Reminder, ContentPost } from '@/types';
 
 const AnalyticsDashboard = () => {
   // Prioritize Supabase data, fallback to localStorage
   const { leads: supabaseLeads, loading: leadsLoading, refreshLeads } = useSupabaseLeads();
   const { reminders: supabaseReminders, loading: remindersLoading, refreshReminders } = useSupabaseReminders();
+  const { emails: supabaseEmails, loading: emailsLoading, refreshEmails } = useSupabaseEmails();
   const { isConfigured: zapierConfigured } = useZapierIntegration();
   
   const [localLeads] = useLocalStorage<Lead[]>('leads', []);
-  const [emails] = useLocalStorage<Email[]>('emails', []);
   const [localReminders] = useLocalStorage<Reminder[]>('reminders', []);
   const [posts] = useLocalStorage<ContentPost[]>('contentPosts', []);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -26,6 +27,7 @@ const AnalyticsDashboard = () => {
   // Use Supabase data if available, otherwise fallback to localStorage
   const leads = supabaseLeads.length > 0 ? supabaseLeads : localLeads;
   const reminders = supabaseReminders.length > 0 ? supabaseReminders : localReminders;
+  const emails = supabaseEmails.length > 0 ? supabaseEmails : [];
 
   // Real-time updates for leads
   useEffect(() => {
@@ -75,6 +77,30 @@ const AnalyticsDashboard = () => {
     };
   }, [refreshReminders]);
 
+  // Real-time updates for emails
+  useEffect(() => {
+    const channel = supabase
+      .channel('analytics-emails-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'emails'
+        },
+        () => {
+          console.log('Email data changed, refreshing...');
+          refreshEmails();
+          setLastUpdate(new Date());
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [refreshEmails]);
+
   // Generate monthly performance data
   const generatePerformanceData = () => {
     const months = ['Sij', 'Velj', 'Ožu', 'Tra', 'Svi', 'Lip'];
@@ -90,7 +116,7 @@ const AnalyticsDashboard = () => {
       }).length;
       
       const monthEmails = emails.filter(email => {
-        const emailDate = new Date(email.dateSent);
+        const emailDate = new Date(email.sent_at || email.created_at);
         return emailDate.getMonth() === monthDate.getMonth() && 
                emailDate.getFullYear() === monthDate.getFullYear();
       }).length;
@@ -141,14 +167,26 @@ const AnalyticsDashboard = () => {
   const getEmailPerformanceData = () => {
     const sentEmails = emails.filter(e => e.status === 'Sent').length;
     const draftEmails = emails.filter(e => e.status === 'Draft').length;
-    const openRate = sentEmails > 0 ? (sentEmails * 0.284) : 0;
-    const clickRate = sentEmails > 0 ? (sentEmails * 0.062) : 0;
+    
+    // Calculate actual open and click rates from database
+    const sentEmailsWithOpenRate = emails.filter(e => e.status === 'Sent' && e.open_rate);
+    const avgOpenRate = sentEmailsWithOpenRate.length > 0 
+      ? sentEmailsWithOpenRate.reduce((sum, e) => sum + parseFloat(e.open_rate || '0'), 0) / sentEmailsWithOpenRate.length 
+      : 0;
+    
+    const sentEmailsWithClickRate = emails.filter(e => e.status === 'Sent' && e.click_rate);
+    const avgClickRate = sentEmailsWithClickRate.length > 0
+      ? sentEmailsWithClickRate.reduce((sum, e) => sum + parseFloat(e.click_rate || '0'), 0) / sentEmailsWithClickRate.length
+      : 0;
+    
+    const openedCount = Math.round((avgOpenRate / 100) * sentEmails);
+    const clickedCount = Math.round((avgClickRate / 100) * sentEmails);
 
     return [
       { name: 'Poslani', value: sentEmails, color: '#10b981' },
       { name: 'Draft', value: draftEmails, color: '#f59e0b' },
-      { name: 'Otvoreni', value: Math.round(openRate), color: '#3b82f6' },
-      { name: 'Kliknuti', value: Math.round(clickRate), color: '#8b5cf6' }
+      { name: 'Otvoreni', value: openedCount, color: '#3b82f6' },
+      { name: 'Kliknuti', value: clickedCount, color: '#8b5cf6' }
     ];
   };
 
