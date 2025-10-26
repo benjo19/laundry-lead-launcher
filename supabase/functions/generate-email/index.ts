@@ -188,7 +188,8 @@ VAŽNE SMJERNICE:
 - Fokusiraj se na korist za primatelja
 - Izbjegavaj klišeje i generičke fraze
 - Poruka treba biti jasna i koncizna (max 200 riječi)
-- Završi s jasnim pozivom na akciju`;
+- Završi s jasnim pozivom na akciju
+- OBAVEZNO dodaj potpis na kraju emaila ako je naveden u kontekstu pošiljatelja`;
 
   if (businessContext) {
     prompt += `\n\nKONTEKST POŠILJATELJA:\n${businessContext}`;

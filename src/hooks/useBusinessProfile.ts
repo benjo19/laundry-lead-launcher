@@ -255,7 +255,8 @@ export const useBusinessProfile = () => {
       ai_goals: Array.isArray(profile.ai_goals) ? profile.ai_goals : [],
       ai_system_prompt: profile.ai_system_prompt || '',
       location: profile.location || '',
-      website: profile.website || ''
+      website: profile.website || '',
+      email_signature: profile.email_signature || ''
     };
     
     // Get documents content for this specific profile
@@ -271,6 +272,7 @@ Ton komunikacije: ${safeProfile.ai_tone}
 Ciljevi AI asistenta: ${safeProfile.ai_goals.join(', ')}
 Lokacija: ${safeProfile.location}
 Website: ${safeProfile.website}
+Email potpis: ${safeProfile.email_signature}
     `.trim();
 
     if (safeProfile.ai_system_prompt) {
