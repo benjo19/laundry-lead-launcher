@@ -9,9 +9,10 @@ interface ExportButtonProps {
   data: any[];
   filename: string;
   type: 'leads' | 'emails' | 'reminders' | 'posts';
+  leads?: any[];
 }
 
-const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
+const ExportButton = ({ data, filename, type, leads }: ExportButtonProps) => {
   const { toast } = useToast();
 
   const getRelevantFields = (item: any, type: string) => {
@@ -30,6 +31,11 @@ const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
           'Bilješke': item.notes || ''
         };
       case 'reminders':
+        // Try to find associated lead by company name
+        const associatedLead = leads?.find((lead: any) => 
+          lead.company.toLowerCase() === item.company.toLowerCase()
+        );
+        
         return {
           'Naslov': item.title || '',
           'Opis': item.description || '',
@@ -37,7 +43,14 @@ const ExportButton = ({ data, filename, type }: ExportButtonProps) => {
           'Datum': item.date || '',
           'Vrijeme': item.time || '',
           'Prioritet': item.priority || '',
-          'Status': item.status || ''
+          'Status': item.status || '',
+          // Dodatne informacije iz lead-a (ako postoje)
+          'Email': associatedLead?.email || '',
+          'Telefon': associatedLead?.phone || '',
+          'Industrija': associatedLead?.industry || '',
+          'Lokacija': associatedLead?.location || '',
+          'Broj zaposlenika': associatedLead?.employees || '',
+          'Website': associatedLead?.website || ''
         };
       case 'emails':
         return {

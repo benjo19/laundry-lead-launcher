@@ -11,7 +11,7 @@ import Settings from '@/components/Settings';
 import KnowledgeBase from '@/components/KnowledgeBase';
 import AIKnowledgeChat from '@/components/AIKnowledgeChat';
 import AdminDashboard from '@/components/AdminDashboard';
-import { EmailScrapingTest } from '@/components/EmailScrapingTest';
+
 import MobileHeader from '@/components/MobileHeader';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -72,7 +72,6 @@ const Index = () => {
       case 'lead-hunter': return t('lead_hunter');
       case 'lead-discovery': return t('lead_discovery');
       case 'knowledge-base': return 'Knowledge Base';
-      case 'email-scraping-test': return 'Email Scraping Test';
       case 'ai-chat': return 'AI Asistent';
       case 'email-generator': return t('email_generator');
       case 'crm-reminder': return 'CRM Datoteke';
@@ -101,9 +100,6 @@ const Index = () => {
         case 'knowledge-base':
           console.log('Index: Rendering KnowledgeBase');
           return <KnowledgeBase />;
-        case 'email-scraping-test':
-          console.log('Index: Rendering EmailScrapingTest');
-          return <EmailScrapingTest />;
         case 'ai-chat':
           console.log('Index: Rendering AIKnowledgeChat');
           return <AIKnowledgeChat />;

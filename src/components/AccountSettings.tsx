@@ -18,6 +18,7 @@ export const AccountSettings = () => {
 
   const [profile, setProfile] = useState<any>(null);
   const [fullName, setFullName] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
@@ -79,6 +80,9 @@ export const AccountSettings = () => {
   };
 
   const handleChangePassword = async () => {
+    if (!currentPassword) {
+      return;
+    }
     if (newPassword.length < 6) {
       return;
     }
@@ -86,8 +90,9 @@ export const AccountSettings = () => {
       return;
     }
 
-    const success = await changePassword(newPassword);
+    const success = await changePassword(currentPassword, newPassword);
     if (success) {
+      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
     }
@@ -200,6 +205,17 @@ export const AccountSettings = () => {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
+            <Label htmlFor="currentPassword">{t('current_password')}</Label>
+            <Input
+              id="currentPassword"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+              placeholder={t('enter_current_password')}
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="newPassword">{t('new_password')}</Label>
             <Input
               id="newPassword"
@@ -237,6 +253,7 @@ export const AccountSettings = () => {
             onClick={handleChangePassword}
             disabled={
               isUpdating ||
+              !currentPassword ||
               !newPassword ||
               !confirmPassword ||
               newPassword !== confirmPassword ||

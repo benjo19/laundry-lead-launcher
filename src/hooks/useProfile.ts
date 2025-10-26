@@ -179,12 +179,28 @@ export const useProfile = () => {
     }
   };
 
-  const changePassword = async (newPassword: string) => {
+  const changePassword = async (currentPassword: string, newPassword: string) => {
     if (!user) return false;
 
     setIsUpdating(true);
 
     try {
+      // Re-authenticate user first
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: currentPassword
+      });
+
+      if (signInError) {
+        toast({
+          title: "Error",
+          description: "Pogrešna trenutna lozinka",
+          variant: "destructive",
+        });
+        return false;
+      }
+
+      // Then change password
       const { error } = await supabase.auth.updateUser({
         password: newPassword
       });

@@ -11,6 +11,8 @@ import ReminderForm from './crm/ReminderForm';
 import ReminderList from './crm/ReminderList';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import ErrorMessage from '@/components/ui/error-message';
+import { Card, CardContent } from '@/components/ui/card';
+import { Calendar, AlertCircle, Clock, CheckCircle } from 'lucide-react';
 
 interface NewReminderForm {
   title: string;
@@ -231,8 +233,72 @@ const CRMReminder = () => {
               Završeno: {completedReminders.length}
             </span>
           </div>
-          <ExportButton data={filteredReminders} filename="crm-datoteke" type="reminders" />
+          <ExportButton data={filteredReminders} filename="crm-datoteke" type="reminders" leads={leads} />
         </div>
+      </div>
+
+      {/* Summary Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Dospijeva danas</p>
+                <div className="text-3xl font-bold text-blue-600 dark:text-blue-400">
+                  {reminders.filter(r => r.date === new Date().toISOString().split('T')[0] && r.status === 'Aktivan').length}
+                </div>
+              </div>
+              <Calendar className="h-8 w-8 text-blue-600 dark:text-blue-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Visok prioritet</p>
+                <div className="text-3xl font-bold text-orange-600 dark:text-orange-400">
+                  {reminders.filter(r => r.priority === 'Visok' && r.status === 'Aktivan').length}
+                </div>
+              </div>
+              <AlertCircle className="h-8 w-8 text-orange-600 dark:text-orange-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-900">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Ovaj tjedan</p>
+                <div className="text-3xl font-bold text-purple-600 dark:text-purple-400">
+                  {reminders.filter(r => {
+                    const reminderDate = new Date(r.date);
+                    const weekFromNow = new Date();
+                    weekFromNow.setDate(weekFromNow.getDate() + 7);
+                    return reminderDate <= weekFromNow && r.status === 'Aktivan';
+                  }).length}
+                </div>
+              </div>
+              <Clock className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-muted-foreground mb-1">Ukupno završeno</p>
+                <div className="text-3xl font-bold text-green-600 dark:text-green-400">
+                  {reminders.filter(r => r.status === 'Završen').length}
+                </div>
+              </div>
+              <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       <ReminderFilters
@@ -242,8 +308,8 @@ const CRMReminder = () => {
         onPriorityFilterChange={setPriorityFilter}
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 min-h-0">
-        <div className="lg:col-span-2 min-h-0 max-h-[calc(100vh-300px)] overflow-y-auto">
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 min-h-0">
+        <div className="lg:col-span-3 min-h-0 max-h-[calc(100vh-480px)] overflow-y-auto">
           <ReminderList
             reminders={filteredReminders}
             onUpdateStatus={handleUpdateReminderStatus}
@@ -253,7 +319,7 @@ const CRMReminder = () => {
           />
         </div>
 
-        <div className="lg:col-span-1 min-h-0 max-h-[calc(100vh-300px)] overflow-y-auto">
+        <div className="lg:col-span-2 min-h-0 max-h-[calc(100vh-480px)] overflow-y-auto">
           <ReminderForm
             newReminder={newReminder}
             setNewReminder={setNewReminder}
