@@ -60,8 +60,7 @@ serve(async (req) => {
 
     const emailSettings = userSettings.email_settings as any;
     console.log('Email settings loaded:', { 
-      provider_type: emailSettings.provider_type,
-      has_oauth: !!emailSettings.oauth_providers 
+      provider_type: emailSettings.provider_type
     });
 
     let emailSent = false;
@@ -82,26 +81,38 @@ serve(async (req) => {
     }
 
     // Try OAuth if Resend failed or not configured
-    if (!emailSent && emailSettings.oauth_providers) {
-      const oauthProvider = emailSettings.provider_type === 'gmail' 
-        ? emailSettings.oauth_providers.google
-        : emailSettings.provider_type === 'outlook'
-        ? emailSettings.oauth_providers.outlook
-        : null;
+    if (!emailSent && (emailSettings.provider_type === 'gmail' || emailSettings.provider_type === 'outlook')) {
+      console.log('Attempting OAuth email send...');
+      
+      // Fetch OAuth tokens from secure table using service role
+      const supabaseAdmin = createClient(
+        Deno.env.get('SUPABASE_URL') ?? '',
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
+      );
 
-      if (oauthProvider?.access_token) {
-        console.log('Attempting OAuth email send...');
+      const provider = emailSettings.provider_type === 'gmail' ? 'google' : 'outlook';
+      const { data: tokenData, error: tokenError } = await supabaseAdmin
+        .from('oauth_tokens')
+        .select('access_token, refresh_token, token_email')
+        .eq('user_id', user_id)
+        .eq('provider', provider)
+        .single();
+
+      if (!tokenError && tokenData?.access_token) {
+        console.log('OAuth token retrieved for provider:', provider);
         emailSent = await sendEmailViaOAuth(
           emailSettings.provider_type,
-          oauthProvider,
+          tokenData,
           {
             to: to_email,
             subject,
             content,
-            from: emailSettings.from_email || oauthProvider.email
+            from: emailSettings.from_email || tokenData.token_email
           }
         );
         if (emailSent) sendMethod = 'oauth';
+      } else {
+        console.log('OAuth token not found for provider:', provider);
       }
     }
 

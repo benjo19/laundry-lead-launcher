@@ -62,3 +62,9 @@ verify_jwt = true
 
 [functions.make-webhook-keepalive]
 verify_jwt = false
+
+[functions.store-oauth-token]
+verify_jwt = true
+
+[functions.delete-oauth-token]
+verify_jwt = true

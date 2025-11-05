@@ -42,7 +42,20 @@ export const useOAuthCallback = () => {
           throw new Error('OAuth tokens or email not found in session');
         }
 
-        // Store OAuth tokens in user settings
+        // Store OAuth tokens in secure oauth_tokens table via edge function
+        // This keeps tokens server-side only and inaccessible to client
+        const { error: tokenError } = await supabase.functions.invoke('store-oauth-token', {
+          body: {
+            provider: oauthCallback,
+            access_token: providerToken,
+            refresh_token: providerRefreshToken,
+            token_email: userEmail
+          }
+        });
+
+        if (tokenError) throw tokenError;
+
+        // Update user_settings with connection status (no sensitive tokens)
         const { data: existingSettings } = await supabase
           .from('user_settings')
           .select('email_settings')
@@ -56,9 +69,8 @@ export const useOAuthCallback = () => {
             ...currentSettings.oauth_providers,
             [oauthCallback]: {
               email: userEmail,
-              access_token: providerToken,
-              refresh_token: providerRefreshToken,
-              connected_at: new Date().toISOString()
+              connected_at: new Date().toISOString(),
+              connected: true
             }
           }
         };

@@ -43,15 +43,21 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
       if (error) throw error;
 
       const emailSettings = data?.email_settings as any;
-      if (emailSettings?.oauth_providers?.[provider]?.email) {
+      const oauthProviders = emailSettings?.oauth_providers || {};
+      const providerData = oauthProviders[provider];
+
+      // Check if connected (we only store connection status now, not tokens)
+      if (providerData?.connected && providerData?.email) {
         setConnectionStatus('connected');
-        onConnectionChange(provider, emailSettings.oauth_providers[provider].email);
+        onConnectionChange(provider, providerData.email);
       } else {
         setConnectionStatus('disconnected');
+        onConnectionChange(provider);
       }
     } catch (error) {
       console.error('Error checking connection status:', error);
       setConnectionStatus('disconnected');
+      onConnectionChange(provider);
     }
   };
 
@@ -117,26 +123,38 @@ const EmailOAuthHandler: React.FC<EmailOAuthHandlerProps> = ({
   };
 
   const handleDisconnect = async () => {
+    if (!user) return;
+
     try {
+      // Delete OAuth token via edge function (service role access)
+      const { error: deleteError } = await supabase.functions.invoke('delete-oauth-token', {
+        body: { provider }
+      });
+
+      if (deleteError) throw deleteError;
+
+      // Update user_settings to remove connection status
       const { data: existingSettings } = await supabase
         .from('user_settings')
         .select('email_settings')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .maybeSingle();
 
       const currentSettings = existingSettings?.email_settings as any || {};
+      const oauthProviders = currentSettings.oauth_providers || {};
+      
+      // Remove the provider connection status
+      delete oauthProviders[provider];
+
       const updatedSettings = {
         ...currentSettings,
-        oauth_providers: {
-          ...currentSettings.oauth_providers,
-          [provider]: undefined
-        }
+        oauth_providers: oauthProviders
       };
 
       const { error } = await supabase
         .from('user_settings')
         .upsert({
-          user_id: user?.id,
+          user_id: user.id,
           email_settings: updatedSettings,
           updated_at: new Date().toISOString()
         });
