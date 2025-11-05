@@ -907,7 +907,20 @@ const MakeIntegration = () => {
               <span className="font-medium">✓</span>
               <span>Minimalan payload koji ne aktivira scenarije</span>
             </div>
+            <div className="flex items-start gap-2">
+              <span className="font-medium">✓</span>
+              <span>Automatske email notifikacije administratorima pri greškama</span>
+            </div>
           </div>
+        </div>
+
+        <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+          <h5 className="text-xs font-medium text-amber-800 mb-2">📧 Email notifikacije</h5>
+          <p className="text-xs text-amber-700">
+            Ako keepalive sustav ne uspije poslati poruke na neki webhook, svi <strong>super admin</strong> korisnici 
+            će automatski primiti email obavijest s detaljima o neuspjelim webhookovima. 
+            Email sadrži korisnički ID, webhook URL i detaljnu poruku greške.
+          </p>
         </div>
 
         <Button
