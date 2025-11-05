@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, TestTube, Loader2, ExternalLink, CheckCircle, AlertCircle } from 'lucide-react';
+import { Settings, TestTube, Loader2, ExternalLink, CheckCircle, AlertCircle, Zap } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 
 interface MakeSettings {
@@ -33,6 +33,7 @@ const MakeIntegration = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isTesting, setIsTesting] = useState(false);
+  const [isRunningKeepalive, setIsRunningKeepalive] = useState(false);
   const [lastTestResult, setLastTestResult] = useState<'success' | 'error' | null>(null);
   const [testLog, setTestLog] = useState<string>('');
   
@@ -431,6 +432,30 @@ const MakeIntegration = () => {
     }
   };
 
+  const runManualKeepalive = async () => {
+    setIsRunningKeepalive(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('make-webhook-keepalive');
+      
+      if (error) throw error;
+      
+      toast({
+        title: "Keepalive pokrenut",
+        description: `Poslano: ${data.total_webhooks_sent} webhooks. Uspješno: ${data.success_count}`,
+        duration: 5000,
+      });
+    } catch (error) {
+      console.error('Keepalive error:', error);
+      toast({
+        title: "Greška",
+        description: "Dogodila se greška prilikom pokretanja keepalive-a.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsRunningKeepalive(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -442,13 +467,14 @@ const MakeIntegration = () => {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Settings className="h-5 w-5" />
-          {t('make_integration')}
-        </CardTitle>
-      </CardHeader>
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Settings className="h-5 w-5" />
+            {t('make_integration')}
+          </CardTitle>
+        </CardHeader>
       <CardContent className="space-y-6">
         <div className="bg-blue-50 p-4 rounded-lg">
           <h4 className="font-medium text-blue-900 mb-2">📋 Kako postaviti Make.com integraciju - VAŽNO!</h4>
@@ -849,6 +875,87 @@ const MakeIntegration = () => {
         </div>
       </CardContent>
     </Card>
+
+    {/* Keepalive Card */}
+    <Card className="mt-6">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Zap className="h-5 w-5" />
+          🔄 Automatski Keepalive Sustav
+        </CardTitle>
+        <CardDescription>
+          Održava Make.com webhooks aktivnima automatskim "heartbeat" porukama
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+          <h4 className="font-medium text-green-900 mb-2">📡 Kako radi?</h4>
+          <p className="text-sm text-green-800 mb-3">
+            Sustav automatski šalje "heartbeat" na sve konfigurirane webhooks svaki dan u 3:00 AM UTC 
+            kako bi ih održao aktivnima. Make.com neće aktivirati scenarije za "keepalive" event.
+          </p>
+          <div className="space-y-2 text-xs text-green-700">
+            <div className="flex items-start gap-2">
+              <span className="font-medium">✓</span>
+              <span>Automatski šalje heartbeat svaki dan</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="font-medium">✓</span>
+              <span>Održava sve tipove webhooks aktivnima</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <span className="font-medium">✓</span>
+              <span>Minimalan payload koji ne aktivira scenarije</span>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          onClick={runManualKeepalive}
+          disabled={isRunningKeepalive}
+          variant="outline"
+          className="w-full"
+        >
+          {isRunningKeepalive ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Slanje heartbeat...
+            </>
+          ) : (
+            <>
+              <Zap className="h-4 w-4 mr-2" />
+              Pošalji Keepalive Sada (Test)
+            </>
+          )}
+        </Button>
+
+        <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
+          <h5 className="text-xs font-medium text-slate-700 mb-2">⚙️ Konfiguracija na Make.com:</h5>
+          <p className="text-xs text-slate-600 mb-2">
+            Da bi scenario ignorirao keepalive poruke, dodaj <strong>Filter</strong> modul nakon webhook-a:
+          </p>
+          <pre className="text-xs text-slate-600 font-mono bg-white p-2 rounded border">
+Filter Condition: event NOT EQUAL TO keepalive
+          </pre>
+          <p className="text-xs text-slate-600 mt-2">
+            Tako će scenario raditi samo za stvarne podatke, a keepalive će održavati webhook aktivnim.
+          </p>
+        </div>
+
+        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+          <h5 className="text-xs font-medium text-blue-700 mb-2">📦 Keepalive Payload Format:</h5>
+          <pre className="text-xs text-slate-600 font-mono overflow-x-auto">
+{`{
+  "event": "keepalive",
+  "timestamp": "2025-11-05T03:00:00.000Z",
+  "message": "Automatic heartbeat to keep webhook active",
+  "info": "This is an automated ping..."
+}`}
+          </pre>
+        </div>
+      </CardContent>
+    </Card>
+    </>
   );
 };
 
