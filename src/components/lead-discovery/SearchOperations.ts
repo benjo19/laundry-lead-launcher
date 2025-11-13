@@ -82,7 +82,31 @@ export const performLeadSearch = async (
     if (!response.ok) {
       const errorText = await response.text();
       console.error('❌ API Error Response:', errorText);
-      throw new Error(`Google Maps API error: ${response.status} - ${errorText}`);
+      
+      // Parse detailed error messages
+      let detailedError = '';
+      if (response.status === 403) {
+        detailedError = 'Google Maps API: Pristup zabranjen.\n\n' +
+          'Mogući razlozi:\n' +
+          '• Places API nije omogućen u Google Cloud Console\n' +
+          '• API ključ nema potrebna dopuštenja\n' +
+          '• API ključ ima postavljene restrikcije koje blokiraju ovaj zahtjev\n\n' +
+          'Provjerite: Google Cloud Console → APIs & Services → Places API';
+      } else if (response.status === 400) {
+        detailedError = 'Google Maps API: Neispravan zahtjev.\n\n' +
+          'Mogući razlozi:\n' +
+          '• API ključ je neispravan ili istekao\n' +
+          '• Format zahtjeva nije pravilan\n\n' +
+          'Provjerite da je API ključ točno kopiran.';
+      } else if (response.status === 429) {
+        detailedError = 'Google Maps API: Prekoračen limit zahtjeva.\n\n' +
+          'Dostigli ste dnevni ili mjesečni limit API poziva.\n' +
+          'Provjerite: Google Cloud Console → APIs & Services → Quotas';
+      } else {
+        detailedError = `Google Maps API greška: ${response.status}\n${errorText}`;
+      }
+      
+      throw new Error(detailedError);
     }
     
     const data = await response.json();
@@ -90,6 +114,34 @@ export const performLeadSearch = async (
     console.log('📈 Status:', data.status);
     console.log('📊 Results count:', data.results ? data.results.length : 0);
     console.log('⚠️ Error message:', data.error_message || 'none');
+    
+    // Check for API-level errors
+    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+      let detailedError = '';
+      
+      if (data.status === 'REQUEST_DENIED') {
+        detailedError = 'Google Maps API: Zahtjev odbijen.\n\n' +
+          'Mogući razlozi:\n' +
+          '• Places API nije omogućen - idite na Google Cloud Console → APIs & Services → Library → Places API → Enable\n' +
+          '• API ključ nema dopuštenja za Places API\n' +
+          '• API ključ ima postavljena HTTP referrer ograničenja\n\n' +
+          (data.error_message ? `Google poruka: ${data.error_message}` : '');
+      } else if (data.status === 'OVER_QUERY_LIMIT') {
+        detailedError = 'Google Maps API: Prekoračen limit.\n\n' +
+          'Mogući razlozi:\n' +
+          '• Billing nije postavljen u Google Cloud Console\n' +
+          '• Prekoračen dnevni/mjesečni limit poziva\n\n' +
+          'Provjerite: Google Cloud Console → Billing → Link a billing account';
+      } else if (data.status === 'INVALID_REQUEST') {
+        detailedError = 'Google Maps API: Neispravan zahtjev.\n\n' +
+          'Parametri pretrage nisu ispravni ili nedostaju.\n' +
+          (data.error_message ? `Google poruka: ${data.error_message}` : '');
+      } else {
+        detailedError = `Google Maps API status: ${data.status}\n${data.error_message || 'Nepoznata greška'}`;
+      }
+      
+      throw new Error(detailedError);
+    }
     console.log('🏢 First 3 results preview:', data.results ? data.results.slice(0, 3).map(r => ({ 
       name: r.name, 
       address: r.formatted_address,
