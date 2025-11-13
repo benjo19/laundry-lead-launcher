@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Mail, Phone, MapPin, Users, Trash2 } from 'lucide-react';
+import { Mail, Phone, MapPin, Trash2 } from 'lucide-react';
 
 interface SelectableLeadListProps {
   leads: Lead[];
@@ -27,6 +27,14 @@ const SelectableLeadList = ({
   onEmailClick,
   activeFiltersCount
 }: SelectableLeadListProps) => {
+  const extractCity = (location: string) => {
+    if (!location) return 'Nepoznato';
+    // Extract city from location string (usually format: "Address, City, Country")
+    const parts = location.split(',').map(p => p.trim());
+    // Return the second-to-last part (city) if available, otherwise the first part
+    return parts.length > 1 ? parts[parts.length - 2] : parts[0];
+  };
+
   const getPotentialColor = (potential: string) => {
     switch (potential) {
       case 'Visok': return 'bg-green-100 text-green-800 border-green-300';
@@ -51,7 +59,7 @@ const SelectableLeadList = ({
     return (
       <div className="text-center py-12">
         <div className="text-slate-400 mb-4">
-          <Users className="h-16 w-16 mx-auto" />
+          <Mail className="h-16 w-16 mx-auto" />
         </div>
         <h3 className="text-lg font-medium text-slate-900 mb-2">
           {activeFiltersCount > 0 ? 'Nema rezultata' : 'Nema leadova'}
@@ -93,12 +101,14 @@ const SelectableLeadList = ({
             <div className="space-y-2 mb-4">
               <div className="flex items-center text-sm text-slate-600">
                 <MapPin className="h-4 w-4 mr-2 shrink-0" />
-                <span className="truncate">{lead.location || 'Nepoznato'}</span>
+                <span className="truncate">{extractCity(lead.location)}</span>
               </div>
-              <div className="flex items-center text-sm text-slate-600">
-                <Users className="h-4 w-4 mr-2 shrink-0" />
-                <span>{lead.employees} zaposlenika</span>
-              </div>
+              {lead.email && (
+                <div className="flex items-center text-sm text-slate-600">
+                  <Mail className="h-4 w-4 mr-2 shrink-0" />
+                  <span className="truncate">{lead.email}</span>
+                </div>
+              )}
               <div className="flex items-center text-sm text-slate-600">
                 <Phone className="h-4 w-4 mr-2 shrink-0" />
                 <span className="truncate">{lead.phone}</span>
