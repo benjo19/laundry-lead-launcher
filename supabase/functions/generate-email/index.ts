@@ -16,7 +16,7 @@ const requestSchema = z.object({
   recipientRating: z.number().min(0).max(5).optional(),
   emailType: z.enum(['cold', 'follow-up', 'proposal', 'introduction']),
   additionalContext: z.string().max(2000).optional(),
-  businessContext: z.string().max(2000).optional(),
+  businessContext: z.string().max(15000).optional(),
 });
 
 interface EmailGenerationRequest {
