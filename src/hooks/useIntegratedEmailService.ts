@@ -11,6 +11,7 @@ interface EmailGenerationParams {
   emailType: 'intro' | 'follow-up' | 'proposal' | 'reminder';
   additionalContext?: string;
   industry?: string;
+  profileId?: string;
   companyInfo?: {
     location?: string;
     website?: string;
@@ -57,7 +58,7 @@ export const useIntegratedEmailService = () => {
       // Add business context to the parameters with error handling
       let businessContext = '';
       try {
-        businessContext = await getContextForAI();
+        businessContext = await getContextForAI(params.profileId);
       } catch (error) {
         console.warn('Error getting business context:', error);
         businessContext = '';

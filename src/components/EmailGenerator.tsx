@@ -178,6 +178,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         recipientEmail: recipient,
         emailType: template as 'intro' | 'follow-up' | 'proposal' | 'reminder',
         industry,
+        profileId: selectedProfileId || undefined,
         additionalContext: selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : undefined,
         companyInfo: {
           location: selectedContact ? leads.find(l => l.email === recipient)?.location : undefined,
