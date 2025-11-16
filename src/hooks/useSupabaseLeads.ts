@@ -321,6 +321,57 @@ export const useSupabaseLeads = () => {
     }
   };
 
+  const updateLeadNotes = async (leadId: number, notes: string): Promise<void> => {
+    if (!user) {
+      throw new Error('User not authenticated');
+    }
+
+    try {
+      // Find the lead to get its details
+      const leadToUpdate = leads.find(lead => lead.id === leadId);
+      if (!leadToUpdate) {
+        throw new Error('Lead not found');
+      }
+
+      const { error } = await supabase
+        .from('leads')
+        .update({ 
+          notes: notes,
+          updated_at: new Date().toISOString() 
+        })
+        .eq('user_id', user.id)
+        .eq('company', leadToUpdate.company);
+
+      if (error) {
+        console.error('Error updating lead notes:', error);
+        throw error;
+      }
+
+      await fetchLeads(); // Refresh the list
+
+      // Trigger Make.com webhook for CRM sync
+      await triggerWebhook('lead_updated', {
+        company: leadToUpdate.company,
+        location: leadToUpdate.location,
+        employees: leadToUpdate.employees,
+        phone: leadToUpdate.phone,
+        email: leadToUpdate.email,
+        website: leadToUpdate.website || '',
+        status: leadToUpdate.status,
+        potential: leadToUpdate.potential,
+        industry: leadToUpdate.industry,
+        biljeske: notes,
+        dateAdded: leadToUpdate.dateAdded,
+        action: 'NOTES_UPDATED'
+      });
+
+      console.log('Lead notes updated and synced with CRM');
+    } catch (err) {
+      console.error('Exception updating lead notes:', err);
+      throw err;
+    }
+  };
+
   const deleteLead = async (leadId: number) => {
     if (!user) return;
 
@@ -392,6 +443,7 @@ export const useSupabaseLeads = () => {
     error,
     addLead,
     updateLeadStatus,
+    updateLeadNotes,
     deleteLead,
     refreshLeads: fetchLeads
   };
