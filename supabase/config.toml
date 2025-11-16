@@ -68,3 +68,6 @@ verify_jwt = true
 
 [functions.delete-oauth-token]
 verify_jwt = true
+
+[functions.firecrawl-lead-search]
+verify_jwt = true
