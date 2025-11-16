@@ -285,6 +285,22 @@
       transform: translateY(0);
     }
   }
+  
+  /* Email content styling */
+  .prose p {
+    margin-bottom: 1em;
+    line-height: 1.6;
+  }
+  
+  .prose p:last-child {
+    margin-bottom: 0;
+  }
+  
+  .prose br {
+    display: block;
+    content: "";
+    margin-top: 0.5em;
+  }
 }
 
 /* Print styles */

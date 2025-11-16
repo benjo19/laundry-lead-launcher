@@ -693,10 +693,21 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
           <CardContent className="space-y-4">
             <Textarea
               placeholder="Vaš personalizirani email sadržaj će se pojaviti ovdje..."
-              value={emailContent}
+              value={emailContent.replace(/<[^>]*>/g, '').replace(/<br>/gi, '\n')}  // Strip HTML for editing
               onChange={(e) => setEmailContent(e.target.value)}
               className="min-h-48 sm:min-h-64 w-full resize-none"
             />
+            
+            {/* HTML Preview if content has HTML tags */}
+            {emailContent.includes('<p>') && (
+              <div className="mt-4 p-4 bg-slate-50 rounded-lg border">
+                <p className="text-sm font-medium text-slate-700 mb-2">Preview:</p>
+                <div 
+                  className="prose prose-sm max-w-none text-slate-700"
+                  dangerouslySetInnerHTML={{ __html: emailContent }}
+                />
+              </div>
+            )}
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               <Button 
@@ -869,9 +880,16 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 <p className="font-medium text-slate-700 mb-2">Sadržaj emaila:</p>
                 <div className="bg-slate-50 rounded-lg p-4 border">
                   <div className="prose prose-sm max-w-none">
-                    <pre className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed">
-                      {selectedEmailForView.content}
-                    </pre>
+                    {selectedEmailForView.content.includes('<p>') ? (
+                      <div 
+                        className="text-slate-700 leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: selectedEmailForView.content }}
+                      />
+                    ) : (
+                      <pre className="whitespace-pre-wrap font-sans text-slate-700 leading-relaxed">
+                        {selectedEmailForView.content}
+                      </pre>
+                    )}
                   </div>
                 </div>
               </div>
