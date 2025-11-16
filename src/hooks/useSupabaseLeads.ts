@@ -200,6 +200,34 @@ export const useSupabaseLeads = () => {
 
       await fetchLeads(); // Refresh the list
       
+      // Start automatic lead enrichment in background
+      if (insertedData && insertedData.length > 0) {
+        const leadId = insertedData[0].id;
+        console.log('🔍 Starting automatic lead enrichment for:', leadId);
+        
+        // Call enrichment function without waiting for result
+        supabase.functions.invoke('enrich-lead', {
+          body: {
+            leadId,
+            companyName: newLeadData.company,
+            website: newLeadData.website,
+            location: newLeadData.location,
+          }
+        }).then(({ data, error }) => {
+          if (error) {
+            console.error('Error starting enrichment:', error);
+          } else {
+            console.log('✅ Lead enrichment started:', data);
+            toast({
+              title: "Automatsko obogaćivanje pokrenuto",
+              description: "Tražimo dodatne podatke o tvrtki...",
+            });
+          }
+        }).catch(err => {
+          console.error('Exception in enrichment:', err);
+        });
+      }
+      
       // Trigger Make.com webhook for Google Sheets
       console.log('About to trigger Make.com webhook...');
       const webhookResult = await triggerWebhook('lead_added', {
