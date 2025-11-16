@@ -71,3 +71,7 @@ verify_jwt = true
 
 [functions.firecrawl-lead-search]
 verify_jwt = true
+
+[functions.enrich-lead]
+verify_jwt = true
+
