@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Search, Loader2, Key, Zap } from 'lucide-react';
+import { Search, Loader2, Key, Zap, Globe } from 'lucide-react';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
 import IndustrySelector, { industries } from './IndustrySelector';
@@ -46,8 +46,8 @@ interface SearchFormProps {
   setIndustry: (industry: string) => void;
   apiKey: string;
   setApiKey: (key: string) => void;
-  searchMethod: 'google' | 'apify';
-  setSearchMethod: (method: 'google' | 'apify') => void;
+  searchMethod: 'google' | 'apify' | 'firecrawl';
+  setSearchMethod: (method: 'google' | 'apify' | 'firecrawl') => void;
   isSearching: boolean;
   isAnalyzing: boolean;
   discoveredLeads: AnalyzedLead[];
@@ -98,7 +98,7 @@ const SearchForm = ({
             <label className="block text-sm font-medium text-slate-700 mb-2">
               Metoda pretraživanja
             </label>
-            <RadioGroup value={searchMethod} onValueChange={setSearchMethod} className="flex gap-4">
+            <RadioGroup value={searchMethod} onValueChange={setSearchMethod} className="flex gap-4 flex-wrap">
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="apify" id="apify" />
                 <Label htmlFor="apify" className="cursor-pointer flex items-center">
@@ -113,11 +113,20 @@ const SearchForm = ({
                   <span>Google Maps API</span>
                 </Label>
               </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="firecrawl" id="firecrawl" />
+                <Label htmlFor="firecrawl" className="cursor-pointer flex items-center">
+                  <Globe className="h-4 w-4 mr-1 text-green-500" />
+                  <span>Firecrawl Web Scraping</span>
+                </Label>
+              </div>
             </RadioGroup>
             <p className="text-xs text-slate-500 mt-1">
               {searchMethod === 'apify' 
-                ? '✨ Apify daje najkvalitetnije rezultate s kontaktima i automatski pronalazi emailove'
-                : '🗺️ Google Maps API zahtijeva API ključ, ali nudi direktan pristup Google podacima'}
+                ? 'Koristi Apify za najbrže i najpouzdanije rezultate sa Google Mapsa'
+                : searchMethod === 'firecrawl'
+                ? 'Pretražuje web stranice i ekstraktira kontakt podatke direktno sa web stranica'
+                : 'Koristi Google Maps API za direktno pretraživanje'}
             </p>
           </div>
 
