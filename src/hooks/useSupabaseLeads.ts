@@ -98,30 +98,61 @@ export const useSupabaseLeads = () => {
     try {
       // Check for duplicates first
       console.log('Checking for duplicate leads...');
-      const { data: existingLeads, error: checkError } = await supabase
+      
+      // Check for duplicate company
+      const { data: existingCompany, error: companyCheckError } = await supabase
         .from('leads')
-        .select('company, email')
+        .select('company')
         .eq('user_id', user.id)
-        .or(`company.eq.${newLeadData.company},email.eq.${newLeadData.email}`);
+        .eq('company', newLeadData.company)
+        .limit(1);
 
-      if (checkError) {
-        console.error('Error checking for duplicates:', checkError);
+      if (companyCheckError) {
+        console.error('Error checking for duplicate company:', companyCheckError);
         toast({
           title: "Greška",
-          description: checkError.message,
+          description: companyCheckError.message,
           variant: "destructive",
         });
         return false;
       }
 
-      if (existingLeads && existingLeads.length > 0) {
-        const duplicateBy = existingLeads.find(lead => lead.company === newLeadData.company) ? 'tvrtka' : 'email';
+      if (existingCompany && existingCompany.length > 0) {
         toast({
           title: "Lead već postoji",
-          description: `Lead s istom ${duplicateBy} već postoji u bazi podataka.`,
+          description: `Lead s tvrtkom "${newLeadData.company}" već postoji u bazi podataka.`,
           variant: "destructive",
         });
         return false;
+      }
+
+      // Check for duplicate email only if email is provided and not empty
+      if (newLeadData.email && newLeadData.email.trim() !== '') {
+        const { data: existingEmail, error: emailCheckError } = await supabase
+          .from('leads')
+          .select('email')
+          .eq('user_id', user.id)
+          .eq('email', newLeadData.email)
+          .limit(1);
+
+        if (emailCheckError) {
+          console.error('Error checking for duplicate email:', emailCheckError);
+          toast({
+            title: "Greška",
+            description: emailCheckError.message,
+            variant: "destructive",
+          });
+          return false;
+        }
+
+        if (existingEmail && existingEmail.length > 0) {
+          toast({
+            title: "Lead već postoji",
+            description: `Lead s email adresom "${newLeadData.email}" već postoji u bazi podataka.`,
+            variant: "destructive",
+          });
+          return false;
+        }
       }
 
       console.log('Adding lead to Supabase:', newLeadData);
