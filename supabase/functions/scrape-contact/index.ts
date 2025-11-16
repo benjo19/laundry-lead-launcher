@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.49.9';
 import { z } from 'https://deno.land/x/zod@v3.22.4/mod.ts';
 
 const requestSchema = z.object({
-  website: z.string().min(1).max(500),
+  website: z.string().max(500).optional().default(''),
   companyName: z.string().min(1).max(200),
   location: z.string().max(100).optional(),
 });
@@ -58,7 +58,7 @@ function validateEmail(email: string, website: string, companyName: string): Ema
   let source = 'website';
 
   // Check if email domain matches company website
-  if (website) {
+  if (website && website.trim() !== '') {
     try {
       const websiteDomain = new URL(website.startsWith('http') ? website : `https://${website}`).hostname.replace('www.', '');
       const emailDomainParts = domain.split('.');
@@ -183,97 +183,105 @@ serve(async (req) => {
     }
 
     const { website, companyName, location } = validationResult.data;
-    console.log(`🔍 Enhanced scraping for: ${companyName} from ${website}`);
-
-    // Normalize URL
-    const baseUrl = website.startsWith('http') ? website : `https://${website}`;
     
-    // Common contact pages
-    const paths = [
-      '/',
-      '/contact',
-      '/contact-us',
-      '/kontakt',
-      '/about',
-      '/about-us',
-      '/o-nama',
-      '/impressum'
-    ];
-
     const emails = new Set<string>();
     const socialProfiles: Record<string, string> = {};
 
-    // Fetch and parse each page
-    for (const path of paths) {
-      try {
-        const url = new URL(path, baseUrl).toString();
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+    // Check if website is provided
+    const hasWebsite = website && website.trim() !== '';
+    
+    if (hasWebsite) {
+      console.log(`🔍 Enhanced scraping for: ${companyName} from ${website}`);
+      
+      // Normalize URL
+      const baseUrl = website.startsWith('http') ? website : `https://${website}`;
+      
+      // Common contact pages
+      const paths = [
+        '/',
+        '/contact',
+        '/contact-us',
+        '/kontakt',
+        '/about',
+        '/about-us',
+        '/o-nama',
+        '/impressum'
+      ];
 
-        const response = await fetch(url, { 
-          signal: controller.signal,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-          }
-        });
-        clearTimeout(timeout);
+      // Fetch and parse each page
+      for (const path of paths) {
+        try {
+          const url = new URL(path, baseUrl).toString();
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 8000);
 
-        if (!response.ok) continue;
+          const response = await fetch(url, { 
+            signal: controller.signal,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+          });
+          clearTimeout(timeout);
 
-        const html = await response.text();
-        
-        // Extract emails
-        const emailRegex = /(?:mailto:)?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi;
-        const matches = html.matchAll(emailRegex);
-        
-        for (const match of matches) {
-          const email = match[1].toLowerCase().trim();
+          if (!response.ok) continue;
+
+          const html = await response.text();
           
-          // Filter out common non-contact emails
-          if (email.includes('noreply') || 
-              email.includes('no-reply') ||
-              email.includes('example.com') ||
-              email.includes('test.com')) {
-            continue;
-          }
+          // Extract emails
+          const emailRegex = /(?:mailto:)?([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,})/gi;
+          const matches = html.matchAll(emailRegex);
           
-          // Prefer company domain emails
-          try {
-            const emailDomain = email.split('@')[1];
-            const siteDomain = new URL(baseUrl).hostname.replace('www.', '');
+          for (const match of matches) {
+            const email = match[1].toLowerCase().trim();
             
-            if (emailDomain.includes(siteDomain.split('.')[0])) {
-              emails.add(email);
-            } else if (!emailDomain.includes('gmail') && 
-                       !emailDomain.includes('yahoo') && 
-                       !emailDomain.includes('hotmail')) {
+            // Filter out common non-contact emails
+            if (email.includes('noreply') || 
+                email.includes('no-reply') ||
+                email.includes('example.com') ||
+                email.includes('test.com')) {
+              continue;
+            }
+
+            // Prefer company domain emails
+            try {
+              const emailDomain = email.split('@')[1];
+              const siteDomain = new URL(baseUrl).hostname.replace('www.', '');
+              
+              if (emailDomain.includes(siteDomain.split('.')[0])) {
+                emails.add(email);
+              } else if (!emailDomain.includes('gmail') && 
+                         !emailDomain.includes('yahoo') && 
+                         !emailDomain.includes('hotmail')) {
+                emails.add(email);
+              }
+            } catch {
               emails.add(email);
             }
-          } catch {
-            emails.add(email);
           }
+
+          // Extract social profiles (LinkedIn, Facebook, Instagram, Twitter)
+          const linkedInMatch = html.match(/https?:\/\/(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_]+/i);
+          if (linkedInMatch) socialProfiles.linkedin = linkedInMatch[0];
+
+          const facebookMatch = html.match(/https?:\/\/(?:www\.)?facebook\.com\/[a-zA-Z0-9\-_.]+/i);
+          if (facebookMatch) socialProfiles.facebook = facebookMatch[0];
+
+          const instagramMatch = html.match(/https?:\/\/(?:www\.)?instagram\.com\/[a-zA-Z0-9\-_.]+/i);
+          if (instagramMatch) socialProfiles.instagram = instagramMatch[0];
+
+          const twitterMatch = html.match(/https?:\/\/(?:www\.)?(?:twitter|x)\.com\/[a-zA-Z0-9\-_]+/i);
+          if (twitterMatch) socialProfiles.twitter = twitterMatch[0];
+
+          // If we found emails, we can stop early
+          if (emails.size > 0) break;
+          
+        } catch (error) {
+          console.log(`Error fetching ${path}:`, error.message);
+          continue;
         }
-
-        // Extract social profiles (LinkedIn, Facebook, Instagram, Twitter)
-        const linkedInMatch = html.match(/https?:\/\/(?:www\.)?linkedin\.com\/company\/[a-zA-Z0-9\-_]+/i);
-        if (linkedInMatch) socialProfiles.linkedin = linkedInMatch[0];
-
-        const facebookMatch = html.match(/https?:\/\/(?:www\.)?facebook\.com\/[a-zA-Z0-9\-_.]+/i);
-        if (facebookMatch) socialProfiles.facebook = facebookMatch[0];
-
-        const instagramMatch = html.match(/https?:\/\/(?:www\.)?instagram\.com\/[a-zA-Z0-9\-_.]+/i);
-        if (instagramMatch) socialProfiles.instagram = instagramMatch[0];
-
-        const twitterMatch = html.match(/https?:\/\/(?:www\.)?(?:twitter|x)\.com\/[a-zA-Z0-9\-_]+/i);
-        if (twitterMatch) socialProfiles.twitter = twitterMatch[0];
-
-        // If we found emails, we can stop early
-        if (emails.size > 0) break;
-        
-      } catch (error) {
-        console.log(`Error fetching ${path}:`, error.message);
-        continue;
       }
+    } else {
+      console.log(`⚠️ No website provided for: ${companyName}. Using alternative search methods.`);
     }
 
     // Enhanced social media scraping for emails
@@ -343,7 +351,7 @@ serve(async (req) => {
 
     // Validate and score emails
     const validatedEmails: EmailValidationResult[] = Array.from(emails).map(email => {
-      const validation = validateEmail(email, website, companyName);
+      const validation = validateEmail(email, website || '', companyName);
       return validation;
     }).filter(v => v.isValid).sort((a, b) => {
       // Sort by confidence: high > medium > low
