@@ -20,7 +20,7 @@ interface LeadHunterProps {
 }
 
 const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
-  const { leads, loading, error, addLead, updateLeadStatus, deleteLead, refreshLeads } = useLeadManagement();
+  const { leads, loading, error, addLead, updateLeadStatus, updateLeadNotes, deleteLead, refreshLeads } = useLeadManagement();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
@@ -298,6 +298,7 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         selectedLeads={selectedLeads}
         onToggleSelect={handleToggleSelect}
         onUpdateStatus={updateLeadStatus}
+        onUpdateNotes={updateLeadNotes}
         onDeleteLead={deleteLead}
         onEmailClick={handleEmailClick}
         activeFiltersCount={activeFiltersCount}

@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Lead } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Mail, Phone, MapPin, Trash2 } from 'lucide-react';
+import LeadDetailDialog from './LeadDetailDialog';
 
 interface SelectableLeadListProps {
   leads: Lead[];
@@ -15,6 +16,7 @@ interface SelectableLeadListProps {
   onUpdateStatus: (leadId: number, newStatus: Lead['status']) => void;
   onDeleteLead: (leadId: number) => void;
   onEmailClick: (email: string, company: string) => void;
+  onUpdateNotes: (leadId: number, notes: string) => Promise<void>;
   activeFiltersCount: number;
 }
 
@@ -25,8 +27,16 @@ const SelectableLeadList = ({
   onUpdateStatus,
   onDeleteLead,
   onEmailClick,
+  onUpdateNotes,
   activeFiltersCount
 }: SelectableLeadListProps) => {
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const handleLeadClick = (lead: Lead) => {
+    setSelectedLead(lead);
+    setDialogOpen(true);
+  };
   const extractCity = (location: string) => {
     if (!location) return 'Nepoznato';
     // Extract city from location string (usually format: "Address, City, Country")
@@ -75,10 +85,30 @@ const SelectableLeadList = ({
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-      {leads.map((lead) => (
-        <Card key={lead.id} className={`hover:shadow-md transition-shadow ${selectedLeads.includes(lead.id) ? 'ring-2 ring-blue-500' : ''}`}>
-          <CardContent className="p-4">
+    <>
+      <LeadDetailDialog
+        lead={selectedLead}
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onUpdateStatus={onUpdateStatus}
+        onUpdateNotes={onUpdateNotes}
+        onEmailClick={onEmailClick}
+      />
+      
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {leads.map((lead) => (
+          <Card 
+            key={lead.id} 
+            className={`hover:shadow-md transition-shadow cursor-pointer ${selectedLeads.includes(lead.id) ? 'ring-2 ring-blue-500' : ''}`}
+            onClick={(e) => {
+              // Don't open dialog if clicking on checkbox, buttons, or select
+              if ((e.target as HTMLElement).closest('button, input, [role="combobox"]')) {
+                return;
+              }
+              handleLeadClick(lead);
+            }}
+          >
+            <CardContent className="p-4">
             <div className="flex justify-between items-start mb-3">
               <div className="flex items-start gap-3">
                 <Checkbox
@@ -158,9 +188,10 @@ const SelectableLeadList = ({
               Dodano: {new Date(lead.dateAdded).toLocaleDateString('hr-HR')}
             </div>
           </CardContent>
-        </Card>
-      ))}
-    </div>
+          </Card>
+        ))}
+      </div>
+    </>
   );
 };
 

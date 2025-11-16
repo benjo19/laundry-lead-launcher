@@ -122,7 +122,23 @@ async function generatePersonalizedEmail(
   params: EmailGenerationRequest, 
   apiKey: string
 ): Promise<GeneratedEmailContent> {
-  const systemPrompt = buildSystemPrompt(params.businessContext);
+  // Extract custom AI instructions from business context if present
+  let customInstructions = '';
+  let cleanedBusinessContext = params.businessContext || '';
+
+  if (params.businessContext) {
+    // Try to extract "Prilagođene AI upute:" section
+    const customInstructionsMatch = params.businessContext.match(/Prilagođene AI upute:\s*(.+?)(?:\n\n|$)/s);
+    if (customInstructionsMatch) {
+      customInstructions = customInstructionsMatch[1].trim();
+      // Remove the custom instructions section from business context to avoid duplication
+      cleanedBusinessContext = params.businessContext.replace(/\n\nPrilagođene AI upute:.+?(?=\n\n|$)/s, '');
+    }
+  }
+
+  console.log('Custom AI instructions extracted:', customInstructions ? 'Yes' : 'No');
+  
+  const systemPrompt = buildSystemPrompt(cleanedBusinessContext, customInstructions);
   const userPrompt = buildUserPrompt(params);
 
   try {
@@ -179,8 +195,23 @@ async function generateWithLovableAI(
   return parseGeneratedEmail(generatedText);
 }
 
-function buildSystemPrompt(businessContext?: string): string {
-  let prompt = `Ti si stručnjak za B2B marketing i prodaju. Tvoj zadatak je kreiranje profesionalnih, personaliziranih emailova na hrvatskom jeziku.
+function buildSystemPrompt(businessContext?: string, customInstructions?: string): string {
+  let prompt = '';
+
+  // FIRST: Add critical custom instructions if they exist (highest priority)
+  if (customInstructions && customInstructions.trim()) {
+    prompt = `⚠️ KRITIČNA PRAVILA - MORA SE BEZUVJETNO POŠTOVATI:
+
+${customInstructions}
+
+================================================================
+
+`;
+    console.log('Added critical custom instructions to system prompt');
+  }
+
+  // THEN: Add standard instructions
+  prompt += `Ti si stručnjak za B2B marketing i prodaju. Tvoj zadatak je kreiranje profesionalnih, personaliziranih emailova na hrvatskom jeziku.
 
 VAŽNE SMJERNICE:
 - Uvijek piši na hrvatskom jeziku
@@ -198,7 +229,8 @@ FORMAT EMAILA:
 - Koristi pozdravljenje na početku (Poštovani/a...)
 - Dodaj potpis na kraju s kontakt informacijama`;
 
-  if (businessContext) {
+  // FINALLY: Add business context (lowest priority)
+  if (businessContext && businessContext.trim()) {
     prompt += `\n\nKONTEKST POŠILJATELJA:\n${businessContext}`;
   }
 
