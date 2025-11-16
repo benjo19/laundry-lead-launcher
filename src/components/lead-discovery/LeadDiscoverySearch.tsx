@@ -1,13 +1,13 @@
 
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
-import { performLeadSearch, performApifyLeadSearch } from './SearchOperations';
+import { performLeadSearch, performApifyLeadSearch, performFirecrawlLeadSearch } from './SearchOperations';
 
 interface LeadDiscoverySearchProps {
   searchQuery: string;
   location: string;
   country: string;
   industry: string;
-  searchMethod: 'google' | 'apify';
+  searchMethod: 'google' | 'apify' | 'firecrawl';
   tempApiKey: string;
   savedGoogleMapsApiKey: string;
   saveGoogleMapsApiKey: (key: string) => Promise<void>;
@@ -76,6 +76,14 @@ export const useLeadDiscoverySearch = ({
           searchLocation,
           industry,
           20 // maxResults
+        );
+      } else if (searchMethod === 'firecrawl') {
+        console.log('🌐 Using Firecrawl search method');
+        detailedLeads = await performFirecrawlLeadSearch(
+          searchQuery,
+          searchLocation,
+          country,
+          industry
         );
       } else {
         console.log('🗺️ Using Google Maps search method');

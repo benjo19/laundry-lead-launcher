@@ -493,3 +493,58 @@ export const performApifyLeadSearch = async (
     throw error;
   }
 };
+
+export const performFirecrawlLeadSearch = async (
+  searchQuery: string,
+  location: string,
+  country: string,
+  industry: string
+) => {
+  console.log('=== STARTING FIRECRAWL LEAD SEARCH ===');
+  console.log('Search parameters:', { 
+    searchQuery: `"${searchQuery}"`, 
+    location: `"${location}"`,
+    country: `"${country}"`,
+    industry: `"${industry}"` 
+  });
+
+  try {
+    console.log('🚀 Calling Firecrawl edge function...');
+    
+    const { data, error } = await supabase.functions.invoke('firecrawl-lead-search', {
+      body: {
+        searchQuery,
+        location,
+        country,
+        industry
+      }
+    });
+
+    if (error) {
+      console.error('❌ Firecrawl edge function error:', error);
+      throw new Error(`Firecrawl search failed: ${error.message}`);
+    }
+
+    console.log('=== FIRECRAWL API RESPONSE ===');
+    console.log('📊 Results count:', data?.leads?.length || 0);
+    console.log('🏢 First 3 results preview:', data?.leads?.slice(0, 3) || []);
+
+    if (!data?.leads || data.leads.length === 0) {
+      console.log('⚠️ No results returned from Firecrawl');
+      return [];
+    }
+
+    const leads: DiscoveredLead[] = data.leads;
+
+    console.log(`\n=== FIRECRAWL SEARCH COMPLETE ===`);
+    console.log(`📊 Total leads: ${leads.length}`);
+    console.log(`📧 Leads with email: ${leads.filter(l => l.email).length}`);
+    console.log(`🌐 Leads with website: ${leads.filter(l => l.website).length}`);
+
+    return leads;
+
+  } catch (error) {
+    console.error('❌ Firecrawl search error:', error);
+    throw error;
+  }
+};

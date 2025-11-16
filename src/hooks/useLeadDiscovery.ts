@@ -21,14 +21,14 @@ export const useLeadDiscovery = () => {
     country: '',
     industry: 'laundry',
     tempApiKey: '',
-    searchMethod: 'apify' as 'google' | 'apify'
+    searchMethod: 'apify' as 'google' | 'apify' | 'firecrawl'
   });
 
   const [searchQuery, setSearchQuery] = useState(savedFormData.searchQuery || '');
   const [location, setLocation] = useState(savedFormData.location || '');
   const [country, setCountry] = useState(savedFormData.country || '');
   const [industry, setIndustry] = useState(savedFormData.industry || 'laundry');
-  const [searchMethod, setSearchMethod] = useState<'google' | 'apify'>(savedFormData.searchMethod || 'apify');
+  const [searchMethod, setSearchMethod] = useState<'google' | 'apify' | 'firecrawl'>(savedFormData.searchMethod || 'apify');
   const [isSearching, setIsSearching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [discoveredLeads, setDiscoveredLeads] = useLocalStorage<AnalyzedLead[]>('discoveredLeads', []);
