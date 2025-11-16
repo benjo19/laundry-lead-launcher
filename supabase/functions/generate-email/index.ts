@@ -189,7 +189,14 @@ VAŽNE SMJERNICE:
 - Izbjegavaj klišeje i generičke fraze
 - Poruka treba biti jasna i koncizna (max 200 riječi)
 - Završi s jasnim pozivom na akciju
-- OBAVEZNO dodaj potpis na kraju emaila ako je naveden u kontekstu pošiljatelja`;
+- OBAVEZNO dodaj potpis na kraju emaila ako je naveden u kontekstu pošiljatelja
+
+FORMAT EMAILA:
+- Podijeli sadržaj na jasne odlomke
+- Svaki odlomak treba biti 2-3 rečenice
+- Ostavi praznu liniju između odlomaka
+- Koristi pozdravljenje na početku (Poštovani/a...)
+- Dodaj potpis na kraju s kontakt informacijama`;
 
   if (businessContext) {
     prompt += `\n\nKONTEKST POŠILJATELJA:\n${businessContext}`;
@@ -197,7 +204,7 @@ VAŽNE SMJERNICE:
 
   prompt += `\n\nODGOVOR FORMATIRAJ U TOČNO 2 DIJELA:
 SUBJECT: [naslov emaila]
-CONTENT: [sadržaj emaila]`;
+CONTENT: [sadržaj emaila - podijeli ga u odlomke s praznim linijama između]`;
 
   return prompt;
 }
@@ -270,6 +277,9 @@ function parseGeneratedEmail(text: string): GeneratedEmailContent {
       }
     } else if (inContent && trimmedLine) {
       content += (content ? '\n' : '') + trimmedLine;
+    } else if (inContent && !trimmedLine) {
+      // Preserve empty lines for paragraph breaks
+      content += '\n';
     }
   }
 
@@ -292,5 +302,16 @@ function parseGeneratedEmail(text: string): GeneratedEmailContent {
     }
   }
 
-  return { subject, content };
+  // Convert plain text with line breaks to HTML with proper paragraphs
+  const htmlContent = content
+    .split('\n\n')  // Split by double newlines (paragraphs)
+    .map(para => para.trim())
+    .filter(para => para.length > 0)
+    .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)  // Replace single newlines with <br>
+    .join('\n');
+
+  return { 
+    subject, 
+    content: htmlContent || content  // Fallback to plain text if conversion fails
+  };
 }
