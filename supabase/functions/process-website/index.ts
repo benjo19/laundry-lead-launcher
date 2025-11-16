@@ -78,36 +78,79 @@ serve(async (req) => {
 
 async function scrapeWebsite(url: string): Promise<string> {
   try {
-    const response = await fetch(url, {
+    const firecrawlApiKey = Deno.env.get('FIRECRAWL_API_KEY');
+    
+    if (!firecrawlApiKey) {
+      console.log('Firecrawl API key not found, using basic scraping');
+      return await basicScrape(url);
+    }
+
+    console.log('Using Firecrawl API for scraping:', url);
+    
+    const response = await fetch('https://api.firecrawl.dev/v1/scrape', {
+      method: 'POST',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
+        'Authorization': `Bearer ${firecrawlApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        url,
+        formats: ['markdown', 'html'],
+        onlyMainContent: true,
+        includeTags: ['article', 'main', 'content'],
+        excludeTags: ['nav', 'footer', 'aside', 'header'],
+      }),
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to fetch website: ${response.status}`);
+      const errorText = await response.text();
+      console.error('Firecrawl API error:', response.status, errorText);
+      throw new Error(`Firecrawl API error: ${response.status}`);
     }
 
-    const html = await response.text();
+    const data = await response.json();
     
-    // Simple HTML text extraction
-    // Remove script and style elements
-    let cleanText = html
-      .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-      .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-
+    // Use markdown content if available, otherwise use cleaned HTML
+    let content = data.markdown || data.html || '';
+    
     // Limit content length
-    if (cleanText.length > 10000) {
-      cleanText = cleanText.substring(0, 10000) + '...';
+    if (content.length > 50000) {
+      content = content.substring(0, 50000) + '...';
     }
 
-    return cleanText;
+    return content;
 
   } catch (error) {
     console.error('Website scraping error:', error);
-    throw new Error(`Failed to scrape website: ${error.message}`);
+    console.log('Falling back to basic scraping');
+    return await basicScrape(url);
   }
+}
+
+async function basicScrape(url: string): Promise<string> {
+  const response = await fetch(url, {
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch website: ${response.status}`);
+  }
+
+  const html = await response.text();
+  
+  // Simple HTML text extraction
+  let cleanText = html
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  if (cleanText.length > 10000) {
+    cleanText = cleanText.substring(0, 10000) + '...';
+  }
+
+  return cleanText;
 }
