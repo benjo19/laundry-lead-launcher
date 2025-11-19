@@ -152,12 +152,22 @@ Deno.serve(async (req) => {
 
     console.log(`📊 Found ${userSettings?.length || 0} users with Make.com settings`);
 
-    // Prepare heartbeat payload
+    // Prepare unified heartbeat payload
     const heartbeatPayload = {
-      event: 'keepalive',
+      event_type: 'keepalive',
       timestamp: new Date().toISOString(),
-      message: 'Automatic heartbeat to keep webhook active',
-      info: 'This is an automated ping to prevent webhook deactivation. No action needed.'
+      user_id: null, // Will be set per user in the loop
+      test: false,
+      data: {
+        message: 'Automatic heartbeat to keep webhook active',
+        info: 'This is an automated ping to prevent webhook deactivation. No action needed.',
+        source: 'automated_keepalive_system'
+      },
+      schema: {
+        message: 'string',
+        info: 'string',
+        source: 'string'
+      }
     };
 
     let totalWebhooksSent = 0;
@@ -185,12 +195,18 @@ Deno.serve(async (req) => {
           totalWebhooksSent++;
           console.log(`📤 Sending heartbeat to ${webhook.name}: ${webhook.url}`);
 
+          // Customize payload for this specific user
+          const userHeartbeat = {
+            ...heartbeatPayload,
+            user_id: setting.user_id
+          };
+
           const response = await fetch(webhook.url!, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify(heartbeatPayload),
+            body: JSON.stringify(userHeartbeat),
           });
 
           if (response.ok || response.status === 0) { // status 0 is ok for no-cors
