@@ -92,95 +92,145 @@ export const useMakeIntegration = () => {
         return false;
       }
 
-      // Format data based on event type
-      let webhookData;
+      // Format data based on event type with unified structure
+      let unifiedData: MakeWebhookData;
       const hasImageBlob = data.image instanceof Blob;
 
       if (isEmailEvent) {
-        webhookData = {
-          to_email: data.to_email || '',
-          subject: data.subject || '',
-          content: data.content || '', // Već personaliziran sadržaj
-          timestamp: data.timestamp || new Date().toISOString(),
-          status: data.status || 'sent' // 'sent' ili 'draft'
+        unifiedData = {
+          event_type: 'email_sent',
+          timestamp: new Date().toISOString(),
+          user_id: user.id,
+          data: {
+            to_email: data.to_email || '',
+            subject: data.subject || '',
+            content: data.content || '',
+            send_method: data.send_method || 'resend',
+            status: data.status || 'sent'
+          },
+          schema: {
+            to_email: 'string',
+            subject: 'string',
+            content: 'string',
+            send_method: 'string',
+            status: 'string'
+          }
         };
       } else if (isCRMExportEvent) {
-        webhookData = {
-          event: 'crm_export',
-          export_info: {
-            type: data.type || 'reminders',
-            filename: data.filename || 'export',
-            format: data.format || 'excel',
-            timestamp: new Date().toISOString(),
-            user_id: user.id
+        unifiedData = {
+          event_type: 'crm_export',
+          timestamp: new Date().toISOString(),
+          user_id: user.id,
+          data: {
+            export_info: {
+              type: data.type || 'reminders',
+              filename: data.filename || 'export',
+              format: data.format || 'excel',
+              timestamp: new Date().toISOString(),
+              user_id: user.id
+            },
+            summary: {
+              total_items: data.data?.length || 0,
+              total_leads: data.leads?.length || 0,
+              has_leads: (data.leads?.length || 0) > 0,
+              has_reminders: (data.data?.length || 0) > 0
+            },
+            reminders: (data.data || []).map((item: any) => ({
+              id: item.id,
+              title: item.title,
+              description: item.description,
+              company: item.company,
+              date: item.date,
+              time: item.time,
+              priority: item.priority,
+              status: item.status,
+              created_at: item.created_at
+            })),
+            leads: (data.leads || []).map((lead: any) => ({
+              id: lead.id,
+              company: lead.company,
+              email: lead.email,
+              phone: lead.phone,
+              website: lead.website,
+              location: lead.location,
+              status: lead.status,
+              potential: lead.potential,
+              industry: lead.industry,
+              notes: lead.notes,
+              created_at: lead.created_at
+            }))
           },
-          summary: {
-            total_items: data.data?.length || 0,
-            total_leads: data.leads?.length || 0,
-            has_leads: (data.leads?.length || 0) > 0,
-            has_reminders: (data.data?.length || 0) > 0
-          },
-          reminders: (data.data || []).map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            description: item.description,
-            company: item.company,
-            date: item.date,
-            time: item.time,
-            priority: item.priority,
-            status: item.status,
-            created_at: item.created_at
-          })),
-          leads: (data.leads || []).map((lead: any) => ({
-            id: lead.id,
-            company: lead.company,
-            email: lead.email,
-            phone: lead.phone,
-            website: lead.website,
-            location: lead.location,
-            status: lead.status,
-            potential: lead.potential,
-            industry: lead.industry,
-            notes: lead.notes,
-            created_at: lead.created_at
-          }))
+          schema: {
+            export_info: 'object',
+            summary: 'object',
+            reminders: 'array',
+            leads: 'array'
+          }
         };
       } else if (isContentEvent) {
         if (hasImageBlob) {
           // Use FormData for content with image file
           const formData = new FormData();
+          formData.append('event_type', 'content_published');
+          formData.append('timestamp', new Date().toISOString());
+          formData.append('user_id', user.id);
           formData.append('text', data.text || '');
           formData.append('image', data.image, 'image.jpg');
 
           const response = await fetch(webhookUrl, {
             method: 'POST',
-            mode: 'no-cors',
             body: formData,
           });
 
           console.log(`Make.com webhook triggered for ${eventType} with image file`);
           return true;
         } else {
-          // Content Booster data without image
-          webhookData = {
-            text: data.text || '',
-            image: data.image || ''
+          unifiedData = {
+            event_type: 'content_published',
+            timestamp: new Date().toISOString(),
+            user_id: user.id,
+            data: {
+              text: data.text || '',
+              image: data.image || ''
+            },
+            schema: {
+              text: 'string',
+              image: 'string'
+            }
           };
         }
       } else {
         // Lead data for Google Sheets
-        webhookData = {
-          company: data.company || '',
-          email: data.email || '',
-          phone: data.phone || '',
-          website: data.website || '',
-          location: data.location || '',
-          country: data.country || '',
-          status: data.status || '',
-          potential: data.potential || '',
-          industry: data.industry || '',
-          biljeske: data.biljeske || '',
-          dateAdded: data.dateAdded || ''
+        unifiedData = {
+          event_type: 'lead_added',
+          timestamp: new Date().toISOString(),
+          user_id: user.id,
+          data: {
+            company: data.company || '',
+            email: data.email || '',
+            phone: data.phone || '',
+            website: data.website || '',
+            location: data.location || '',
+            country: data.country || '',
+            status: data.status || '',
+            potential: data.potential || '',
+            industry: data.industry || '',
+            biljeske: data.biljeske || '',
+            dateAdded: data.dateAdded || ''
+          },
+          schema: {
+            company: 'string',
+            email: 'string',
+            phone: 'string',
+            website: 'string',
+            location: 'string',
+            country: 'string',
+            status: 'string',
+            potential: 'string',
+            industry: 'string',
+            biljeske: 'string',
+            dateAdded: 'string'
+          }
         };
       }
 
@@ -189,9 +239,13 @@ export const useMakeIntegration = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors',
-        body: JSON.stringify(webhookData),
+        body: JSON.stringify(unifiedData),
       });
+
+      if (!response.ok && response.status !== 0) {
+        console.error(`Make.com webhook error: ${response.status} ${response.statusText}`);
+        return false;
+      }
 
       console.log(`Make.com webhook triggered for event: ${eventType}`);
       return true;

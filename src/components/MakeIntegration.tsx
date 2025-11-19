@@ -141,17 +141,35 @@ const MakeIntegration = () => {
     setLastTestResult(null);
 
     try {
-      const testLeadData = {
-        company: 'Test Tvrtka d.o.o.',
-        email: 'test@example.com',
-        phone: '+385 99 123 4567',
-        website: 'https://www.test-company.com',
-        location: 'Zagreb, Hrvatska',
-        country: 'Hrvatska',
-        status: 'Nova',
-        potential: 'Visoki',
-        industry: 'IT & Tehnologija',
-        dateAdded: new Date().toISOString()
+      const unifiedTestData = {
+        event_type: 'lead_added',
+        timestamp: new Date().toISOString(),
+        user_id: user?.id,
+        test: true,
+        data: {
+          company: 'Test Tvrtka d.o.o.',
+          email: 'test@example.com',
+          phone: '+385 99 123 4567',
+          website: 'https://www.test-company.com',
+          location: 'Zagreb, Hrvatska',
+          country: 'Hrvatska',
+          status: 'Nova',
+          potential: 'Visoki',
+          industry: 'IT & Tehnologija',
+          dateAdded: new Date().toISOString()
+        },
+        schema: {
+          company: 'string',
+          email: 'string',
+          phone: 'string',
+          website: 'string',
+          location: 'string',
+          country: 'string',
+          status: 'string',
+          potential: 'string',
+          industry: 'string',
+          dateAdded: 'string'
+        }
       };
 
       const response = await fetch(settings.webhook_url, {
@@ -159,9 +177,12 @@ const MakeIntegration = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors',
-        body: JSON.stringify(testLeadData),
+        body: JSON.stringify(unifiedTestData),
       });
+
+      if (!response.ok && response.status !== 0) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
       setLastTestResult('success');
       toast({
@@ -196,29 +217,44 @@ const MakeIntegration = () => {
     setLastTestResult(null);
 
     try {
-      const testEmailData = {
-        to_email: 'test@example.com',
-        subject: 'Test email iz Marketing Agent aplikacije',
-        content_preview: 'Ovo je testni email poslan iz Marketing Agent aplikacije za provjeru Make.com integracije...',
+      const unifiedTestData = {
+        event_type: 'email_sent',
         timestamp: new Date().toISOString(),
-        send_method: 'resend',
-        status: 'sent'
+        user_id: user?.id,
+        test: true,
+        data: {
+          to_email: 'test@example.com',
+          subject: 'Test email iz Marketing Agent aplikacije',
+          content: 'Ovo je testni email poslan iz Marketing Agent aplikacije za provjeru Make.com integracije...',
+          send_method: 'resend',
+          status: 'sent'
+        },
+        schema: {
+          to_email: 'string',
+          subject: 'string',
+          content: 'string',
+          send_method: 'string',
+          status: 'string'
+        }
       };
 
       console.log('=== EMAIL WEBHOOK TEST ===');
       console.log('Webhook URL:', settings.email_webhook_url);
-      console.log('Test data:', testEmailData);
+      console.log('Test data:', unifiedTestData);
 
       const response = await fetch(settings.email_webhook_url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors',
-        body: JSON.stringify(testEmailData),
+        body: JSON.stringify(unifiedTestData),
       });
 
-      console.log('Request sent successfully (no-cors mode)');
+      if (!response.ok && response.status !== 0) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      console.log('Request sent successfully');
 
       setLastTestResult('success');
       toast({
@@ -271,25 +307,32 @@ const MakeIntegration = () => {
         canvas.toBlob((blob) => resolve(blob!), 'image/jpeg', 0.9);
       });
 
-      // Prepare FormData with image file
+      // Prepare FormData with unified structure
       const formData = new FormData();
+      formData.append('event_type', 'content_published');
+      formData.append('timestamp', new Date().toISOString());
+      formData.append('user_id', user?.id || '');
+      formData.append('test', 'true');
       formData.append('text', 'Test objava iz Marketing Agent aplikacije');
       formData.append('image', imageBlob, 'image.jpg');
 
-      const logMessage = `📤 Šaljem podatke na:\n${settings.content_booster_webhook_url}\n\n📦 Podaci:\n- text: "Test objava iz Marketing Agent aplikacije"\n- image: test-image.jpg (${imageBlob.size} bytes)`;
+      const logMessage = `📤 Šaljem podatke na:\n${settings.content_booster_webhook_url}\n\n📦 Podaci:\n- event_type: content_published\n- test: true\n- text: "Test objava iz Marketing Agent aplikacije"\n- image: test-image.jpg (${imageBlob.size} bytes)`;
       setTestLog(logMessage);
       
       console.log('=== CONTENT BOOSTER WEBHOOK TEST ===');
       console.log('Webhook URL:', settings.content_booster_webhook_url);
-      console.log('Sending FormData with image file');
+      console.log('Sending FormData with unified structure and image file');
 
       const response = await fetch(settings.content_booster_webhook_url, {
         method: 'POST',
-        mode: 'no-cors',
         body: formData,
       });
 
-      console.log('Request sent successfully (no-cors mode - cannot see response)');
+      if (!response.ok && response.status !== 0) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      console.log('Request sent successfully');
 
       setLastTestResult('success');
       setTestLog(prev => `${prev}\n\n✅ Zahtjev uspješno poslan sa .jpg slikom!`);
@@ -329,65 +372,80 @@ const MakeIntegration = () => {
     setLastTestResult(null);
 
     try {
-      const testCRMData = {
-        export_type: 'reminders',
-        filename: 'crm-test-export',
+      const unifiedTestData = {
+        event_type: 'crm_export',
         timestamp: new Date().toISOString(),
-        total_count: 2,
-        items: [
-          {
-            title: 'Testni reminder',
-            description: 'Test opis za reminder',
-            company: 'Test Tvrtka d.o.o.',
-            date: '2024-01-20',
-            time: '14:00',
-            priority: 'Visok',
-            status: 'Aktivan'
-          },
-          {
-            title: 'Drugi reminder',
-            description: 'Poslati ponudu',
-            company: 'Drugi Klijent d.o.o.',
-            date: '2024-01-22',
-            time: '10:00',
-            priority: 'Srednji',
-            status: 'Aktivan'
-          }
-        ],
-        leads: [
-          {
-            company: 'Test Tvrtka d.o.o.',
-            email: 'info@test.hr',
-            phone: '+385 1 234 5678',
-            website: 'https://www.test.hr',
-            location: 'Zagreb, Hrvatska',
-            industry: 'IT & Tehnologija'
-          },
-          {
-            company: 'Drugi Klijent d.o.o.',
-            email: 'kontakt@klijent.hr',
-            phone: '+385 91 999 8888',
-            website: 'https://www.klijent.hr',
-            location: 'Split, Hrvatska',
-            industry: 'Trgovina'
-          }
-        ]
+        user_id: user?.id,
+        test: true,
+        data: {
+          export_type: 'reminders',
+          filename: 'crm-test-export',
+          total_count: 2,
+          items: [
+            {
+              title: 'Testni reminder',
+              description: 'Test opis za reminder',
+              company: 'Test Tvrtka d.o.o.',
+              date: '2024-01-20',
+              time: '14:00',
+              priority: 'Visok',
+              status: 'Aktivan'
+            },
+            {
+              title: 'Drugi reminder',
+              description: 'Poslati ponudu',
+              company: 'Drugi Klijent d.o.o.',
+              date: '2024-01-22',
+              time: '10:00',
+              priority: 'Srednji',
+              status: 'Aktivan'
+            }
+          ],
+          leads: [
+            {
+              company: 'Test Tvrtka d.o.o.',
+              email: 'info@test.hr',
+              phone: '+385 1 234 5678',
+              website: 'https://www.test.hr',
+              location: 'Zagreb, Hrvatska',
+              industry: 'IT & Tehnologija'
+            },
+            {
+              company: 'Drugi Klijent d.o.o.',
+              email: 'kontakt@klijent.hr',
+              phone: '+385 91 999 8888',
+              website: 'https://www.klijent.hr',
+              location: 'Split, Hrvatska',
+              industry: 'Trgovina'
+            }
+          ]
+        },
+        schema: {
+          export_type: 'string',
+          filename: 'string',
+          total_count: 'number',
+          items: 'array',
+          leads: 'array'
+        }
       };
 
       console.log('=== CRM EXPORT WEBHOOK TEST ===');
       console.log('Webhook URL:', settings.crm_export_webhook_url);
-      console.log('Test data:', testCRMData);
+      console.log('Test data:', unifiedTestData);
 
       const response = await fetch(settings.crm_export_webhook_url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        mode: 'no-cors',
-        body: JSON.stringify(testCRMData),
+        body: JSON.stringify(unifiedTestData),
       });
 
-      console.log('Request sent successfully (no-cors mode)');
+      if (!response.ok && response.status !== 0) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      console.log('Request sent successfully');
 
       setLastTestResult('success');
       toast({
@@ -495,6 +553,29 @@ const MakeIntegration = () => {
               ⚠️ Ako ne vidite podatke: Provjerite da je scenario AKTIVAN i da webhook modul kaže "Waiting for data"
             </p>
           </div>
+        </div>
+
+        <div className="bg-purple-50 border border-purple-200 p-4 rounded-lg">
+          <h4 className="font-medium text-purple-900 mb-2">🔄 Unified Webhook Format</h4>
+          <p className="text-sm text-purple-800 mb-2">
+            Svi webhookovi koriste jedinstveni format podataka koji uključuje:
+          </p>
+          <div className="bg-white p-3 rounded border border-purple-200 text-xs font-mono">
+            <pre className="text-purple-900">{`{
+  "event_type": "lead_added | email_sent | content_published | crm_export | keepalive",
+  "timestamp": "ISO date string",
+  "user_id": "user UUID",
+  "test": true/false,
+  "data": { ... vaši podaci ... },
+  "schema": { ... tipovi polja ... }
+}`}</pre>
+          </div>
+          <p className="text-xs text-purple-700 mt-2">
+            💡 <strong>Schema polje</strong> automatski informira Make.com o tipovima podataka (string, number, boolean, array, object) što omogućava automatsko kreiranje module inputa.
+          </p>
+          <p className="text-xs text-purple-700 mt-1">
+            🔁 <strong>Keepalive sistem</strong> šalje automatske "heartbeat" poruke svakih nekoliko dana da zadrži webhookove aktivnima i spriječi deaktivaciju u Make.com-u.
+          </p>
         </div>
 
         <div className="space-y-4">
