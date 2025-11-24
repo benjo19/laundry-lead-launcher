@@ -63,12 +63,12 @@ const KnowledgeBase = () => {
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    // Check file size (max 10MB)
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    // Check file size (max 20MB for PDF, 10MB for images)
+    const maxSize = type === 'pdf' ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
     if (file.size > maxSize) {
       toast({
         title: "Greška",
-        description: "Fajl je prevelik. Maksimalna veličina je 10MB.",
+        description: `Fajl je prevelik. Maksimalna veličina je ${type === 'pdf' ? '20MB' : '10MB'}.`,
         variant: "destructive",
       });
       return;
@@ -97,42 +97,59 @@ const KnowledgeBase = () => {
       setUploading(true);
       console.log('Starting file upload:', file.name, 'type:', type);
       
-      // Upload file to storage
-      const fileExt = file.name.split('.').pop();
-      const fileName = `${Date.now()}.${fileExt}`;
-      const filePath = `${user.id}/${fileName}`;
+      if (type === 'pdf') {
+        // Use analyze-pdf edge function for PDF files
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('title', file.name.replace('.pdf', ''));
 
-      console.log('Uploading to storage path:', filePath);
-      
-      // Direct upload to public bucket
-      const { error: uploadError } = await supabase.storage
-        .from('user-documents')
-        .upload(filePath, file, {
-          upsert: true
+        const { data, error } = await supabase.functions.invoke('analyze-pdf', {
+          body: formData,
         });
 
-      if (uploadError) {
-        console.error('Storage upload error:', uploadError);
-        throw uploadError;
-      }
-      
-      console.log('File uploaded to storage successfully');
+        if (error) throw error;
+        if (!data.success) throw new Error(data.error || 'Upload failed');
 
-      // Process file content using edge function
-      const { data: processedData, error: processError } = await supabase.functions.invoke('process-document', {
-        body: {
-          filePath,
-          type,
-          title: file.name.replace(`.${fileExt}`, '')
+        toast({
+          title: "Uspjeh",
+          description: "PDF je uspješno uploadovan, analiziran i dodan u knowledge base.",
+        });
+      } else {
+        // Original logic for images
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}.${fileExt}`;
+        const filePath = `${user.id}/${fileName}`;
+
+        console.log('Uploading to storage path:', filePath);
+        
+        const { error: uploadError } = await supabase.storage
+          .from('user-documents')
+          .upload(filePath, file, {
+            upsert: true
+          });
+
+        if (uploadError) {
+          console.error('Storage upload error:', uploadError);
+          throw uploadError;
         }
-      });
+        
+        console.log('File uploaded to storage successfully');
 
-      if (processError) throw processError;
+        const { data: processedData, error: processError } = await supabase.functions.invoke('process-document', {
+          body: {
+            filePath,
+            type,
+            title: file.name.replace(`.${fileExt}`, '')
+          }
+        });
 
-      toast({
-        title: "Uspjeh",
-        description: `${type === 'pdf' ? 'PDF' : 'Slika'} je uspješno uploadana i procesirana.`,
-      });
+        if (processError) throw processError;
+
+        toast({
+          title: "Uspjeh",
+          description: "Slika je uspješno uploadana i procesirana.",
+        });
+      }
 
       fetchKnowledgeItems();
     } catch (error) {
@@ -144,7 +161,6 @@ const KnowledgeBase = () => {
       });
     } finally {
       setUploading(false);
-      // Reset input
       event.target.value = '';
     }
   };
@@ -219,7 +235,9 @@ const KnowledgeBase = () => {
 
   const getIcon = (type: string) => {
     switch (type) {
-      case 'pdf': return <FileText className="h-5 w-5" />;
+      case 'pdf':
+      case 'document': 
+        return <FileText className="h-5 w-5" />;
       case 'image': return <Image className="h-5 w-5" />;
       case 'website': return <Globe className="h-5 w-5" />;
       default: return <FileText className="h-5 w-5" />;
@@ -251,7 +269,7 @@ const KnowledgeBase = () => {
               <CardContent>
                 <div className="space-y-4">
                   <p className="text-sm text-muted-foreground">
-                    Uploadajte PDF fajlove koji će biti procesurani i dodani u AI knowledge base.
+                    Uploadajte PDF fajlove do 20MB koji će biti analizirani AI-em i dodani u knowledge base.
                   </p>
                   <Input
                     type="file"
@@ -259,6 +277,9 @@ const KnowledgeBase = () => {
                     onChange={(e) => handleFileUpload(e, 'pdf')}
                     disabled={uploading}
                   />
+                  <p className="text-xs text-muted-foreground">
+                    PDF dokumenti se automatski analiziraju i ekstraktuje se tekst sa AI sažetkom.
+                  </p>
                 </div>
               </CardContent>
             </Card>
