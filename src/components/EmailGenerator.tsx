@@ -290,7 +290,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       console.log('Sending email data to webhook:', emailData);
 
       // Pošalji na Make.com webhook
-      const webhookTriggered = await triggerWebhook('email_sent', emailData);
+      const webhookTriggered = await triggerWebhook('sent', emailData);
 
       if (!webhookTriggered) {
         toast({
@@ -381,7 +381,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       status: 'draft'
     };
 
-    await triggerWebhook('email_sent', draftData);
+    await triggerWebhook('draft', draftData);
 
     if (editingDraftId) {
       // Update existing draft
