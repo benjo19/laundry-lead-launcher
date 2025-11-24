@@ -356,32 +356,34 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   };
 
   const saveDraft = async () => {
-    if (!recipient || !subject || !emailContent) {
+    if (!subject || !emailContent) {
       toast({
         title: "Nedostaju podaci",
-        description: "Molimo unesite osnovne podatke za spremanje drafta.",
+        description: "Molimo unesite naslov i sadržaj za spremanje drafta.",
         variant: "destructive"
       });
       return;
     }
 
-    // Personaliziraj sadržaj prije slanja
-    const personalizedContent = personalizeContent(
+    // Personaliziraj sadržaj prije slanja samo ako postoji primatelj
+    const personalizedContent = recipient ? personalizeContent(
       emailContent, 
       selectedCompany || recipient.split('@')[0],
       recipient
-    );
+    ) : emailContent;
 
-    // Pošalji draft podatke na webhook
-    const draftData = {
-      to_email: recipient,
-      subject: subject,
-      content: personalizedContent, // Personaliziran sadržaj
-      timestamp: new Date().toISOString(),
-      status: 'draft'
-    };
+    // Pošalji draft podatke na webhook samo ako postoji primatelj
+    if (recipient) {
+      const draftData = {
+        to_email: recipient,
+        subject: subject,
+        content: personalizedContent,
+        timestamp: new Date().toISOString(),
+        status: 'draft'
+      };
 
-    await triggerWebhook('email_sent', draftData);
+      await triggerWebhook('email_sent', draftData);
+    }
 
     if (editingDraftId) {
       // Update existing draft
@@ -398,7 +400,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       // Create new draft
       const draft: Email = {
         id: Date.now(),
-        to: recipient,
+        to: recipient || 'Bez primatelja',
         subject,
         content: emailContent,
         template: template || 'custom',
@@ -408,7 +410,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       setEmails([draft, ...emails]);
       toast({
         title: "Draft spremljen",
-        description: "Email draft je uspješno spremljen i poslan na webhook.",
+        description: recipient 
+          ? "Email draft je uspješno spremljen i poslan na webhook."
+          : "Email draft je spremljen. Dodajte primatelja prije slanja.",
       });
     }
   };
@@ -869,18 +873,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               <Button 
                 onClick={saveDraft} 
                 variant="outline" 
-                className="flex-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!recipient}
-                title={!recipient ? 'Unesite email primatelja za spremanje drafta' : ''}
+                className="flex-1 text-sm"
+                disabled={!subject || !emailContent}
               >
                 {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
               </Button>
             </div>
             
             {!recipient && emailContent && (
-              <div className="mt-2 text-center p-3 bg-orange-50 rounded-lg border border-orange-300">
-                <p className="text-sm text-orange-700 font-medium">
-                  ⚠️ Unesite email primatelja iznad da omogućite slanje
+              <div className="mt-2 text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <p className="text-sm text-blue-700">
+                  💡 Možete spremiti draft bez primatelja i dodati ga kasnije
                 </p>
               </div>
             )}
