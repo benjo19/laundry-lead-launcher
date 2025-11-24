@@ -65,20 +65,22 @@ const CRMReminder = () => {
 
   const handleCreateReminder = async () => {
     console.log('Creating reminder:', newReminder);
+    
+    // Generate and open Google Calendar link IMMEDIATELY (before async operations)
+    // This prevents mobile pop-up blockers
+    const calendarUrl = generateGoogleCalendarLink({
+      title: newReminder.title,
+      description: newReminder.description,
+      date: newReminder.date,
+      time: newReminder.time,
+      company: newReminder.company,
+    });
+    window.open(calendarUrl, '_blank');
+    
     try {
       const success = await createReminder(newReminder);
       
       if (success) {
-        // Generate and open Google Calendar link
-        const calendarUrl = generateGoogleCalendarLink({
-          title: newReminder.title,
-          description: newReminder.description,
-          date: newReminder.date,
-          time: newReminder.time,
-          company: newReminder.company,
-        });
-        window.open(calendarUrl, '_blank');
-
         // Trigger Make.com webhook
         await triggerWebhook('reminder_created', {
           title: newReminder.title,
