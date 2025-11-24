@@ -750,7 +750,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 {/* Email input for sending industry templates */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-slate-700">
-                    Email za slanje (opcionalno)
+                    Email za slanje <span className="text-red-500">*</span>
                   </label>
                   <Input
                     placeholder="email@tvrtka.hr"
@@ -758,8 +758,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                     onChange={(e) => setRecipient(e.target.value)}
                     className="w-full"
                   />
-                  <p className="text-xs text-slate-500">
-                    Unesite email ako želite poslati ovaj generički template direktno
+                  <p className="text-xs text-orange-600 font-medium">
+                    ⚠️ Email je potreban za slanje ili spremanje drafta
                   </p>
                 </div>
 
@@ -859,8 +859,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               <Button 
                 onClick={sendEmail} 
-                className="flex-1 bg-green-600 hover:bg-green-700 text-sm"
+                className="flex-1 bg-green-600 hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={isSending || !recipient}
+                title={!recipient ? 'Unesite email primatelja za slanje' : ''}
               >
                 <Send className="h-4 w-4 mr-2" />
                 {isSending ? 'Šaljem...' : (editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email')}
@@ -868,17 +869,18 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               <Button 
                 onClick={saveDraft} 
                 variant="outline" 
-                className="flex-1 text-sm"
+                className="flex-1 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!recipient}
+                title={!recipient ? 'Unesite email primatelja za spremanje drafta' : ''}
               >
                 {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
               </Button>
             </div>
             
-            {generationType === 'industry' && (
-              <div className="mt-2 text-center p-2 bg-purple-50 rounded-lg border border-purple-200">
-                <p className="text-xs text-purple-600">
-                  💡 Za slanje, unesite email primatelja iznad
+            {!recipient && emailContent && (
+              <div className="mt-2 text-center p-3 bg-orange-50 rounded-lg border border-orange-300">
+                <p className="text-sm text-orange-700 font-medium">
+                  ⚠️ Unesite email primatelja iznad da omogućite slanje
                 </p>
               </div>
             )}
