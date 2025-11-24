@@ -4,6 +4,7 @@ import { Reminder } from '@/types';
 import { useReminders } from '@/hooks/useReminders';
 import { useMakeIntegration } from '@/hooks/useMakeIntegration';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { generateGoogleCalendarLink } from '@/utils/googleCalendarLink';
 import ExportButton from './ExportButton';
 import ReminderFilters from './crm/ReminderFilters';
 import ReminderForm from './crm/ReminderForm';
@@ -68,6 +69,16 @@ const CRMReminder = () => {
       const success = await createReminder(newReminder);
       
       if (success) {
+        // Generate and open Google Calendar link
+        const calendarUrl = generateGoogleCalendarLink({
+          title: newReminder.title,
+          description: newReminder.description,
+          date: newReminder.date,
+          time: newReminder.time,
+          company: newReminder.company,
+        });
+        window.open(calendarUrl, '_blank');
+
         // Trigger Make.com webhook
         await triggerWebhook('reminder_created', {
           title: newReminder.title,
