@@ -5,7 +5,6 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, AlertCircle, CheckCircle2, Trash2, Users, Edit, CalendarPlus } from 'lucide-react';
 import { Reminder } from '@/types';
 import { generateGoogleCalendarLink } from '@/utils/googleCalendarLink';
-import { useToast } from '@/hooks/use-toast';
 
 interface ReminderItemProps {
   reminder: Reminder;
@@ -16,24 +15,13 @@ interface ReminderItemProps {
 }
 
 const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit }: ReminderItemProps) => {
-  const { toast } = useToast();
-
-  const handleAddToGoogleCalendar = () => {
-    const calendarUrl = generateGoogleCalendarLink({
-      title: reminder.title,
-      description: reminder.description || '',
-      date: reminder.date,
-      time: reminder.time,
-      company: reminder.company,
-    });
-    
-    window.open(calendarUrl, '_blank');
-    
-    toast({
-      title: "Google Calendar otvoren",
-      description: "Kliknite 'Save' za dodavanje događaja u vaš kalendar",
-    });
-  };
+  const calendarUrl = generateGoogleCalendarLink({
+    title: reminder.title,
+    description: reminder.description || '',
+    date: reminder.date,
+    time: reminder.time,
+    company: reminder.company,
+  });
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
@@ -78,15 +66,15 @@ const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit }
           <span>{reminder.date}</span>
           <Clock className="h-3 w-3 ml-3 mr-1" />
           <span>{reminder.time}</span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAddToGoogleCalendar}
-            className="h-6 w-6 p-0 ml-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+          <a
+            href={calendarUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center h-6 w-6 p-0 ml-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded transition-colors"
             title="Dodaj u Google Calendar"
           >
             <CalendarPlus className="h-4 w-4" />
-          </Button>
+          </a>
         </div>
         <div className="flex space-x-1">
           {reminder.status === 'Aktivan' && (
