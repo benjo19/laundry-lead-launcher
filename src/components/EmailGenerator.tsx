@@ -717,34 +717,65 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
             {/* Conditional Fields - Industry Mode */}
             {generationType === 'industry' && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-slate-700">
-                  Odaberite industriju
-                </label>
-                <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Odaberite industriju" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {industries.map((industry) => (
-                      <SelectItem key={industry.value} value={industry.value}>
-                        {industry.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {selectedIndustry && (
-                  <div className="mt-2 p-3 bg-purple-50 rounded-md border border-purple-200">
-                    <div className="flex items-center gap-2 text-sm mb-1">
-                      <span className="text-purple-700 font-medium">Industrija:</span>
-                      <span className="text-purple-600">{industries.find(i => i.value === selectedIndustry)?.label}</span>
+              <>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Odaberite industriju
+                  </label>
+                  <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Odaberite industriju" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {industries.map((industry) => (
+                        <SelectItem key={industry.value} value={industry.value}>
+                          {industry.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {selectedIndustry && (
+                    <div className="mt-2 p-3 bg-purple-50 rounded-md border border-purple-200">
+                      <div className="flex items-center gap-2 text-sm mb-1">
+                        <span className="text-purple-700 font-medium">Industrija:</span>
+                        <span className="text-purple-600">{industries.find(i => i.value === selectedIndustry)?.label}</span>
+                      </div>
+                      <p className="text-xs text-purple-600">
+                        Email će biti generički template primjenjiv za različite tvrtke u ovoj industriji
+                      </p>
                     </div>
-                    <p className="text-xs text-purple-600">
-                      Email će biti generički template primjenjiv za različite tvrtke u ovoj industriji
-                    </p>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+
+                {/* Email input for sending industry templates */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Email za slanje (opcionalno)
+                  </label>
+                  <Input
+                    placeholder="email@tvrtka.hr"
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                    className="w-full"
+                  />
+                  <p className="text-xs text-slate-500">
+                    Unesite email ako želite poslati ovaj generički template direktno
+                  </p>
+                </div>
+
+                {/* Company Name for industry mode */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Naziv tvrtke (opcionalno)
+                  </label>
+                  <Input
+                    placeholder="Naziv tvrtke"
+                    value={selectedCompany}
+                    onChange={(e) => setSelectedCompany(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </>
             )}
 
             {/* Template Selection */}
@@ -826,31 +857,31 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             )}
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              {generationType === 'recipient' ? (
-                <>
-                  <Button 
-                    onClick={sendEmail} 
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-sm"
-                    disabled={isSending}
-                  >
-                    <Send className="h-4 w-4 mr-2" />
-                    {isSending ? 'Šaljem...' : (editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email')}
-                  </Button>
-                  <Button onClick={saveDraft} variant="outline" className="flex-1 text-sm">
-                    {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
-                  </Button>
-                </>
-              ) : (
-                <div className="w-full text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
-                  <p className="text-sm text-purple-700 font-medium">
-                    📋 Kopirajte template i prilagodite ga za pojedine klijente
-                  </p>
-                  <p className="text-xs text-purple-600 mt-1">
-                    Za slanje, prebacite se na "Za konkretnog primatelja" mod
-                  </p>
-                </div>
-              )}
+              <Button 
+                onClick={sendEmail} 
+                className="flex-1 bg-green-600 hover:bg-green-700 text-sm"
+                disabled={isSending || !recipient}
+              >
+                <Send className="h-4 w-4 mr-2" />
+                {isSending ? 'Šaljem...' : (editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email')}
+              </Button>
+              <Button 
+                onClick={saveDraft} 
+                variant="outline" 
+                className="flex-1 text-sm"
+                disabled={!recipient}
+              >
+                {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
+              </Button>
             </div>
+            
+            {generationType === 'industry' && (
+              <div className="mt-2 text-center p-2 bg-purple-50 rounded-lg border border-purple-200">
+                <p className="text-xs text-purple-600">
+                  💡 Za slanje, unesite email primatelja iznad
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
