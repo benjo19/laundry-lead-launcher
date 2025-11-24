@@ -11,6 +11,7 @@ import MakeIntegration from './MakeIntegration';
 import ZapierIntegration from './ZapierIntegration';
 import GoogleCalendarIntegration from './GoogleCalendarIntegration';
 import ContentBoosterWebhook from './ContentBoosterWebhook';
+import SimpleWebhookIntegration from './SimpleWebhookIntegration';
 import AISettings from './AISettings';
 import { AccountSettings } from './AccountSettings';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -92,40 +93,41 @@ const Settings = () => {
 
               <TabsContent value="integrations" className="space-y-6">
                 <div className="space-y-6">
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Webhook className="h-5 w-5" />
-                        Webhook Integracije
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-8">
-                      {/* Make.com Integration */}
-                      <div>
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <Zap className="h-5 w-5 text-blue-500" />
-                          Make.com
-                        </h3>
-                        <MakeIntegration />
-                      </div>
+                  {isAdmin ? (
+                    // Admin vidi sve integracije kao do sad
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Webhook className="h-5 w-5" />
+                          Webhook Integracije
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-8">
+                        {/* Make.com Integration */}
+                        <div>
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-blue-500" />
+                            Make.com
+                          </h3>
+                          <MakeIntegration />
+                        </div>
 
-                      <div className="border-t pt-8">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <Zap className="h-5 w-5 text-orange-500" />
-                          Zapier
-                        </h3>
-                        <ZapierIntegration />
-                      </div>
+                        <div className="border-t pt-8">
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Zap className="h-5 w-5 text-orange-500" />
+                            Zapier
+                          </h3>
+                          <ZapierIntegration />
+                        </div>
 
-                      <div className="border-t pt-8">
-                        <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                          <Webhook className="h-5 w-5 text-green-500" />
-                          Content Booster Webhook
-                        </h3>
-                        <ContentBoosterWebhook />
-                      </div>
+                        <div className="border-t pt-8">
+                          <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                            <Webhook className="h-5 w-5 text-green-500" />
+                            Content Booster Webhook
+                          </h3>
+                          <ContentBoosterWebhook />
+                        </div>
 
-                      {isAdmin && (
                         <div className="border-t pt-8">
                           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
                             <Calendar className="h-5 w-5 text-purple-500" />
@@ -133,9 +135,12 @@ const Settings = () => {
                           </h3>
                           <GoogleCalendarIntegration />
                         </div>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    // Obični korisnici vide samo 3 jednostavna webhook polja
+                    <SimpleWebhookIntegration />
+                  )}
                 </div>
               </TabsContent>
             </Tabs>
