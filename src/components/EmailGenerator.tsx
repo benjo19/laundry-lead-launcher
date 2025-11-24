@@ -372,18 +372,16 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       recipient
     ) : emailContent;
 
-    // Pošalji draft podatke na webhook samo ako postoji primatelj
-    if (recipient) {
-      const draftData = {
-        to_email: recipient,
-        subject: subject,
-        content: personalizedContent,
-        timestamp: new Date().toISOString(),
-        status: 'draft'
-      };
+    // Pošalji draft podatke na webhook uvijek, čak i bez primatelja
+    const draftData = {
+      to_email: recipient || '',
+      subject: subject,
+      content: personalizedContent,
+      timestamp: new Date().toISOString(),
+      status: 'draft'
+    };
 
-      await triggerWebhook('email_sent', draftData);
-    }
+    await triggerWebhook('email_sent', draftData);
 
     if (editingDraftId) {
       // Update existing draft
