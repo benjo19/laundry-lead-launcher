@@ -62,7 +62,7 @@ export const useMakeIntegration = () => {
       
       // Determine which webhook to use based on event type
       const isContentEvent = eventType === 'content_published';
-      const isEmailEvent = eventType === 'email_sent';
+      const isEmailEvent = eventType === 'sent' || eventType === 'draft';
       const isCRMExportEvent = eventType === 'crm_export';
       
       let webhookUrl: string | undefined;
@@ -98,7 +98,7 @@ export const useMakeIntegration = () => {
 
       if (isEmailEvent) {
         unifiedData = {
-          event_type: 'email_sent',
+          event_type: eventType,
           timestamp: new Date().toISOString(),
           user_id: user.id,
           data: {
