@@ -693,19 +693,21 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
           <CardContent className="space-y-4">
             <Textarea
               placeholder="Vaš personalizirani email sadržaj će se pojaviti ovdje..."
-              value={emailContent.replace(/<[^>]*>/g, '').replace(/<br>/gi, '\n')}  // Strip HTML for editing
+              value={emailContent}
               onChange={(e) => setEmailContent(e.target.value)}
-              className="min-h-48 sm:min-h-64 w-full resize-none"
+              className="min-h-48 sm:min-h-64 w-full resize-none font-sans leading-relaxed"
+              style={{ whiteSpace: 'pre-wrap' }}
             />
             
-            {/* HTML Preview if content has HTML tags */}
-            {emailContent.includes('<p>') && (
+            {/* Formatted Preview */}
+            {emailContent && (
               <div className="mt-4 p-4 bg-slate-50 rounded-lg border">
                 <p className="text-sm font-medium text-slate-700 mb-2">Preview:</p>
                 <div 
-                  className="prose prose-sm max-w-none text-slate-700"
-                  dangerouslySetInnerHTML={{ __html: emailContent }}
-                />
+                  className="text-slate-700 whitespace-pre-wrap font-sans leading-relaxed"
+                >
+                  {emailContent}
+                </div>
               </div>
             )}
             
