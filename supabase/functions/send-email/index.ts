@@ -8,6 +8,20 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Helper function to convert plain text with newlines to HTML
+function convertTextToHTML(text: string): string {
+  // Split by double newlines to get paragraphs
+  const paragraphs = text.split('\n\n').filter(p => p.trim());
+  
+  // Convert each paragraph: replace single newlines with <br>
+  const htmlParagraphs = paragraphs.map(paragraph => {
+    const withBreaks = paragraph.replace(/\n/g, '<br>');
+    return `<p>${withBreaks}</p>`;
+  });
+  
+  return htmlParagraphs.join('');
+}
+
 interface EmailRequest {
   to_email: string;
   subject: string;
@@ -189,12 +203,14 @@ async function sendEmailViaOAuth(
 }
 
 async function sendViaGmail(accessToken: string, emailData: any): Promise<boolean> {
+  const htmlContent = convertTextToHTML(emailData.content);
+  
   const email = [
     `To: ${emailData.to}`,
     `Subject: ${emailData.subject}`,
     `Content-Type: text/html; charset=utf-8`,
     '',
-    emailData.content
+    htmlContent
   ].join('\n');
 
   const encodedEmail = btoa(email).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
@@ -220,6 +236,8 @@ async function sendViaGmail(accessToken: string, emailData: any): Promise<boolea
 }
 
 async function sendViaOutlook(accessToken: string, emailData: any): Promise<boolean> {
+  const htmlContent = convertTextToHTML(emailData.content);
+  
   const response = await fetch('https://graph.microsoft.com/v1.0/me/sendMail', {
     method: 'POST',
     headers: {
@@ -231,7 +249,7 @@ async function sendViaOutlook(accessToken: string, emailData: any): Promise<bool
         subject: emailData.subject,
         body: {
           contentType: 'HTML',
-          content: emailData.content
+          content: htmlContent
         },
         toRecipients: [{
           emailAddress: {
@@ -257,12 +275,13 @@ async function sendViaResend(
 ): Promise<boolean> {
   try {
     const resend = new Resend(apiKey);
+    const htmlContent = convertTextToHTML(emailData.content);
     
     const response = await resend.emails.send({
       from: `${emailData.fromName} <${emailData.from}>`,
       to: [emailData.to],
       subject: emailData.subject,
-      html: emailData.content,
+      html: htmlContent,
     });
 
     console.log('Resend email sent successfully:', response);
