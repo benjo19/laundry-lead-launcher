@@ -108,12 +108,29 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { triggerWebhook } = useMakeIntegration();
 
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
+  const [selectedIndustry, setSelectedIndustry] = useState('');
+  const [generationType, setGenerationType] = useState<'recipient' | 'industry'>('recipient');
 
   const templates = [
     { value: 'intro', label: 'Uvodna prezentacija' },
     { value: 'follow-up', label: 'Follow-up email' },
     { value: 'proposal', label: 'Poslovni prijedlog' },
     { value: 'reminder', label: 'Podsjetnik' },
+  ];
+
+  const industries = [
+    { value: 'praone', label: 'Profesionalne praone rublja' },
+    { value: 'restorani', label: 'Restorani i ugostiteljstvo' },
+    { value: 'hoteli', label: 'Hoteli i smještaj' },
+    { value: 'trgovina', label: 'Maloprodaja i trgovina' },
+    { value: 'proizvodnaja', label: 'Proizvodnja' },
+    { value: 'zdravstvo', label: 'Zdravstvo i njega' },
+    { value: 'ljepota', label: 'Ljepota i wellness' },
+    { value: 'gradevina', label: 'Građevinarstvo' },
+    { value: 'edukacija', label: 'Edukacija i obuka' },
+    { value: 'it', label: 'IT i tehnologija' },
+    { value: 'transport', label: 'Transport i logistika' },
+    { value: 'nekretnine', label: 'Nekretnine' },
   ];
 
   const generateEmailContent = async () => {
@@ -130,10 +147,20 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
-    if (!recipient) {
+    // Check validation based on generation type
+    if (generationType === 'recipient' && !recipient) {
       toast({
         title: "Primatelj potreban",
         description: "Molimo odaberite ili unesite email primatelja.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (generationType === 'industry' && !selectedIndustry) {
+      toast({
+        title: "Industrija potrebna",
+        description: "Molimo odaberite industriju za generiranje emaila.",
         variant: "destructive"
       });
       return;
@@ -151,38 +178,50 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setIsGenerating(true);
     
     try {
-      // Find additional context about the company
-      const allEmails = getAllEmailAddresses();
-      const selectedContact = allEmails.find(contact => contact.email === recipient);
-      
-      // Try to determine industry based on company info
       let industry = 'općenito';
-      const companyName = selectedCompany.toLowerCase();
-      if (companyName.includes('praon') || companyName.includes('čišć') || companyName.includes('pranj')) {
-        industry = 'profesionalne praone rublja';
+      let recipientCompany = 'tvrtka';
+      let recipientEmail = recipient || 'primatelj@tvrtka.hr';
+      let additionalContext = '';
+
+      if (generationType === 'industry') {
+        // Generate by industry
+        const industryLabel = industries.find(i => i.value === selectedIndustry)?.label || selectedIndustry;
+        industry = industryLabel;
+        recipientCompany = `tvrtka u industriji ${industryLabel.toLowerCase()}`;
+        additionalContext = `Generiraj generički email za industriju: ${industryLabel}. Email treba biti primjenjiv za različite tvrtke u ovoj industriji.`;
+      } else {
+        // Generate by recipient
+        const allEmails = getAllEmailAddresses();
+        const selectedContact = allEmails.find(contact => contact.email === recipient);
+        
+        // Try to determine industry based on company info
+        const companyName = selectedCompany.toLowerCase();
+        if (companyName.includes('praon') || companyName.includes('čišć') || companyName.includes('pranj')) {
+          industry = 'profesionalne praone rublja';
+        }
+        
+        recipientCompany = selectedCompany || 'tvrtka';
+        additionalContext = selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : '';
       }
 
       console.log('Calling generateEmail with params:', {
-        recipientCompany: selectedCompany || 'tvrtka',
-        recipientEmail: recipient,
+        recipientCompany,
+        recipientEmail,
         emailType: template,
         industry,
-        additionalContext: selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : undefined,
-        companyInfo: {
-          location: selectedContact ? leads.find(l => l.email === recipient)?.location : undefined,
-        }
+        additionalContext,
       });
 
       const result = await generateEmail({
-        recipientCompany: selectedCompany || 'tvrtka',
-        recipientEmail: recipient,
+        recipientCompany,
+        recipientEmail,
         emailType: template as 'intro' | 'follow-up' | 'proposal' | 'reminder',
         industry,
         profileId: selectedProfileId || undefined,
-        additionalContext: selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : undefined,
-        companyInfo: {
-          location: selectedContact ? leads.find(l => l.email === recipient)?.location : undefined,
-        }
+        additionalContext: additionalContext || undefined,
+        companyInfo: generationType === 'recipient' ? {
+          location: leads.find(l => l.email === recipient)?.location,
+        } : undefined,
       });
 
       console.log('generateEmail result:', result);
@@ -190,6 +229,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       if (result) {
         setSubject(result.subject);
         setEmailContent(result.content);
+        
+        if (generationType === 'industry') {
+          toast({
+            title: "Email generiran za industriju",
+            description: `Generički email za ${industries.find(i => i.value === selectedIndustry)?.label} je spreman.`,
+          });
+        }
       }
     } catch (error) {
       console.error('AI generation error:', error);
@@ -575,71 +621,131 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               </div>
             )}
 
-            {/* Recipient Selection */}
-            <div className="space-y-2">
+            {/* Generation Type Selection */}
+            <div className="space-y-2 bg-gradient-to-r from-purple-50 to-blue-50 p-3 rounded-lg border border-purple-200">
               <label className="block text-sm font-medium text-slate-700">
-                Odaberite primatelja iz leadova
+                Način generiranja
               </label>
-              <Select value={recipient} onValueChange={handleRecipientSelect}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Odaberite iz postojećih leadova" />
+              <Select value={generationType} onValueChange={(value: 'recipient' | 'industry') => {
+                setGenerationType(value);
+                if (value === 'industry') {
+                  setRecipient('');
+                  setSelectedCompany('');
+                } else {
+                  setSelectedIndustry('');
+                }
+              }}>
+                <SelectTrigger className="w-full bg-white">
+                  <SelectValue placeholder="Odaberite način" />
                 </SelectTrigger>
-                <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none max-h-60 overflow-y-auto">
-                  {getAllEmailAddresses().map((contact, index) => (
-                    <SelectItem key={index} value={contact.email} className="max-w-full p-2">
-                      <div className="flex flex-row items-center gap-2 w-full min-w-0">
-                        <div className="font-medium text-sm text-slate-900">{contact.company}</div>
-                        <div className="text-xs text-slate-500">•</div>
-                        <div className="text-xs text-slate-600 truncate">{contact.email}</div>
-                        <div className="text-xs text-slate-400 ml-auto shrink-0">({contact.source})</div>
-                      </div>
-                    </SelectItem>
-                  ))}
+                <SelectContent>
+                  <SelectItem value="recipient">📧 Za konkretnog primatelja</SelectItem>
+                  <SelectItem value="industry">🏭 Za industriju (generički template)</SelectItem>
                 </SelectContent>
               </Select>
-              
-              {/* Display selected recipient horizontally if available */}
-              {recipient && (
-                <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-blue-700 font-medium">Odabrani primatelj:</span>
-                    <span className="text-blue-600 truncate">{recipient}</span>
-                    {selectedCompany && (
-                      <>
-                        <span className="text-blue-400">•</span>
-                        <span className="text-blue-600 truncate">{selectedCompany}</span>
-                      </>
-                    )}
-                  </div>
+            </div>
+
+            {/* Conditional Fields - Recipient Mode */}
+            {generationType === 'recipient' && (
+              <>
+                {/* Recipient Selection */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Odaberite primatelja iz leadova
+                  </label>
+                  <Select value={recipient} onValueChange={handleRecipientSelect}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Odaberite iz postojećih leadova" />
+                    </SelectTrigger>
+                    <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none max-h-60 overflow-y-auto">
+                      {getAllEmailAddresses().map((contact, index) => (
+                        <SelectItem key={index} value={contact.email} className="max-w-full p-2">
+                          <div className="flex flex-row items-center gap-2 w-full min-w-0">
+                            <div className="font-medium text-sm text-slate-900">{contact.company}</div>
+                            <div className="text-xs text-slate-500">•</div>
+                            <div className="text-xs text-slate-600 truncate">{contact.email}</div>
+                            <div className="text-xs text-slate-400 ml-auto shrink-0">({contact.source})</div>
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  {recipient && (
+                    <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="text-blue-700 font-medium">Odabrani:</span>
+                        <span className="text-blue-600 truncate">{recipient}</span>
+                        {selectedCompany && (
+                          <>
+                            <span className="text-blue-400">•</span>
+                            <span className="text-blue-600 truncate">{selectedCompany}</span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Manual Email Input */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
-                Ili unesite email ručno
-              </label>
-              <Input
-                placeholder="email@tvrtka.hr"
-                value={recipient}
-                onChange={(e) => setRecipient(e.target.value)}
-                className="w-full"
-              />
-            </div>
+                {/* Manual Email Input */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Ili unesite email ručno
+                  </label>
+                  <Input
+                    placeholder="email@tvrtka.hr"
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
 
-            {/* Company Name */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-700">
-                Naziv tvrtke (za personalizaciju)
-              </label>
-              <Input
-                placeholder="Naziv tvrtke"
-                value={selectedCompany}
-                onChange={(e) => setSelectedCompany(e.target.value)}
-                className="w-full"
-              />
-            </div>
+                {/* Company Name */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-slate-700">
+                    Naziv tvrtke (za personalizaciju)
+                  </label>
+                  <Input
+                    placeholder="Naziv tvrtke"
+                    value={selectedCompany}
+                    onChange={(e) => setSelectedCompany(e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Conditional Fields - Industry Mode */}
+            {generationType === 'industry' && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-slate-700">
+                  Odaberite industriju
+                </label>
+                <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Odaberite industriju" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {industries.map((industry) => (
+                      <SelectItem key={industry.value} value={industry.value}>
+                        {industry.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedIndustry && (
+                  <div className="mt-2 p-3 bg-purple-50 rounded-md border border-purple-200">
+                    <div className="flex items-center gap-2 text-sm mb-1">
+                      <span className="text-purple-700 font-medium">Industrija:</span>
+                      <span className="text-purple-600">{industries.find(i => i.value === selectedIndustry)?.label}</span>
+                    </div>
+                    <p className="text-xs text-purple-600">
+                      Email će biti generički template primjenjiv za različite tvrtke u ovoj industriji
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Template Selection */}
             <div className="space-y-2">
@@ -676,11 +782,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             {/* Generate Button */}
             <Button 
               onClick={generateEmailContent} 
-              disabled={isGenerating || !isAIConfigured()}
+              disabled={isGenerating || !isAIConfigured() || 
+                (generationType === 'recipient' && !recipient) ||
+                (generationType === 'industry' && !selectedIndustry)}
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-sm"
             >
               <Sparkles className="h-4 w-4 mr-2" />
-              {isGenerating ? 'Generiranje AI sadržaja...' : 'Generiraj Personalizirani AI Email'}
+              {isGenerating ? 'Generiranje AI sadržaja...' : 
+                generationType === 'industry' ? 'Generiraj Template za Industriju' : 'Generiraj Personalizirani Email'}
             </Button>
           </CardContent>
         </Card>
@@ -689,6 +798,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         <Card className="w-full">
           <CardHeader className="pb-4">
             <CardTitle className="text-base sm:text-lg">Sadržaj Emaila</CardTitle>
+            {generationType === 'industry' && emailContent && (
+              <p className="text-xs text-purple-600 mt-2">
+                💡 Ovo je generički template - možete ga kopirati i prilagoditi za pojedine klijente
+              </p>
+            )}
           </CardHeader>
           <CardContent className="space-y-4">
             <Textarea
@@ -712,17 +826,30 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             )}
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-              <Button 
-                onClick={sendEmail} 
-                className="flex-1 bg-green-600 hover:bg-green-700 text-sm"
-                disabled={isSending}
-              >
-                <Send className="h-4 w-4 mr-2" />
-                {isSending ? 'Šaljem...' : (editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email')}
-              </Button>
-              <Button onClick={saveDraft} variant="outline" className="flex-1 text-sm">
-                {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
-              </Button>
+              {generationType === 'recipient' ? (
+                <>
+                  <Button 
+                    onClick={sendEmail} 
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-sm"
+                    disabled={isSending}
+                  >
+                    <Send className="h-4 w-4 mr-2" />
+                    {isSending ? 'Šaljem...' : (editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email')}
+                  </Button>
+                  <Button onClick={saveDraft} variant="outline" className="flex-1 text-sm">
+                    {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
+                  </Button>
+                </>
+              ) : (
+                <div className="w-full text-center p-3 bg-purple-50 rounded-lg border border-purple-200">
+                  <p className="text-sm text-purple-700 font-medium">
+                    📋 Kopirajte template i prilagodite ga za pojedine klijente
+                  </p>
+                  <p className="text-xs text-purple-600 mt-1">
+                    Za slanje, prebacite se na "Za konkretnog primatelja" mod
+                  </p>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
