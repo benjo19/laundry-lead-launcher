@@ -334,16 +334,16 @@ function parseGeneratedEmail(text: string): GeneratedEmailContent {
     }
   }
 
-  // Convert plain text with line breaks to HTML with proper paragraphs
-  const htmlContent = content
+  // Keep as plain text with clear paragraph breaks (double newlines)
+  // Clean up content to ensure consistent paragraph formatting
+  const formattedContent = content
     .split('\n\n')  // Split by double newlines (paragraphs)
-    .map(para => para.trim())
+    .map(para => para.trim().replace(/\n/g, ' '))  // Join single newlines within paragraphs
     .filter(para => para.length > 0)
-    .map(para => `<p>${para.replace(/\n/g, '<br>')}</p>`)  // Replace single newlines with <br>
-    .join('\n');
+    .join('\n\n');  // Rejoin with double newlines between paragraphs
 
   return { 
     subject, 
-    content: htmlContent || content  // Fallback to plain text if conversion fails
+    content: formattedContent
   };
 }
