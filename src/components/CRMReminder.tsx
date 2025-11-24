@@ -3,7 +3,6 @@ import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { Reminder } from '@/types';
 import { useReminders } from '@/hooks/useReminders';
 import { useMakeIntegration } from '@/hooks/useMakeIntegration';
-import { useGoogleCalendar } from '@/hooks/useGoogleCalendar';
 import { useLanguage } from '@/contexts/LanguageContext';
 import ExportButton from './ExportButton';
 import ReminderFilters from './crm/ReminderFilters';
@@ -29,7 +28,6 @@ const CRMReminder = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const { triggerWebhook } = useMakeIntegration();
-  const { createCalendarEvent, updateCalendarEvent } = useGoogleCalendar();
   
   const [newReminder, setNewReminder] = useState<NewReminderForm>({
     title: '',
@@ -70,21 +68,6 @@ const CRMReminder = () => {
       const success = await createReminder(newReminder);
       
       if (success) {
-        // Create reminder object for calendar
-        const reminderForCalendar = {
-          id: Date.now(), // Temporary ID
-          title: newReminder.title,
-          description: newReminder.description,
-          date: newReminder.date,
-          time: newReminder.time,
-          priority: newReminder.priority,
-          company: newReminder.company,
-          status: 'Aktivan' as const
-        };
-
-        // Add to Google Calendar and get event ID
-        const eventId = await createCalendarEvent(reminderForCalendar);
-        
         // Trigger Make.com webhook
         await triggerWebhook('reminder_created', {
           title: newReminder.title,
@@ -148,22 +131,6 @@ const CRMReminder = () => {
     try {
       const success = await updateReminder(editingReminder.id, newReminder);
       if (success) {
-        // Create updated reminder object for calendar
-        const reminderForCalendar = {
-          id: editingReminder.id,
-          title: newReminder.title,
-          description: newReminder.description,
-          date: newReminder.date,
-          time: newReminder.time,
-          priority: newReminder.priority,
-          company: newReminder.company,
-          status: editingReminder.status
-        };
-
-        // Try to update Google Calendar event if we have an event ID
-        // Note: For simplicity, this will create a new calendar link since we don't store event IDs yet
-        await updateCalendarEvent(reminderForCalendar, 'placeholder-event-id');
-        
         setEditingReminder(null);
         setNewReminder({
           title: '',
