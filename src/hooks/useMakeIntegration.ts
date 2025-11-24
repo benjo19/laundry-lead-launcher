@@ -64,6 +64,7 @@ export const useMakeIntegration = () => {
       const isContentEvent = eventType === 'content_published';
       const isEmailEvent = eventType === 'sent' || eventType === 'draft';
       const isCRMExportEvent = eventType === 'crm_export';
+      const isLeadEvent = eventType === 'lead_added';
       
       let webhookUrl: string | undefined;
       let autoTrigger: boolean | undefined;
@@ -77,9 +78,12 @@ export const useMakeIntegration = () => {
       } else if (isCRMExportEvent) {
         webhookUrl = settings?.crm_export_webhook_url;
         autoTrigger = settings?.crm_export_auto_trigger;
-      } else {
+      } else if (isLeadEvent) {
         webhookUrl = settings?.webhook_url;
         autoTrigger = settings?.auto_trigger;
+      } else {
+        console.log(`Make.com: Unknown event type ${eventType}`);
+        return false;
       }
       
       if (!webhookUrl) {
@@ -199,7 +203,7 @@ export const useMakeIntegration = () => {
             }
           };
         }
-      } else {
+      } else if (isLeadEvent) {
         // Lead data for Google Sheets
         unifiedData = {
           event_type: 'lead_added',
@@ -232,6 +236,9 @@ export const useMakeIntegration = () => {
             dateAdded: 'string'
           }
         };
+      } else {
+        console.error(`Make.com: Unhandled event type ${eventType}`);
+        return false;
       }
 
       const response = await fetch(webhookUrl, {
