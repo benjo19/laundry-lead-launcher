@@ -258,6 +258,33 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     return personalizedContent;
   };
 
+  // Helper funkcija za konverziju plain text u HTML format
+  const convertToHTML = (text: string): string => {
+    // Split by double newlines to get paragraphs
+    const paragraphs = text.split('\n\n').filter(p => p.trim());
+    
+    // Convert each paragraph: replace single newlines with <br>
+    const htmlParagraphs = paragraphs.map(paragraph => {
+      const withBreaks = paragraph.replace(/\n/g, '<br>');
+      return `    <p style="margin: 0 0 16px 0; line-height: 1.6;">${withBreaks}</p>`;
+    });
+    
+    // Wrap in a professional HTML template
+    return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
+  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px;">
+${htmlParagraphs.join('')}
+  </div>
+</body>
+</html>`;
+  };
+
   const sendEmail = async () => {
     if (!recipient || !subject || !emailContent) {
       toast({
@@ -278,11 +305,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         recipient
       );
 
+      // Konvertiraj u HTML format
+      const htmlContent = convertToHTML(personalizedContent);
+
       // Pripremi email podatke za webhook
       const emailData = {
         to_email: recipient,
         subject: subject,
-        content: personalizedContent, // Personaliziran sadržaj
+        content: htmlContent, // HTML formatiran sadržaj
         timestamp: new Date().toISOString(),
         status: 'sent'
       };
@@ -372,11 +402,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       recipient
     ) : emailContent;
 
+    // Konvertiraj u HTML format
+    const htmlContent = convertToHTML(personalizedContent);
+
     // Pošalji draft podatke na webhook uvijek, čak i bez primatelja
     const draftData = {
       to_email: recipient || '',
       subject: subject,
-      content: personalizedContent,
+      content: htmlContent, // HTML formatiran sadržaj
       timestamp: new Date().toISOString(),
       status: 'draft'
     };
