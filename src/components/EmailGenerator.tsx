@@ -134,10 +134,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   ];
 
   const generateEmailContent = async () => {
-    console.log('generateEmailContent called');
-    console.log('Current AI settings:', aiSettings);
-    console.log('Is AI configured:', isAIConfigured());
-
     if (!template) {
       toast({
         title: "Greška",
@@ -204,14 +200,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         additionalContext = selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : '';
       }
 
-      console.log('Calling generateEmail with params:', {
-        recipientCompany,
-        recipientEmail,
-        emailType: template,
-        industry,
-        additionalContext,
-      });
-
       const result = await generateEmail({
         recipientCompany,
         recipientEmail,
@@ -223,8 +211,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
           location: leads.find(l => l.email === recipient)?.location,
         } : undefined,
       });
-
-      console.log('generateEmail result:', result);
 
       if (result) {
         setSubject(result.subject);
@@ -316,8 +302,6 @@ ${htmlParagraphs.join('')}
         timestamp: new Date().toISOString(),
         status: 'sent'
       };
-
-      console.log('Sending email data to webhook:', emailData);
 
       // Pošalji na Make.com webhook
       const webhookTriggered = await triggerWebhook('sent', emailData);

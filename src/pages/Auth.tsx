@@ -28,20 +28,14 @@ const Auth: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('Auth: Component mounted, checking user session');
-    
     const checkUser = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          console.error('Auth: Error checking session:', error);
           setAuthError(`Session check failed: ${error.message}`);
         } else if (session) {
-          console.log('Auth: User already authenticated, redirecting');
           navigate('/');
-        } else {
-          console.log('Auth: No active session, showing auth form');
         }
       } catch (error) {
         console.error('Auth: Exception during auth check:', error);
@@ -53,7 +47,6 @@ const Auth: React.FC = () => {
 
     // Add timeout to prevent infinite loading
     const timeoutId = setTimeout(() => {
-      console.log('Auth: Timeout reached during auth check');
       setIsCheckingAuth(false);
       setAuthError('Authentication check timed out');
     }, 8000);

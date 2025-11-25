@@ -27,13 +27,9 @@ const queryClient = new QueryClient({
 });
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  console.log('ProtectedRoute: Rendering protected route');
   const { user, loading, error } = useAuthContext();
   
-  console.log('ProtectedRoute: User state:', { user: !!user, loading, error });
-  
   if (loading) {
-    console.log('ProtectedRoute: Showing loading state');
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
         <div className="text-center space-y-4">
@@ -53,22 +49,17 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
   }
   
   if (error) {
-    console.log('ProtectedRoute: Auth error, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }
   
   if (!user) {
-    console.log('ProtectedRoute: No user, redirecting to auth');
     return <Navigate to="/auth" replace />;
   }
   
-  console.log('ProtectedRoute: User authenticated, rendering children');
   return <>{children}</>;
 };
 
 const AppContent: React.FC = () => {
-  console.log('App: Starting application');
-  
   try {
     return (
       <ErrorBoundary>

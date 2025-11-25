@@ -16,22 +16,12 @@ export const useOAuthCallback = () => {
       const oauthCallback = searchParams.get('oauth_callback');
       const lovableToken = searchParams.get('__lovable_token');
       
-      console.log('OAuth callback hook running', { 
-        url: window.location.href, 
-        oauthCallback, 
-        hasSession: !!session, 
-        hasUser: !!user,
-        searchParamsString: searchParams.toString() 
-      });
-      
       // Skip if this is a Lovable token or not an OAuth callback
       if (lovableToken || !oauthCallback || !session || !user) {
-        console.log('OAuth callback skipped:', { oauthCallback: !!oauthCallback, session: !!session, user: !!user, lovableToken: !!lovableToken });
         return;
       }
 
       try {
-        console.log('Processing OAuth callback for:', oauthCallback);
         
         // Get the OAuth provider data from the session
         const providerToken = session.provider_token;

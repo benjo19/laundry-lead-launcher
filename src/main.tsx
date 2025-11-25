@@ -3,8 +3,6 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 
-console.log('main.tsx: Starting application initialization');
-
 // Add global error handler
 window.addEventListener('error', (event) => {
   console.error('Global error:', event.error);
@@ -17,20 +15,14 @@ window.addEventListener('unhandledrejection', (event) => {
 // Enhanced error handling and debugging
 const initializeApp = async () => {
   try {
-    console.log('main.tsx: Checking for root element');
     const rootElement = document.getElementById("root");
     
     if (!rootElement) {
       throw new Error('Root element not found - DOM may not be ready');
     }
     
-    console.log('main.tsx: Root element found, creating React root');
     const root = createRoot(rootElement);
-    
-    console.log('main.tsx: Rendering App component');
     root.render(<App />);
-    
-    console.log('main.tsx: App rendered successfully');
   } catch (error) {
     console.error('main.tsx: Error during initialization:', error);
     
