@@ -74,9 +74,6 @@ const AIKnowledgeChat = () => {
     setIsLoading(true);
 
     try {
-      console.log('Sending message to AI:', inputMessage);
-      console.log('User:', user);
-      
       const { data, error } = await supabase.functions.invoke('ai-knowledge-chat', {
         body: { message: inputMessage }
       });

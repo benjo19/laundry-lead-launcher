@@ -217,14 +217,12 @@ export const performLeadSearch = async (
         let socialProfiles = {};
 
         if (lead.website) {
-          console.log(`📧 Scraping email from: ${lead.website}`);
           try {
             const email = await scrapeEmailFromWebsite(lead.website, lead.name);
             if (email) {
               lead.email = email;
               lead.emailScraped = true;
               emailSource = 'website';
-              console.log(`✅ Email found: ${email}`);
             }
           } catch (emailError) {
             console.error(`❌ Email scraping failed:`, emailError);
@@ -232,18 +230,15 @@ export const performLeadSearch = async (
         } else {
           // Discover website from social profiles (Facebook/LinkedIn About)
           try {
-            console.log('🌐 No website in details. Trying to discover from social profiles...');
             const discovered = await discoverWebsiteFromSocial(lead.name);
             if (discovered?.website) {
               lead.website = discovered.website;
-              console.log(`🌍 Discovered website via ${discovered.source}: ${lead.website}`);
               // Now scrape email from discovered website
               const email = await scrapeEmailFromWebsite(lead.website, lead.name);
               if (email) {
                 lead.email = email;
                 lead.emailScraped = true;
                 emailSource = 'website';
-                console.log(`✅ Email found after discovery: ${email}`);
               }
             }
           } catch (discoverErr) {
@@ -253,7 +248,6 @@ export const performLeadSearch = async (
         
         // Try enhanced email discovery with social media
         try {
-          console.log(`🔍 Enhanced email discovery for: ${lead.name}`);
           const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '', location);
 
           // Only accept emails from the same company domain (avoid free providers)
@@ -266,18 +260,12 @@ export const performLeadSearch = async (
             if (filtered.length > 0) {
               lead.email = filtered[0];
               emailSource = enhancedResult.emailSources[filtered[0]] || 'social';
-              console.log(`✅ Accepted domain-matching email: ${lead.email} (root: ${companyRoot})`);
-            } else {
-              console.log('ℹ️ Enhanced discovery found emails, but none matched company domain');
             }
           }
 
           
           // Store social profiles
           socialProfiles = enhancedResult.socialProfiles;
-          
-          console.log(`📱 Social profiles found:`, socialProfiles);
-          console.log(`📧 Email source: ${emailSource}`);
           
         } catch (enhancedError) {
           console.error(`❌ Enhanced discovery failed:`, enhancedError);
@@ -311,16 +299,6 @@ export const performLeadSearch = async (
         });
       }
     }
-    
-    console.log('=== SEARCH COMPLETED ===');
-    console.log('📊 Total real leads found:', realLeads.length);
-    console.log('📧 Leads with emails:', realLeads.filter(lead => lead.email).length);
-    console.log('🏢 Final results summary:', realLeads.map(lead => ({ 
-      name: lead.name, 
-      address: lead.address,
-      hasEmail: !!lead.email,
-      place_id: lead.place_id
-    })));
     
     // CRITICAL: Verify we're returning real data
     if (realLeads.length > 0) {
@@ -420,14 +398,12 @@ export const performApifyLeadSearch = async (
 
       // If no email but we have a website, try to scrape it
       if (!lead.email && lead.website) {
-        console.log(`📧 No email from Apify, scraping: ${lead.website}`);
         try {
           const scrapedEmail = await scrapeEmailFromWebsite(lead.website, lead.name);
           if (scrapedEmail) {
             lead.email = scrapedEmail;
             lead.emailScraped = true;
             lead.emailSource = 'website';
-            console.log(`✅ Email found via scraping: ${scrapedEmail}`);
           }
         } catch (emailError) {
           console.error(`❌ Email scraping failed:`, emailError);
@@ -437,7 +413,6 @@ export const performApifyLeadSearch = async (
       // Try enhanced email discovery with social media
       if (!lead.email || !lead.website) {
         try {
-          console.log(`🔍 Enhanced email discovery for: ${lead.name}`);
           const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '', location);
 
           // Only accept emails from the same company domain (avoid free providers)
@@ -451,14 +426,12 @@ export const performApifyLeadSearch = async (
               lead.email = filtered[0];
               lead.emailSource = enhancedResult.emailSources[filtered[0]] || 'social';
               lead.emailScraped = true;
-              console.log(`✅ Accepted domain-matching email: ${lead.email}`);
             }
           }
           
           // Store social profiles
           if (Object.keys(enhancedResult.socialProfiles).length > 0) {
             lead.socialProfiles = enhancedResult.socialProfiles as any;
-            console.log(`📱 Social profiles found:`, enhancedResult.socialProfiles);
           }
         } catch (enhancedError) {
           console.error(`❌ Enhanced discovery failed:`, enhancedError);
@@ -466,17 +439,7 @@ export const performApifyLeadSearch = async (
       }
 
       apifyLeads.push(lead);
-      console.log(`✅ Processed: ${lead.name} - Email: ${lead.email || 'none'}`);
     }
-
-    console.log('=== APIFY SEARCH COMPLETED ===');
-    console.log('📊 Total leads found:', apifyLeads.length);
-    console.log('📧 Leads with emails:', apifyLeads.filter(lead => lead.email).length);
-    console.log('🏢 Final results summary:', apifyLeads.map(lead => ({ 
-      name: lead.name, 
-      address: lead.address,
-      hasEmail: !!lead.email
-    })));
 
     if (apifyLeads.length > 0) {
       console.log('✅ RETURNING APIFY DATA');

@@ -25,9 +25,6 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry }: Use
       return;
     }
 
-    console.log('Adding discovered lead:', discoveredLead.name);
-    console.log('User is logged in:', !!user);
-
     // Extract country from address (last part after comma)
     const addressParts = discoveredLead.address.split(',').map(part => part.trim());
     const country = addressParts.length > 1 ? addressParts[addressParts.length - 1] : '';
