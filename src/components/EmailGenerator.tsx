@@ -119,6 +119,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   ];
 
   const industries = [
+    { value: 'opcenito', label: 'Sve industrije / Općenito' },
     { value: 'praone', label: 'Profesionalne praone rublja' },
     { value: 'restorani', label: 'Restorani i ugostiteljstvo' },
     { value: 'hoteli', label: 'Hoteli i smještaj' },
