@@ -9,6 +9,9 @@ export interface Industry {
 }
 
 export const industries: Industry[] = [
+  // Općenita opcija - sve industrije
+  { value: 'general', label: 'Sve industrije / Općenito', query: 'business company "contact us" -directory -listing' },
+  
   // Turizam i smještaj - precizniji upiti
   { value: 'hotel', label: 'Hoteli', query: 'hotel "accommodation" "lodging" -apartment -hostel' },
   { value: 'hostel', label: 'Hosteli', query: 'hostel "backpacker" "budget accommodation" -hotel -apartment' },
