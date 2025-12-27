@@ -99,25 +99,19 @@ export const useSupabaseLeads = () => {
       // Check for duplicates first
       console.log('Checking for duplicate leads...');
       
-      // Check for duplicate company
+      // Check for duplicate company - use maybeSingle to handle empty results gracefully
       const { data: existingCompany, error: companyCheckError } = await supabase
         .from('leads')
         .select('company')
         .eq('user_id', user.id)
         .eq('company', newLeadData.company)
-        .limit(1);
+        .maybeSingle();
 
       if (companyCheckError) {
         console.error('Error checking for duplicate company:', companyCheckError);
-        toast({
-          title: "Greška",
-          description: companyCheckError.message,
-          variant: "destructive",
-        });
-        return false;
-      }
-
-      if (existingCompany && existingCompany.length > 0) {
+        // Don't block on check errors, proceed with insert
+        console.log('Proceeding despite duplicate check error...');
+      } else if (existingCompany) {
         toast({
           title: "Lead već postoji",
           description: `Lead s tvrtkom "${newLeadData.company}" već postoji u bazi podataka.`,
@@ -133,19 +127,13 @@ export const useSupabaseLeads = () => {
           .select('email')
           .eq('user_id', user.id)
           .eq('email', newLeadData.email)
-          .limit(1);
+          .maybeSingle();
 
         if (emailCheckError) {
           console.error('Error checking for duplicate email:', emailCheckError);
-          toast({
-            title: "Greška",
-            description: emailCheckError.message,
-            variant: "destructive",
-          });
-          return false;
-        }
-
-        if (existingEmail && existingEmail.length > 0) {
+          // Don't block on check errors, proceed with insert
+          console.log('Proceeding despite email duplicate check error...');
+        } else if (existingEmail) {
           toast({
             title: "Lead već postoji",
             description: `Lead s email adresom "${newLeadData.email}" već postoji u bazi podataka.`,
