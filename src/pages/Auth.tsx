@@ -28,18 +28,51 @@ const Auth: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Helper to check if error is an invalid token error
+    const isInvalidTokenError = (errorMessage: string | undefined) => {
+      if (!errorMessage) return false;
+      return errorMessage.includes('Invalid token') || 
+             errorMessage.includes('Signature') ||
+             errorMessage.includes('invalid') ||
+             errorMessage.includes('JWT');
+    };
+
+    // Helper to clear invalid session
+    const clearInvalidSession = async () => {
+      console.log('Auth: Clearing invalid session...');
+      localStorage.removeItem('sb-uwtzhkdgprmrmknjrfeb-auth-token');
+      try {
+        await supabase.auth.signOut();
+      } catch (e) {
+        console.error('Auth: Error during signOut:', e);
+      }
+    };
+
     const checkUser = async () => {
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
-          setAuthError(`Session check failed: ${error.message}`);
+          // Check if it's an invalid token error and auto-clear
+          if (isInvalidTokenError(error.message)) {
+            console.log('Auth: Invalid token detected, auto-clearing...');
+            await clearInvalidSession();
+            setAuthError('Sesija je istekla. Molimo prijavite se ponovo.');
+          } else {
+            setAuthError(`Session check failed: ${error.message}`);
+          }
         } else if (session) {
           navigate('/');
         }
-      } catch (error) {
+      } catch (error: any) {
         console.error('Auth: Exception during auth check:', error);
-        setAuthError('Failed to check authentication status');
+        // Check if it's an invalid token error
+        if (isInvalidTokenError(error?.message)) {
+          await clearInvalidSession();
+          setAuthError('Sesija je istekla. Molimo prijavite se ponovo.');
+        } else {
+          setAuthError('Failed to check authentication status');
+        }
       } finally {
         setIsCheckingAuth(false);
       }
