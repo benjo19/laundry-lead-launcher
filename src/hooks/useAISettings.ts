@@ -42,8 +42,12 @@ export const useAISettings = () => {
       if (data?.ai_settings) {
         // Type assertion with proper validation
         const settings = data.ai_settings as any;
-        if (settings && typeof settings === 'object' && settings.provider && settings.api_key) {
-          setAISettings(settings as AISettings);
+        if (settings && typeof settings === 'object' && settings.provider) {
+          // Check for any API key (legacy or provider-specific)
+          const hasApiKey = settings.api_key || settings.openai_api_key || settings.gemini_api_key;
+          if (hasApiKey) {
+            setAISettings(settings as AISettings);
+          }
         }
       }
     } catch (error) {
