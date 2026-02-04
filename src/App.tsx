@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -10,6 +9,7 @@ import { ThemeProvider } from "@/contexts/ThemeContext";
 import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
+import Install from "./pages/Install";
 import Settings from "./components/Settings";
 import AdminDashboard from "./components/AdminDashboard";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
@@ -74,6 +74,7 @@ const AppContent: React.FC = () => {
                 <OAuthWrapper>
                   <Routes>
                     <Route path="/auth" element={<Auth />} />
+                    <Route path="/install" element={<Install />} />
                     <Route path="/" element={
                       <ProtectedRoute>
                         <Index />
