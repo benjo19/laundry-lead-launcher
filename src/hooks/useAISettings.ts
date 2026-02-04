@@ -1,17 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 
 interface AISettings {
-  provider: 'openai' | 'gemini' | 'anthropic';
-  api_key?: string; // legacy/general key
-  openai_api_key?: string;
-  gemini_api_key?: string;
-  model?: string;
   google_maps_api_key?: string;
-  custom_system_prompt?: string;
   search_provider?: 'google_cse' | 'serpapi';
 }
 
@@ -40,14 +33,12 @@ export const useAISettings = () => {
       }
 
       if (data?.ai_settings) {
-        // Type assertion with proper validation
         const settings = data.ai_settings as any;
-        if (settings && typeof settings === 'object' && settings.provider) {
-          // Check for any API key (legacy or provider-specific)
-          const hasApiKey = settings.api_key || settings.openai_api_key || settings.gemini_api_key;
-          if (hasApiKey) {
-            setAISettings(settings as AISettings);
-          }
+        if (settings && typeof settings === 'object') {
+          setAISettings({
+            google_maps_api_key: settings.google_maps_api_key || '',
+            search_provider: settings.search_provider || 'google_cse'
+          });
         }
       }
     } catch (error) {
@@ -61,7 +52,12 @@ export const useAISettings = () => {
     if (!user) return;
 
     try {
-      // First, check if a record exists
+      // Clean settings - only save non-empty values
+      const cleanSettings: AISettings = {
+        google_maps_api_key: settings.google_maps_api_key?.trim() || undefined,
+        search_provider: settings.search_provider || 'google_cse'
+      };
+
       const { data: existingData, error: selectError } = await supabase
         .from('user_settings')
         .select('id')
@@ -69,58 +65,49 @@ export const useAISettings = () => {
         .maybeSingle();
 
       if (selectError) {
-        console.error('Error checking existing settings:', selectError);
         throw selectError;
       }
 
       let result;
       if (existingData) {
-        // Update existing record
         result = await supabase
           .from('user_settings')
           .update({
-            ai_settings: settings as any,
+            ai_settings: cleanSettings as any,
             updated_at: new Date().toISOString()
           })
           .eq('user_id', user.id);
       } else {
-        // Insert new record
         result = await supabase
           .from('user_settings')
           .insert({
             user_id: user.id,
-            ai_settings: settings as any,
+            ai_settings: cleanSettings as any,
             updated_at: new Date().toISOString()
           });
       }
 
       if (result.error) {
-        console.error('Error saving AI settings:', result.error);
         throw result.error;
       }
 
-      setAISettings(settings);
+      setAISettings(cleanSettings);
       toast({
-        title: "AI postavke spremljene",
-        description: "Vaše AI postavke su uspješno ažurirane.",
+        title: "Postavke spremljene",
+        description: "Vaše postavke su uspješno ažurirane.",
       });
     } catch (error) {
       console.error('Error saving AI settings:', error);
       toast({
         title: "Greška",
-        description: "Dogodila se greška prilikom spremanja AI postavki.",
+        description: "Dogodila se greška prilikom spremanja postavki.",
         variant: "destructive",
       });
     }
   };
 
-  const isAIConfigured = () => {
-    if (!aiSettings?.provider) return false;
-    if (aiSettings.provider === 'openai') return !!(aiSettings.openai_api_key || aiSettings.api_key);
-    if (aiSettings.provider === 'gemini') return !!(aiSettings.gemini_api_key || aiSettings.api_key);
-    // For other providers (e.g., Anthropic), fall back to generic api_key
-    return !!aiSettings.api_key;
-  };
+  // AI is always configured via Lovable AI Gateway - no user API keys needed
+  const isAIConfigured = () => true;
 
   return {
     aiSettings,

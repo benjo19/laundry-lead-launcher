@@ -66,7 +66,6 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
       <LeadDiscoveryHeader 
         user={user}
         savedGoogleMapsApiKey={savedGoogleMapsApiKey}
-        isAIConfigured={Boolean(isAIConfigured())}
       />
 
       <SearchForm
