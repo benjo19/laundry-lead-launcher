@@ -151,15 +151,6 @@ export const useLeadDiscovery = () => {
   };
 
   const analyzeWithAI = async (leads: AnalyzedLead[]) => {
-    if (!isAIConfigured()) {
-      toast({
-        title: "AI nije konfiguriran",
-        description: "Molimo postavite AI ključ u Settings prije korištenja AI analize.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     if (!user) {
       toast({
         title: "Greška",
@@ -171,8 +162,8 @@ export const useLeadDiscovery = () => {
 
     setIsAnalyzing(true);
     try {
-      console.log('Starting AI analysis for leads...');
-      const analyzedLeads = await AILeadAnalysisService.analyzeLeads(leads, user.id);
+      console.log('Starting AI analysis for leads via Lovable AI Gateway...');
+      const analyzedLeads = await AILeadAnalysisService.analyzeLeads(leads);
       
       setDiscoveredLeads(analyzedLeads);
       

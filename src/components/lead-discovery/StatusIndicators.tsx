@@ -1,20 +1,16 @@
-
 import React from 'react';
 
 interface StatusIndicatorsProps {
   savedGoogleMapsApiKey: string;
-  isAIConfigured: boolean;
 }
 
-const StatusIndicators = ({ savedGoogleMapsApiKey, isAIConfigured }: StatusIndicatorsProps) => {
+const StatusIndicators = ({ savedGoogleMapsApiKey }: StatusIndicatorsProps) => {
   return (
     <>
       {savedGoogleMapsApiKey && (
         <p className="text-xs text-green-600 mt-1">✓ Google Maps API ključ učitan iz AI postavki</p>
       )}
-      {isAIConfigured && (
-        <p className="text-xs text-purple-600 mt-1">✓ AI konfiguriran za naprednu analizu leadova</p>
-      )}
+      <p className="text-xs text-purple-600 mt-1">✓ AI analiza leadova omogućena (Lovable AI Gateway)</p>
     </>
   );
 };

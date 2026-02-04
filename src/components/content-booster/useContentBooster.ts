@@ -1,10 +1,8 @@
-
 import { useState, useEffect } from 'react';
 import { ContentPost } from '@/types';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useToast } from '@/hooks/use-toast';
 import { AIContentService } from '@/services/aiContentService';
-import { AIProvider } from '@/services/aiEmailService';
 import { useAISettings } from '@/hooks/useAISettings';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { useMakeIntegration } from '@/hooks/useMakeIntegration';
@@ -70,6 +68,7 @@ export const useContentBooster = () => {
       return;
     }
 
+    // AI is always configured via Lovable AI Gateway
     if (!isAIConfigured()) {
       toast({
         title: "AI nije konfiguriran",
@@ -79,28 +78,10 @@ export const useContentBooster = () => {
       return;
     }
 
-    if (contentFormat === 'text-with-image' && !(aiSettings?.openai_api_key || aiSettings?.api_key)) {
-      toast({
-        title: "Generiranje slika nije podržano",
-        description: "Za generiranje slika potreban je OpenAI API ključ.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     setIsGenerating(true);
     setGeneratedImageUrl('');
     
     try {
-      const hasOpenAIKey = !!(aiSettings?.openai_api_key || aiSettings?.api_key);
-      const providerForThis = (contentFormat === 'text-with-image' && hasOpenAIKey)
-        ? 'openai'
-        : aiSettings!.provider;
-
-      const selectedKey = providerForThis === 'openai'
-        ? (aiSettings!.openai_api_key || aiSettings!.api_key || '')
-        : (aiSettings!.gemini_api_key || aiSettings!.api_key || '');
-
       const aiService = new AIContentService();
       
       // Get business context for better content generation (now async)
@@ -133,7 +114,7 @@ export const useContentBooster = () => {
       
       toast({
         title: "AI Sadržaj generiran",
-        description: `Personalizirani sadržaj je uspješno generiran za ${industry} industriju pomoću ${providerForThis === 'openai' ? 'OpenAI' : 'Google Gemini'}.`,
+        description: `Personalizirani sadržaj je uspješno generiran za ${industry} industriju pomoću Lovable AI.`,
       });
     } catch (error) {
       console.error('AI generation error:', error);
@@ -297,12 +278,10 @@ export const useContentBooster = () => {
     scheduledDate,
     setScheduledDate,
     isGenerating,
-    apiKey: (aiSettings?.provider === 'openai'
-      ? (aiSettings?.openai_api_key || aiSettings?.api_key)
-      : (aiSettings?.gemini_api_key || aiSettings?.api_key)) || '',
-    setApiKey: () => {}, // No-op since we use saved settings
-    aiProvider: (aiSettings?.provider || 'openai') as AIProvider,
-    setAiProvider: () => {}, // No-op since we use saved settings
+    apiKey: '', // No longer needed - using Lovable AI Gateway
+    setApiKey: () => {}, // No-op since we use Lovable AI Gateway
+    aiProvider: 'lovable' as any,
+    setAiProvider: () => {}, // No-op since we use Lovable AI Gateway
     contentFormat,
     setContentFormat,
     generatedImageUrl,
@@ -314,7 +293,7 @@ export const useContentBooster = () => {
     // Add new properties for checking AI configuration
     isAIConfigured,
     businessProfile: selectedProfile,
-    canGenerateImages: !!(aiSettings?.openai_api_key || aiSettings?.api_key),
+    canGenerateImages: true, // Images are generated via Lovable AI Gateway
     profiles,
     selectedProfileId,
     setSelectedProfileId,
