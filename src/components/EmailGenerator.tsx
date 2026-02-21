@@ -5,7 +5,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Mail, Send, Sparkles, Trash2, Users, Settings, Edit3, Eye, Building2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+import { Mail, Send, Sparkles, Trash2, Users, Settings, Edit3, Eye, Building2, X, Plus, UserPlus } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { Email, Lead } from '@/types';
@@ -28,14 +30,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
   // Load saved form data from localStorage
   const [savedFormData, setSavedFormData] = useLocalStorage('emailGeneratorForm', {
-    recipient: '',
+    recipients: [] as string[],
     selectedCompany: '',
     subject: '',
     emailContent: '',
     template: ''
   });
 
-  const [recipient, setRecipient] = useState(preSelectedEmail || savedFormData.recipient || '');
+  const [recipients, setRecipients] = useState<string[]>(
+    preSelectedEmail ? [preSelectedEmail] : (savedFormData.recipients || [])
+  );
+  const [manualEmailInput, setManualEmailInput] = useState('');
   const [selectedCompany, setSelectedCompany] = useState(preSelectedCompany || savedFormData.selectedCompany || '');
   const [subject, setSubject] = useState(savedFormData.subject || '');
   const [emailContent, setEmailContent] = useState(savedFormData.emailContent || '');
@@ -43,20 +48,27 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [editingDraftId, setEditingDraftId] = useState<number | null>(null);
   const [selectedEmailForView, setSelectedEmailForView] = useState<Email | null>(null);
   
+  // Bulk send progress
+  const [bulkSendProgress, setBulkSendProgress] = useState(0);
+  const [bulkSendTotal, setBulkSendTotal] = useState(0);
+  const [isBulkSending, setIsBulkSending] = useState(false);
+
   // Save form data to localStorage whenever fields change
   useEffect(() => {
     setSavedFormData({
-      recipient,
+      recipients,
       selectedCompany,
       subject,
       emailContent,
       template
     });
-  }, [recipient, selectedCompany, subject, emailContent, template, setSavedFormData]);
+  }, [recipients, selectedCompany, subject, emailContent, template, setSavedFormData]);
 
   // Override with pre-selected values when they change
   useEffect(() => {
-    if (preSelectedEmail) setRecipient(preSelectedEmail);
+    if (preSelectedEmail && !recipients.includes(preSelectedEmail)) {
+      setRecipients(prev => [...prev, preSelectedEmail]);
+    }
     if (preSelectedCompany) setSelectedCompany(preSelectedCompany);
   }, [preSelectedEmail, preSelectedCompany]);
 
@@ -144,16 +156,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       return;
     }
 
-    // Check validation based on generation type
-    if (generationType === 'recipient' && !recipient) {
-      toast({
-        title: "Primatelj potreban",
-        description: "Molimo odaberite ili unesite email primatelja.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     if (generationType === 'industry' && !selectedIndustry) {
       toast({
         title: "Industrija potrebna",
@@ -177,21 +179,18 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     try {
       let industry = 'općenito';
       let recipientCompany = 'tvrtka';
-      let recipientEmail = recipient || 'primatelj@tvrtka.hr';
+      let recipientEmail = recipients[0] || 'primatelj@tvrtka.hr';
       let additionalContext = '';
 
       if (generationType === 'industry') {
-        // Generate by industry
         const industryLabel = industries.find(i => i.value === selectedIndustry)?.label || selectedIndustry;
         industry = industryLabel;
         recipientCompany = `tvrtka u industriji ${industryLabel.toLowerCase()}`;
         additionalContext = `Generiraj generički email za industriju: ${industryLabel}. Email treba biti primjenjiv za različite tvrtke u ovoj industriji.`;
       } else {
-        // Generate by recipient
         const allEmails = getAllEmailAddresses();
-        const selectedContact = allEmails.find(contact => contact.email === recipient);
+        const selectedContact = allEmails.find(contact => contact.email === recipients[0]);
         
-        // Try to determine industry based on company info
         const companyName = selectedCompany.toLowerCase();
         if (companyName.includes('praon') || companyName.includes('čišć') || companyName.includes('pranj')) {
           industry = 'profesionalne praone rublja';
@@ -199,6 +198,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         
         recipientCompany = selectedCompany || 'tvrtka';
         additionalContext = selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : '';
+        
+        if (recipients.length > 1) {
+          additionalContext += ` Generiraj generički email koji će biti poslan na ${recipients.length} primatelja. Email treba biti primjenjiv za sve primatelje.`;
+        }
       }
 
       const result = await generateEmail({
@@ -209,7 +212,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         profileId: selectedProfileId || undefined,
         additionalContext: additionalContext || undefined,
         companyInfo: generationType === 'recipient' ? {
-          location: leads.find(l => l.email === recipient)?.location,
+          location: leads.find(l => l.email === recipients[0])?.location,
         } : undefined,
       });
 
@@ -234,29 +237,21 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   // Helper funkcija za personalizaciju email sadržaja
   const personalizeContent = (content: string, companyName: string, recipientEmail: string): string => {
     let personalizedContent = content;
-    
-    // Zamijeni sve moguće varijante placeholdera
     personalizedContent = personalizedContent.replace(/\{company_name\}/gi, companyName);
     personalizedContent = personalizedContent.replace(/\{company\}/gi, companyName);
     personalizedContent = personalizedContent.replace(/\{recipient\}/gi, companyName);
     personalizedContent = personalizedContent.replace(/\{to\}/gi, companyName);
     personalizedContent = personalizedContent.replace(/\{email\}/gi, recipientEmail);
-    
     return personalizedContent;
   };
 
   // Helper funkcija za konverziju plain text u HTML format
   const convertToHTML = (text: string): string => {
-    // Split by double newlines to get paragraphs
     const paragraphs = text.split('\n\n').filter(p => p.trim());
-    
-    // Convert each paragraph: replace single newlines with <br>
     const htmlParagraphs = paragraphs.map(paragraph => {
       const withBreaks = paragraph.replace(/\n/g, '<br>');
       return `    <p style="margin: 0 0 16px 0; line-height: 1.6;">${withBreaks}</p>`;
     });
-    
-    // Wrap in a professional HTML template
     return `
 <!DOCTYPE html>
 <html>
@@ -273,89 +268,91 @@ ${htmlParagraphs.join('')}
   };
 
   const sendEmail = async () => {
-    if (!recipient || !subject || !emailContent) {
+    if (recipients.length === 0 || !subject || !emailContent) {
       toast({
         title: "Nedostaju podaci",
-        description: "Molimo unesite primatelja, naslov i sadržaj emaila.",
+        description: "Molimo dodajte barem jednog primatelja, naslov i sadržaj emaila.",
         variant: "destructive"
       });
       return;
     }
 
     setIsSending(true);
+    setIsBulkSending(recipients.length > 1);
+    setBulkSendTotal(recipients.length);
+    setBulkSendProgress(0);
     
     try {
-      // Personaliziraj sadržaj prije slanja
-      const personalizedContent = personalizeContent(
-        emailContent, 
-        selectedCompany || recipient.split('@')[0], // Ako nema company_name, koristi dio prije @
-        recipient
-      );
+      let successCount = 0;
+      let failCount = 0;
 
-      // Konvertiraj u HTML format
-      const htmlContent = convertToHTML(personalizedContent);
+      for (let i = 0; i < recipients.length; i++) {
+        const recipientEmail = recipients[i];
+        const allEmails = getAllEmailAddresses();
+        const contact = allEmails.find(c => c.email === recipientEmail);
+        const companyName = contact?.company || selectedCompany || recipientEmail.split('@')[0];
 
-      // Pripremi email podatke za webhook
-      const emailData = {
-        to_email: recipient,
-        subject: subject,
-        content: htmlContent, // HTML formatiran sadržaj
-        timestamp: new Date().toISOString(),
-        status: 'sent'
-      };
+        const personalizedContent = personalizeContent(emailContent, companyName, recipientEmail);
+        const htmlContent = convertToHTML(personalizedContent);
 
-      // Pošalji na Make.com webhook
-      const webhookTriggered = await triggerWebhook('sent', emailData);
+        const emailData = {
+          to_email: recipientEmail,
+          subject: subject,
+          content: htmlContent,
+          timestamp: new Date().toISOString(),
+          status: 'sent'
+        };
 
-      if (!webhookTriggered) {
-        toast({
-          title: "Webhook nije konfiguriran",
-          description: "Molimo postavite Email webhook URL u postavkama Make.com integracije.",
-          variant: "destructive"
-        });
-        return;
+        try {
+          const webhookTriggered = await triggerWebhook('sent', emailData);
+
+          if (!webhookTriggered) {
+            if (i === 0) {
+              toast({
+                title: "Webhook nije konfiguriran",
+                description: "Molimo postavite Email webhook URL u postavkama Make.com integracije.",
+                variant: "destructive"
+              });
+              setIsSending(false);
+              setIsBulkSending(false);
+              return;
+            }
+            failCount++;
+          } else {
+            successCount++;
+          }
+        } catch (err) {
+          console.error(`Error sending to ${recipientEmail}:`, err);
+          failCount++;
+        }
+
+        setBulkSendProgress(i + 1);
       }
 
-      // Ažuriraj ili kreiraj email zapis
+      // Save email records
+      const newEmails: Email[] = recipients.map(r => ({
+        id: Date.now() + Math.random(),
+        to: r,
+        subject,
+        content: emailContent,
+        template: template || 'custom',
+        dateSent: new Date().toISOString().split('T')[0],
+        status: 'Sent' as const
+      }));
+
       if (editingDraftId) {
-        setEmails(emails.map(email => 
-          email.id === editingDraftId 
-            ? { ...email, to: recipient, subject, content: emailContent, status: 'Sent' as const, dateSent: new Date().toISOString().split('T')[0] }
-            : email
-        ));
+        setEmails(prev => prev.filter(e => e.id !== editingDraftId).concat(newEmails));
         setEditingDraftId(null);
       } else {
-        const newEmail: Email = {
-          id: Date.now(),
-          to: recipient,
-          subject,
-          content: emailContent,
-          template: template || 'custom',
-          dateSent: new Date().toISOString().split('T')[0],
-          status: 'Sent'
-        };
-        setEmails([newEmail, ...emails]);
+        setEmails(prev => [...newEmails, ...prev]);
       }
       
-      // Reset forma
-      const resetData = {
-        recipient: '',
-        selectedCompany: '',
-        subject: '',
-        emailContent: '',
-        template: ''
-      };
-      
-      setRecipient('');
-      setSelectedCompany('');
-      setSubject('');
-      setEmailContent('');
-      setTemplate('');
-      setSavedFormData(resetData);
+      // Reset form
+      resetForm();
 
       toast({
-        title: "Email poslan na webhook",
-        description: `Email podaci su poslani na Make.com za slanje na ${recipient}`,
+        title: "Emailovi poslani",
+        description: `Uspješno poslano: ${successCount}${failCount > 0 ? `, neuspješno: ${failCount}` : ''} od ${recipients.length} primatelja.`,
       });
 
     } catch (error) {
@@ -367,7 +364,27 @@ ${htmlParagraphs.join('')}
       });
     } finally {
       setIsSending(false);
+      setIsBulkSending(false);
+      setBulkSendProgress(0);
+      setBulkSendTotal(0);
     }
+  };
+
+  const resetForm = () => {
+    const resetData = {
+      recipients: [] as string[],
+      selectedCompany: '',
+      subject: '',
+      emailContent: '',
+      template: ''
+    };
+    setRecipients([]);
+    setManualEmailInput('');
+    setSelectedCompany('');
+    setSubject('');
+    setEmailContent('');
+    setTemplate('');
+    setSavedFormData(resetData);
   };
 
   const saveDraft = async () => {
@@ -380,21 +397,19 @@ ${htmlParagraphs.join('')}
       return;
     }
 
-    // Personaliziraj sadržaj prije slanja samo ako postoji primatelj
-    const personalizedContent = recipient ? personalizeContent(
+    const recipientStr = recipients.join(', ') || '';
+    const personalizedContent = recipientStr ? personalizeContent(
       emailContent, 
-      selectedCompany || recipient.split('@')[0],
-      recipient
+      selectedCompany || (recipients[0]?.split('@')[0] || ''),
+      recipients[0] || ''
     ) : emailContent;
 
-    // Konvertiraj u HTML format
     const htmlContent = convertToHTML(personalizedContent);
 
-    // Pošalji draft podatke na webhook uvijek, čak i bez primatelja
     const draftData = {
-      to_email: recipient || '',
+      to_email: recipientStr,
       subject: subject,
-      content: htmlContent, // HTML formatiran sadržaj
+      content: htmlContent,
       timestamp: new Date().toISOString(),
       status: 'draft'
     };
@@ -402,10 +417,9 @@ ${htmlParagraphs.join('')}
     await triggerWebhook('draft', draftData);
 
     if (editingDraftId) {
-      // Update existing draft
       setEmails(emails.map(email => 
         email.id === editingDraftId 
-          ? { ...email, to: recipient, subject, content: emailContent, template: template || 'custom' }
+          ? { ...email, to: recipientStr || 'Bez primatelja', subject, content: emailContent, template: template || 'custom' }
           : email
       ));
       toast({
@@ -413,10 +427,9 @@ ${htmlParagraphs.join('')}
         description: "Email draft je uspješno ažuriran i poslan na webhook.",
       });
     } else {
-      // Create new draft
       const draft: Email = {
         id: Date.now(),
-        to: recipient || 'Bez primatelja',
+        to: recipientStr || 'Bez primatelja',
         subject,
         content: emailContent,
         template: template || 'custom',
@@ -426,7 +439,7 @@ ${htmlParagraphs.join('')}
       setEmails([draft, ...emails]);
       toast({
         title: "Draft spremljen",
-        description: recipient 
+        description: recipientStr
           ? "Email draft je uspješno spremljen i poslan na webhook."
           : "Email draft je spremljen. Dodajte primatelja prije slanja.",
       });
@@ -434,15 +447,16 @@ ${htmlParagraphs.join('')}
   };
 
   const editDraft = (email: Email) => {
-    setRecipient(email.to);
+    // Parse recipients from comma-separated string
+    const parsedRecipients = email.to === 'Bez primatelja' ? [] : email.to.split(',').map(e => e.trim()).filter(Boolean);
+    setRecipients(parsedRecipients);
     setSubject(email.subject);
     setEmailContent(email.content);
     setTemplate(email.template);
     setEditingDraftId(email.id);
     
-    // Find company name from the email address
     const allEmails = getAllEmailAddresses();
-    const contact = allEmails.find(c => c.email === email.to);
+    const contact = allEmails.find(c => parsedRecipients.includes(c.email));
     if (contact) {
       setSelectedCompany(contact.company);
     }
@@ -455,22 +469,7 @@ ${htmlParagraphs.join('')}
 
   const cancelEdit = () => {
     setEditingDraftId(null);
-    // Reset form
-    const resetData = {
-      recipient: '',
-      selectedCompany: '',
-      subject: '',
-      emailContent: '',
-      template: ''
-    };
-    
-    setRecipient('');
-    setSelectedCompany('');
-    setSubject('');
-    setEmailContent('');
-    setTemplate('');
-    setSavedFormData(resetData);
-
+    resetForm();
     toast({
       title: "Uređivanje otkazano",
       description: "Vraćeni ste na čisti obrazac.",
@@ -479,12 +478,9 @@ ${htmlParagraphs.join('')}
 
   const deleteEmail = (emailId: number) => {
     setEmails(emails.filter(email => email.id !== emailId));
-    
-    // If we're editing this draft, cancel the edit
     if (editingDraftId === emailId) {
       cancelEdit();
     }
-
     toast({
       title: "Email obrisan",
       description: "Email je uspješno obrisan.",
@@ -505,8 +501,6 @@ ${htmlParagraphs.join('')}
     }));
     
     const allEmails = [...leadEmails, ...discoveredEmails];
-    
-    // Remove duplicates based on email address
     const uniqueEmails = allEmails.filter((email, index, self) => 
       index === self.findIndex(e => e.email === email.email)
     );
@@ -514,21 +508,61 @@ ${htmlParagraphs.join('')}
     return uniqueEmails;
   };
 
+  const addRecipient = (email: string) => {
+    const trimmed = email.trim();
+    if (trimmed && !recipients.includes(trimmed)) {
+      setRecipients(prev => [...prev, trimmed]);
+    }
+  };
+
+  const removeRecipient = (email: string) => {
+    setRecipients(prev => prev.filter(r => r !== email));
+  };
+
+  const addAllFromDatabase = () => {
+    const allEmails = getAllEmailAddresses();
+    const newRecipients = allEmails
+      .map(c => c.email)
+      .filter(email => !recipients.includes(email));
+    
+    if (newRecipients.length === 0) {
+      toast({
+        title: "Nema novih adresa",
+        description: "Sve email adrese iz baze su već dodane.",
+      });
+      return;
+    }
+
+    setRecipients(prev => [...prev, ...newRecipients]);
+    toast({
+      title: "Adrese dodane",
+      description: `Dodano ${newRecipients.length} email adresa iz baze.`,
+    });
+  };
+
   const handleRecipientSelect = (selectedEmail: string) => {
-    setRecipient(selectedEmail);
+    addRecipient(selectedEmail);
     const allEmails = getAllEmailAddresses();
     const selectedContact = allEmails.find(contact => contact.email === selectedEmail);
-    if (selectedContact) {
+    if (selectedContact && !selectedCompany) {
       setSelectedCompany(selectedContact.company);
     }
   };
 
+  const handleManualEmailKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (manualEmailInput.trim()) {
+        addRecipient(manualEmailInput);
+        setManualEmailInput('');
+      }
+    }
+  };
+
   const handleTemplateSelect = (template: any) => {
-    // Apply template variables to content
     let processedSubject = template.subject;
     let processedContent = template.content;
     
-    // Replace common variables with actual data if available
     const replacements: Record<string, string> = {
       '{{company_name}}': selectedCompany || '{{company_name}}',
       '{{your_name}}': 'Vaše ime',
@@ -555,6 +589,9 @@ ${htmlParagraphs.join('')}
   // Filter emails to show drafts and sent emails separately
   const draftEmails = emails.filter(email => email.status === 'Draft');
   const sentEmails = emails.filter(email => email.status === 'Sent');
+
+  // Available contacts not yet added
+  const availableContacts = getAllEmailAddresses().filter(c => !recipients.includes(c.email));
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-full overflow-hidden">
@@ -649,7 +686,7 @@ ${htmlParagraphs.join('')}
               <Select value={generationType} onValueChange={(value: 'recipient' | 'industry') => {
                 setGenerationType(value);
                 if (value === 'industry') {
-                  setRecipient('');
+                  setRecipients([]);
                   setSelectedCompany('');
                 } else {
                   setSelectedIndustry('');
@@ -668,56 +705,91 @@ ${htmlParagraphs.join('')}
             {/* Conditional Fields - Recipient Mode */}
             {generationType === 'recipient' && (
               <>
-                {/* Recipient Selection */}
+                {/* Multi-Recipient Selection */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Odaberite primatelja iz leadova
-                  </label>
-                  <Select value={recipient} onValueChange={handleRecipientSelect}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Odaberite iz postojećih leadova" />
-                    </SelectTrigger>
-                    <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none max-h-60 overflow-y-auto">
-                      {getAllEmailAddresses().map((contact, index) => (
-                        <SelectItem key={index} value={contact.email} className="max-w-full p-2">
-                          <div className="flex flex-row items-center gap-2 w-full min-w-0">
-                            <div className="font-medium text-sm text-slate-900">{contact.company}</div>
-                            <div className="text-xs text-slate-500">•</div>
-                            <div className="text-xs text-slate-600 truncate">{contact.email}</div>
-                            <div className="text-xs text-slate-400 ml-auto shrink-0">({contact.source})</div>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  
-                  {recipient && (
-                    <div className="mt-2 p-2 bg-blue-50 rounded-md border border-blue-200">
-                      <div className="flex items-center gap-2 text-sm">
-                        <span className="text-blue-700 font-medium">Odabrani:</span>
-                        <span className="text-blue-600 truncate">{recipient}</span>
-                        {selectedCompany && (
-                          <>
-                            <span className="text-blue-400">•</span>
-                            <span className="text-blue-600 truncate">{selectedCompany}</span>
-                          </>
-                        )}
-                      </div>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Primatelji ({recipients.length})
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addAllFromDatabase}
+                      className="text-xs"
+                    >
+                      <UserPlus className="h-3 w-3 mr-1" />
+                      Dodaj sve iz baze ({getAllEmailAddresses().length})
+                    </Button>
+                  </div>
+
+                  {/* Selected recipients badges */}
+                  {recipients.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 p-2 bg-blue-50 rounded-lg border border-blue-200 max-h-32 overflow-y-auto">
+                      {recipients.map((email) => {
+                        const contact = getAllEmailAddresses().find(c => c.email === email);
+                        return (
+                          <Badge key={email} variant="secondary" className="flex items-center gap-1 text-xs py-1 px-2">
+                            <span className="truncate max-w-[180px]">
+                              {contact ? `${contact.company} (${email})` : email}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => removeRecipient(email)}
+                              className="ml-1 hover:text-destructive"
+                            >
+                              <X className="h-3 w-3" />
+                            </button>
+                          </Badge>
+                        );
+                      })}
                     </div>
                   )}
-                </div>
 
-                {/* Manual Email Input */}
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Ili unesite email ručno
-                  </label>
-                  <Input
-                    placeholder="email@tvrtka.hr"
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                    className="w-full"
-                  />
+                  {/* Dropdown to add from leads */}
+                  {availableContacts.length > 0 && (
+                    <Select value="" onValueChange={handleRecipientSelect}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Odaberite iz postojećih leadova" />
+                      </SelectTrigger>
+                      <SelectContent className="max-w-[calc(100vw-2rem)] sm:max-w-none max-h-60 overflow-y-auto">
+                        {availableContacts.map((contact, index) => (
+                          <SelectItem key={index} value={contact.email} className="max-w-full p-2">
+                            <div className="flex flex-row items-center gap-2 w-full min-w-0">
+                              <div className="font-medium text-sm text-slate-900">{contact.company}</div>
+                              <div className="text-xs text-slate-500">•</div>
+                              <div className="text-xs text-slate-600 truncate">{contact.email}</div>
+                              <div className="text-xs text-slate-400 ml-auto shrink-0">({contact.source})</div>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Manual Email Input */}
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Unesite email i pritisnite Enter"
+                      value={manualEmailInput}
+                      onChange={(e) => setManualEmailInput(e.target.value)}
+                      onKeyDown={handleManualEmailKeyDown}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (manualEmailInput.trim()) {
+                          addRecipient(manualEmailInput.trim());
+                          setManualEmailInput('');
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
 
                 {/* Company Name */}
@@ -767,20 +839,65 @@ ${htmlParagraphs.join('')}
                   )}
                 </div>
 
-                {/* Email input for sending industry templates */}
+                {/* Multi-recipient for industry mode */}
                 <div className="space-y-2">
-                  <label className="block text-sm font-medium text-slate-700">
-                    Email za slanje <span className="text-red-500">*</span>
-                  </label>
-                  <Input
-                    placeholder="email@tvrtka.hr"
-                    value={recipient}
-                    onChange={(e) => setRecipient(e.target.value)}
-                    className="w-full"
-                  />
-                  <p className="text-xs text-orange-600 font-medium">
-                    ⚠️ Email je potreban za slanje ili spremanje drafta
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-slate-700">
+                      Primatelji za slanje ({recipients.length})
+                    </label>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={addAllFromDatabase}
+                      className="text-xs"
+                    >
+                      <UserPlus className="h-3 w-3 mr-1" />
+                      Dodaj sve iz baze
+                    </Button>
+                  </div>
+
+                  {recipients.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 p-2 bg-purple-50 rounded-lg border border-purple-200 max-h-32 overflow-y-auto">
+                      {recipients.map((email) => (
+                        <Badge key={email} variant="secondary" className="flex items-center gap-1 text-xs py-1 px-2">
+                          <span className="truncate max-w-[180px]">{email}</span>
+                          <button type="button" onClick={() => removeRecipient(email)} className="ml-1 hover:text-destructive">
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Unesite email i pritisnite Enter"
+                      value={manualEmailInput}
+                      onChange={(e) => setManualEmailInput(e.target.value)}
+                      onKeyDown={handleManualEmailKeyDown}
+                      className="flex-1"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        if (manualEmailInput.trim()) {
+                          addRecipient(manualEmailInput.trim());
+                          setManualEmailInput('');
+                        }
+                      }}
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {recipients.length === 0 && (
+                    <p className="text-xs text-orange-600 font-medium">
+                      ⚠️ Dodajte primatelje za slanje emaila
+                    </p>
+                  )}
                 </div>
 
                 {/* Company Name for industry mode */}
@@ -834,7 +951,6 @@ ${htmlParagraphs.join('')}
             <Button 
               onClick={generateEmailContent} 
               disabled={isGenerating || !isAIConfigured() || 
-                (generationType === 'recipient' && !recipient) ||
                 (generationType === 'industry' && !selectedIndustry)}
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-sm"
             >
@@ -875,16 +991,33 @@ ${htmlParagraphs.join('')}
                 </div>
               </div>
             )}
+
+            {/* Bulk Send Progress */}
+            {isBulkSending && (
+              <div className="space-y-2 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="flex justify-between text-sm text-blue-700">
+                  <span>Slanje emailova...</span>
+                  <span>{bulkSendProgress} / {bulkSendTotal}</span>
+                </div>
+                <Progress value={(bulkSendProgress / bulkSendTotal) * 100} className="h-2" />
+              </div>
+            )}
             
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               <Button 
                 onClick={sendEmail} 
                 className="flex-1 bg-green-600 hover:bg-green-700 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={isSending || !recipient}
-                title={!recipient ? 'Unesite email primatelja za slanje' : ''}
+                disabled={isSending || recipients.length === 0}
+                title={recipients.length === 0 ? 'Dodajte primatelje za slanje' : ''}
               >
                 <Send className="h-4 w-4 mr-2" />
-                {isSending ? 'Šaljem...' : (editingDraftId ? 'Pošalji Ažurirani Email' : 'Pošalji Email')}
+                {isSending 
+                  ? `Šaljem${bulkSendTotal > 1 ? ` (${bulkSendProgress}/${bulkSendTotal})` : ''}...` 
+                  : (editingDraftId 
+                    ? 'Pošalji Ažurirani Email' 
+                    : `Pošalji Email${recipients.length > 1 ? ` (${recipients.length})` : ''}`
+                  )
+                }
               </Button>
               <Button 
                 onClick={saveDraft} 
@@ -896,10 +1029,10 @@ ${htmlParagraphs.join('')}
               </Button>
             </div>
             
-            {!recipient && emailContent && (
+            {recipients.length === 0 && emailContent && (
               <div className="mt-2 text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-700">
-                  💡 Možete spremiti draft bez primatelja i dodati ga kasnije
+                  💡 Možete spremiti draft bez primatelja i dodati ih kasnije
                 </p>
               </div>
             )}
