@@ -515,24 +515,45 @@ ${htmlParagraphs.join('')}
     setRecipients(prev => prev.filter(r => r !== email));
   };
 
-  const addAllFromDatabase = () => {
+  const getFilteredEmailAddresses = () => {
     const allEmails = getAllEmailAddresses();
-    const newRecipients = allEmails
+    if (generationType !== 'industry' || !selectedIndustry || selectedIndustry === 'opcenito') {
+      return allEmails;
+    }
+    const industryLabel = industries.find(i => i.value === selectedIndustry)?.label?.toLowerCase() || '';
+    const industryValue = selectedIndustry.toLowerCase();
+    return allEmails.filter(contact => {
+      const leadFromDB = leads.find(l => l.email === contact.email);
+      const leadFromDiscovery = discoveredLeads.find((l: any) => l.email === contact.email);
+      const leadIndustry = (leadFromDB?.industry || leadFromDiscovery?.industry || '').toLowerCase();
+      return leadIndustry.includes(industryValue) || leadIndustry.includes(industryLabel.split(' ')[0]) || industryLabel.includes(leadIndustry);
+    });
+  };
+
+  const addAllFromDatabase = () => {
+    const filteredEmails = getFilteredEmailAddresses();
+    const newRecipients = filteredEmails
       .map(c => c.email)
       .filter(email => !recipients.includes(email));
     
     if (newRecipients.length === 0) {
+      const industryLabel = industries.find(i => i.value === selectedIndustry)?.label;
       toast({
         title: "Nema novih adresa",
-        description: "Sve email adrese iz baze su već dodane.",
+        description: generationType === 'industry' && selectedIndustry && selectedIndustry !== 'opcenito'
+          ? `Nema email adresa za industriju: ${industryLabel}.`
+          : "Sve email adrese iz baze su već dodane.",
       });
       return;
     }
 
     setRecipients(prev => [...prev, ...newRecipients]);
+    const industryLabel = industries.find(i => i.value === selectedIndustry)?.label;
     toast({
       title: "Adrese dodane",
-      description: `Dodano ${newRecipients.length} email adresa iz baze.`,
+      description: generationType === 'industry' && selectedIndustry && selectedIndustry !== 'opcenito'
+        ? `Dodano ${newRecipients.length} email adresa za industriju: ${industryLabel}.`
+        : `Dodano ${newRecipients.length} email adresa iz baze.`,
     });
   };
 
@@ -849,7 +870,7 @@ ${htmlParagraphs.join('')}
                       className="text-xs"
                     >
                       <UserPlus className="h-3 w-3 mr-1" />
-                      Dodaj sve iz baze
+                      Dodaj sve iz baze ({getFilteredEmailAddresses().length})
                     </Button>
                   </div>
 
