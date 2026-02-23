@@ -250,21 +250,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     const paragraphs = text.split('\n\n').filter(p => p.trim());
     const htmlParagraphs = paragraphs.map(paragraph => {
       const withBreaks = paragraph.replace(/\n/g, '<br>');
-      return `    <p style="margin: 0 0 16px 0; line-height: 1.6;">${withBreaks}</p>`;
+      return `<p>${withBreaks}</p>`;
     });
-    return `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-</head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5;">
-  <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; padding: 40px 30px;">
-${htmlParagraphs.join('')}
-  </div>
-</body>
-</html>`;
+    return htmlParagraphs.join('');
   };
 
   const sendEmail = async () => {
