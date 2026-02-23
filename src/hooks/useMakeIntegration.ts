@@ -117,8 +117,9 @@ export const useMakeIntegration = () => {
           .replace(/\n?```\s*$/i, '')
           .trim();
 
-        // Convert plain text to HTML: \n\n → </p><p>, \n → <br>
-        const htmlContent = '<p>' + cleanContent
+        // If content is already HTML (from convertToHTML), use as-is; otherwise convert plain text to HTML
+        const isAlreadyHTML = cleanContent.trim().startsWith('<!DOCTYPE') || cleanContent.trim().startsWith('<html') || cleanContent.trim().startsWith('<p');
+        const htmlContent = isAlreadyHTML ? cleanContent : '<p>' + cleanContent
           .split('\n\n')
           .map(para => para.trim().replace(/\n/g, '<br>'))
           .filter(para => para.length > 0)
