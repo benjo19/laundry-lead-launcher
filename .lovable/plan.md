@@ -1,64 +1,29 @@
 
-
-# Plan: Slanje svih primatelja u jednom webhook pozivu
+# Plan: Filtriranje "Dodaj sve iz baze" po odabranoj industriji
 
 ## Sto se mijenja
 
-Umjesto slanja zasebnog webhook poziva za svaki email, svi primatelji i njihovi podaci ce se poslati u **jednom JSON webhook pozivu**. Tako Make.com/Zapier odmah dobije kompletnu listu svih email adresa i moze ih automatski obraditi.
+Kada koristite industry mode i odaberete industriju, gumb "Dodaj sve iz baze" ce dodati **samo leadove koji pripadaju toj industriji**, umjesto svih leadova iz baze.
+
+Ako je odabrano "Sve industrije / Opcenito", dodaju se svi leadovi kao i dosad.
 
 ## Tehnicke promjene
 
 ### Datoteka: `src/components/EmailGenerator.tsx`
 
-**Trenutno ponasanje:** Za svakog primatelja salje se zaseban webhook poziv s jednim emailom.
+1. **Azurirati `addAllFromDatabase` funkciju** - dodati provjeru: ako je `generationType === 'industry'` i `selectedIndustry` nije prazan niti `'opcenito'`, filtriraj leadove po `industry` polju koje odgovara odabranoj industriji (label matching, case-insensitive).
 
-**Novo ponasanje:** 
-1. Prije petlje za slanje, pripremi se jedan JSON objekt sa svim primateljima
-2. Posalji jedan webhook poziv sa svim podacima
-3. Petlja za individualno slanje ostaje za spremanje u bazu i pracenje progresa
+2. **Azurirati gumb "Dodaj sve iz baze" u industry modu** - prikazati broj filtriranih leadova u zagradi, npr. "Dodaj sve iz baze (12)" umjesto bez broja.
 
-**Struktura novog webhook payloada:**
-```json
-{
-  "event_type": "sent",
-  "timestamp": "2026-02-23T...",
-  "user_id": "...",
-  "data": {
-    "subject": "Naslov emaila",
-    "content": "<p>HTML sadrzaj</p>",
-    "total_recipients": 5,
-    "recipients": [
-      {
-        "to_email": "ana@firma1.hr",
-        "company": "Firma 1"
-      },
-      {
-        "to_email": "ivan@firma2.hr",
-        "company": "Firma 2"
-      }
-    ]
-  },
-  "schema": {
-    "subject": "string",
-    "content": "string",
-    "total_recipients": "number",
-    "recipients": "array"
-  }
-}
-```
+3. **Pomocna funkcija `getFilteredEmailAddresses`** - nova funkcija koja poziva `getAllEmailAddresses()` i filtrira rezultate prema odabranoj industriji. Filtriranje se radi usporedbom `lead.industry` polja s labelom odabrane industrije (case-insensitive, partial match) jer se industry polje u bazi moze razlikovati od tocnog labela.
 
-**Konkretne promjene u kodu:**
-- Prije `for` petlje (oko linije 289), dodati pripremu bulk payloada sa svim primateljima
-- Poslati jedan `triggerWebhook('sent', bulkPayload)` poziv prije petlje
-- Zadrzati petlju samo za spremanje u bazu (bez individualnih webhook poziva)
-- Ukloniti `triggerWebhook` poziv iz petlje (linija 307)
+### Logika filtriranja
 
-### Datoteka: `src/hooks/useMakeIntegration.ts`
+- Ako je `selectedIndustry === 'opcenito'` ili prazan: vrati sve leadove (bez filtera)
+- Inace: filtriraj leadove cije `industry` polje sadrzi kljucnu rijec industrije (npr. za "hoteli" trazi "hotel" u lead.industry polju)
+- Leadovi iz Lead Discovery (`discoveredLeads`) se takoder filtriraju po istom principu
 
-- Nema strukturalnih promjena - `triggerWebhook` vec prima bilo koji `data` objekt
-- Webhook ce automatski proslijediti novi format jer koristi `JSON.stringify`
+### Promjena u UI-ju
 
-## Korisnicko iskustvo
-
-Korisnik nece primijetiti razliku u UI-ju. Jedina promjena je da Make.com/Zapier sada prima sve email adrese odjednom u jednom pozivu, sto omogucuje automatsku obradu svih primatelja bez visestrukih triggera.
-
+- Gumb u industry modu pokazuje broj dostupnih leadova za tu industriju
+- Toast poruka nakon dodavanja navodi industriju: "Dodano X email adresa za industriju: Hoteli i smjestaj"
