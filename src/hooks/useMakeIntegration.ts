@@ -101,8 +101,8 @@ export const useMakeIntegration = () => {
       const hasImageBlob = data.image instanceof Blob;
 
       if (isEmailEvent) {
-        // Flat structure for Make.com: JSON Parse → Iterator on recipients
-        const recipientsList = data.recipients || [{ to_email: data.to_email || '', company: '' }];
+        const recipientsList = data.recipients || [{ to_email: data.to_email || '' }];
+        const toEmailsList = recipientsList.map((r: any) => r.to_email || '').filter(Boolean);
         unifiedData = {
           event_type: eventType,
           timestamp: new Date().toISOString(),
@@ -110,19 +110,7 @@ export const useMakeIntegration = () => {
           data: {
             subject: data.subject || '',
             content: data.content || '',
-            total_recipients: recipientsList.length,
-            recipients: recipientsList.map((r: any) => ({
-              to_email: r.to_email || '',
-              company: r.company || '',
-              subject: data.subject || '',
-              content: data.content || ''
-            }))
-          },
-          schema: {
-            subject: 'string',
-            content: 'string',
-            total_recipients: 'number',
-            recipients: 'array of objects with to_email, company, subject, content'
+            to_emails_list: toEmailsList
           }
         };
       } else if (isCRMExportEvent) {
