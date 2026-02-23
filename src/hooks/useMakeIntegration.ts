@@ -102,7 +102,14 @@ export const useMakeIntegration = () => {
 
       if (isEmailEvent) {
         const recipientsList = data.recipients || [{ to_email: data.to_email || '' }];
-        const toEmailsList = recipientsList.map((r: any) => r.to_email || '').filter(Boolean);
+        const toEmailsList = recipientsList
+          .flatMap((r: any) => {
+            const email = r.to_email || '';
+            return email.includes(',') 
+              ? email.split(',').map((e: string) => e.trim()) 
+              : [email.trim()];
+          })
+          .filter(Boolean);
         unifiedData = {
           event_type: eventType,
           timestamp: new Date().toISOString(),
