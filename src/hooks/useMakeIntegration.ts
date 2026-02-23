@@ -117,13 +117,20 @@ export const useMakeIntegration = () => {
           .replace(/\n?```\s*$/i, '')
           .trim();
 
+        // Convert plain text to HTML: \n\n → </p><p>, \n → <br>
+        const htmlContent = '<p>' + cleanContent
+          .split('\n\n')
+          .map(para => para.trim().replace(/\n/g, '<br>'))
+          .filter(para => para.length > 0)
+          .join('</p><p>') + '</p>';
+
         unifiedData = {
           event_type: eventType,
           timestamp: new Date().toISOString(),
           user_id: user.id,
           data: {
             subject: cleanSubject,
-            content: cleanContent,
+            content: htmlContent,
             to_emails_list: toEmailsList
           }
         };
