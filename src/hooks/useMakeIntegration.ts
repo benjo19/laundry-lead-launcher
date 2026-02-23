@@ -110,13 +110,20 @@ export const useMakeIntegration = () => {
               : [email.trim()];
           })
           .filter(Boolean);
+        // Clean subject and content: trim whitespace and strip markdown code fences
+        const cleanSubject = (data.subject || '').trim();
+        const cleanContent = (data.content || '')
+          .replace(/^```(?:html|text|markdown)?\s*\n?/i, '')
+          .replace(/\n?```\s*$/i, '')
+          .trim();
+
         unifiedData = {
           event_type: eventType,
           timestamp: new Date().toISOString(),
           user_id: user.id,
           data: {
-            subject: data.subject || '',
-            content: data.content || '',
+            subject: cleanSubject,
+            content: cleanContent,
             to_emails_list: toEmailsList
           }
         };
