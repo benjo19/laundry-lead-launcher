@@ -106,18 +106,16 @@ export const useMakeIntegration = () => {
           timestamp: new Date().toISOString(),
           user_id: user.id,
           data: {
-            to_email: data.to_email || '',
             subject: data.subject || '',
             content: data.content || '',
-            send_method: data.send_method || 'resend',
-            status: data.status || 'sent'
+            total_recipients: data.total_recipients || data.recipients?.length || 1,
+            recipients: data.recipients || [{ to_email: data.to_email || '', company: '' }]
           },
           schema: {
-            to_email: 'string',
             subject: 'string',
             content: 'string',
-            send_method: 'string',
-            status: 'string'
+            total_recipients: 'number',
+            recipients: 'array'
           }
         };
       } else if (isCRMExportEvent) {
