@@ -286,46 +286,42 @@ ${htmlParagraphs.join('')}
       let successCount = 0;
       let failCount = 0;
 
-      for (let i = 0; i < recipients.length; i++) {
-        const recipientEmail = recipients[i];
-        const allEmails = getAllEmailAddresses();
+      // Prepare bulk payload with all recipients
+      const allEmails = getAllEmailAddresses();
+      const bulkRecipients = recipients.map(recipientEmail => {
         const contact = allEmails.find(c => c.email === recipientEmail);
         const companyName = contact?.company || selectedCompany || recipientEmail.split('@')[0];
-
-        const personalizedContent = personalizeContent(emailContent, companyName, recipientEmail);
-        const htmlContent = convertToHTML(personalizedContent);
-
-        const emailData = {
+        return {
           to_email: recipientEmail,
-          subject: subject,
-          content: htmlContent,
-          timestamp: new Date().toISOString(),
-          status: 'sent'
+          company: companyName
         };
+      });
 
-        try {
-          const webhookTriggered = await triggerWebhook('sent', emailData);
+      const bulkPayload = {
+        subject: subject,
+        content: convertToHTML(emailContent),
+        total_recipients: recipients.length,
+        recipients: bulkRecipients
+      };
 
-          if (!webhookTriggered) {
-            if (i === 0) {
-              toast({
-                title: "Webhook nije konfiguriran",
-                description: "Molimo postavite Email webhook URL u postavkama Make.com integracije.",
-                variant: "destructive"
-              });
-              setIsSending(false);
-              setIsBulkSending(false);
-              return;
-            }
-            failCount++;
-          } else {
-            successCount++;
-          }
-        } catch (err) {
-          console.error(`Error sending to ${recipientEmail}:`, err);
-          failCount++;
-        }
+      // Send one webhook with all recipients
+      const webhookTriggered = await triggerWebhook('sent', bulkPayload);
 
+      if (!webhookTriggered) {
+        toast({
+          title: "Webhook nije konfiguriran",
+          description: "Molimo postavite Email webhook URL u postavkama Make.com integracije.",
+          variant: "destructive"
+        });
+        setIsSending(false);
+        setIsBulkSending(false);
+        return;
+      }
+
+      // Loop only for saving to database and tracking progress
+      for (let i = 0; i < recipients.length; i++) {
+        const recipientEmail = recipients[i];
+        successCount++;
         setBulkSendProgress(i + 1);
       }
 
