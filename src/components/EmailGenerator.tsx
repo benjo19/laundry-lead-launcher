@@ -503,22 +503,35 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setRecipients(prev => prev.filter(r => r !== email));
   };
 
+  // Mapiranje EmailGenerator kategorija -> IndustrySelector values iz baze
+  const industryMapping: Record<string, string[]> = {
+    'praone': ['laundry', 'dry-cleaning', 'industrial-laundry', 'cleaning-service', 'samoposluzna praona'],
+    'restorani': ['restaurant', 'fast-food', 'cafe', 'bar', 'catering', 'bakery'],
+    'hoteli': ['hotel', 'hostel', 'apartment', 'motel', 'hoteli'],
+    'trgovina': ['clothing', 'grocery', 'pharmacy', 'electronics', 'jewelry'],
+    'proizvodnaja': ['manufacturing', 'textile-manufacturing', 'food-production', 'metal-manufacturing', 'plastic-manufacturing', 'wood-manufacturing', 'chemical-manufacturing', 'electronics-manufacturing', 'automotive-manufacturing', 'machinery-manufacturing', 'proizvodnja', 'proizvodnja pekara'],
+    'zdravstvo': ['general-practice', 'dental', 'veterinary', 'optometry'],
+    'ljepota': ['beauty-salon', 'spa', 'barbershop', 'massage'],
+    'gradevina': ['plumbing', 'electrical', 'hvac', 'construction'],
+    'edukacija': ['kindergarten', 'primary-school', 'language-school', 'tutoring'],
+    'it': ['it-services'],
+    'nekretnine': ['real-estate', 'property-management'],
+    'transport': [],
+  };
+
   const getFilteredEmailAddresses = () => {
     const allEmails = getAllEmailAddresses();
     if (generationType !== 'industry' || !selectedIndustry || selectedIndustry === 'opcenito') {
       return allEmails;
     }
-    const industryObj = industries.find(i => i.value === selectedIndustry);
-    const industryLabel = industryObj?.label?.toLowerCase() || '';
-    const industryValue = selectedIndustry.toLowerCase();
+    const mappedValues = industryMapping[selectedIndustry] || [];
     return allEmails.filter(contact => {
       const leadFromDB = leads.find(l => l.email === contact.email);
       const leadFromDiscovery = discoveredLeads.find((l: any) => l.email === contact.email);
       const leadIndustry = (leadFromDB?.industry || leadFromDiscovery?.industry || '').toLowerCase().trim();
       if (!leadIndustry) return false;
-      // Strict matching: lead industry must contain the industry value/label keyword,
-      // NOT the other way around (prevents short lead industries matching everything)
-      return leadIndustry.includes(industryValue) || leadIndustry.includes(industryLabel);
+      // Check if lead's industry matches any of the mapped values
+      return mappedValues.some(mapped => leadIndustry === mapped || leadIndustry.includes(mapped));
     });
   };
 
