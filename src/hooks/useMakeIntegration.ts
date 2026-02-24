@@ -132,7 +132,8 @@ export const useMakeIntegration = () => {
           data: {
             subject: cleanSubject,
             content: htmlContent,
-            to_emails_list: toEmailsList
+            to_emails_list: toEmailsList,
+            ...(data.sender_website && { sender_website: data.sender_website })
           }
         };
       } else if (isCRMExportEvent) {
