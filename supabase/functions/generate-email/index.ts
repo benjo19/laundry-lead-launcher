@@ -221,13 +221,14 @@ VAŽNE SMJERNICE:
 - Poruka treba biti jasna i koncizna (max 200 riječi)
 - Završi s jasnim pozivom na akciju
 - OBAVEZNO dodaj potpis na kraju emaila ako je naveden u kontekstu pošiljatelja
+- NIKADA ne stavljaj web stranicu/URL pošiljatelja u tijelo emaila niti u potpis - ona se šalje zasebno putem sustava
 
 FORMAT EMAILA:
 - Podijeli sadržaj na jasne odlomke
 - Svaki odlomak treba biti 2-3 rečenice
 - Ostavi praznu liniju između odlomaka
 - Koristi pozdravljenje na početku (Poštovani/a...)
-- Dodaj potpis na kraju s kontakt informacijama`;
+- Dodaj potpis na kraju s kontakt informacijama (ali BEZ web stranice/URL-a)`;
 
   // FINALLY: Add business context (lowest priority)
   if (businessContext && businessContext.trim()) {
