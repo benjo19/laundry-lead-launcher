@@ -290,6 +290,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         content: convertToHTML(emailContent),
         total_recipients: recipients.length,
         recipients: bulkRecipients,
+        ...(selectedProfile?.company_name && {
+          company_name: selectedProfile.company_name
+        }),
         ...(selectedProfile?.website && {
           sender_website: selectedProfile.website
         })
@@ -399,6 +402,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       content: htmlContent,
       timestamp: new Date().toISOString(),
       status: 'draft',
+      ...(selectedProfile?.company_name && {
+        company_name: selectedProfile.company_name
+      }),
       ...(selectedProfile?.website && {
         sender_website: selectedProfile.website
       })
