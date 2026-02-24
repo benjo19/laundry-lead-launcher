@@ -133,6 +133,7 @@ export const useMakeIntegration = () => {
             subject: cleanSubject,
             content: htmlContent,
             to_emails_list: toEmailsList,
+            ...(data.company_name && { company_name: data.company_name }),
             ...(data.sender_website && { sender_website: data.sender_website })
           }
         };
