@@ -715,6 +715,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                   setSelectedCompany('');
                 } else {
                   setSelectedIndustry('');
+                  setRecipients([]);
                 }
               }}>
                 <SelectTrigger className="w-full bg-white">
