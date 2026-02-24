@@ -836,7 +836,24 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                   <label className="block text-sm font-medium text-slate-700">
                     Odaberite industriju
                   </label>
-                  <Select value={selectedIndustry} onValueChange={setSelectedIndustry}>
+                  <Select value={selectedIndustry} onValueChange={(value) => {
+                    setSelectedIndustry(value);
+                    // Auto-refresh recipients when industry changes
+                    if (value && value !== 'opcenito') {
+                      const allEmails = getAllEmailAddresses();
+                      const mappedValues = industryMapping[value] || [];
+                      const filtered = allEmails.filter(contact => {
+                        const leadFromDB = leads.find(l => l.email === contact.email);
+                        const leadFromDiscovery = discoveredLeads.find((l: any) => l.email === contact.email);
+                        const leadIndustry = (leadFromDB?.industry || leadFromDiscovery?.industry || '').toLowerCase().trim();
+                        if (!leadIndustry) return false;
+                        return mappedValues.some(mapped => leadIndustry === mapped || leadIndustry.includes(mapped));
+                      });
+                      setRecipients(filtered.map(c => c.email));
+                    } else {
+                      setRecipients([]);
+                    }
+                  }}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Odaberite industriju" />
                     </SelectTrigger>
