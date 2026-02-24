@@ -508,13 +508,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     if (generationType !== 'industry' || !selectedIndustry || selectedIndustry === 'opcenito') {
       return allEmails;
     }
-    const industryLabel = industries.find(i => i.value === selectedIndustry)?.label?.toLowerCase() || '';
+    const industryObj = industries.find(i => i.value === selectedIndustry);
+    const industryLabel = industryObj?.label?.toLowerCase() || '';
     const industryValue = selectedIndustry.toLowerCase();
     return allEmails.filter(contact => {
       const leadFromDB = leads.find(l => l.email === contact.email);
       const leadFromDiscovery = discoveredLeads.find((l: any) => l.email === contact.email);
-      const leadIndustry = (leadFromDB?.industry || leadFromDiscovery?.industry || '').toLowerCase();
-      return leadIndustry.includes(industryValue) || leadIndustry.includes(industryLabel.split(' ')[0]) || industryLabel.includes(leadIndustry);
+      const leadIndustry = (leadFromDB?.industry || leadFromDiscovery?.industry || '').toLowerCase().trim();
+      if (!leadIndustry) return false;
+      // Strict matching: lead industry must contain the industry value/label keyword,
+      // NOT the other way around (prevents short lead industries matching everything)
+      return leadIndustry.includes(industryValue) || leadIndustry.includes(industryLabel);
     });
   };
 
