@@ -285,14 +285,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         };
       });
 
-      const senderCompanyName = selectedProfile?.company_name?.toLowerCase().trim() || '';
       const bulkPayload = {
         subject: subject,
         content: convertToHTML(emailContent),
         total_recipients: recipients.length,
         recipients: bulkRecipients,
-        ...(senderCompanyName.includes('automind') && {
-          sender_website: 'https://automind-ai-agents.lovable.app/'
+        ...(selectedProfile?.website && {
+          sender_website: selectedProfile.website
         })
       };
 
