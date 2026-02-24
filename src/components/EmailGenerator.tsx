@@ -398,7 +398,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       subject: subject,
       content: htmlContent,
       timestamp: new Date().toISOString(),
-      status: 'draft'
+      status: 'draft',
+      ...(selectedProfile?.website && {
+        sender_website: selectedProfile.website
+      })
     };
 
     await triggerWebhook('draft', draftData);
