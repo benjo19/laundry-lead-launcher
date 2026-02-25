@@ -293,9 +293,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         ...(selectedProfile?.name && {
           company_name: selectedProfile.name
         }),
-        ...(selectedProfile?.website && {
-          sender_website: selectedProfile.website
-        })
       };
 
       // Send one webhook with all recipients
@@ -405,9 +402,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       ...(selectedProfile?.name && {
         company_name: selectedProfile.name
       }),
-      ...(selectedProfile?.website && {
-        sender_website: selectedProfile.website
-      })
     };
 
     await triggerWebhook('draft', draftData);
