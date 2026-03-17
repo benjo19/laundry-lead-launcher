@@ -22,297 +22,135 @@ export const performLeadSearch = async (
   location: string,
   industry: string,
   apiKey: string,
-  getPlaceDetails: (placeId: string, apiKey: string) => Promise<any>
+  _getPlaceDetails: (placeId: string, apiKey: string) => Promise<any>
 ) => {
-  console.log('=== STARTING REAL GOOGLE MAPS SEARCH ===');
-  console.log('Search parameters:', { 
-    searchQuery: `"${searchQuery}"`, 
-    location: `"${location}"`, 
-    industry: `"${industry}"`, 
-    apiKey: apiKey ? `KEY PROVIDED (${apiKey.substring(0, 10)}...)` : 'MISSING API KEY' 
+  console.log('=== STARTING GOOGLE MAPS EDGE SEARCH ===');
+  console.log('Search parameters:', {
+    searchQuery: `"${searchQuery}"`,
+    location: `"${location}"`,
+    industry: `"${industry}"`,
+    apiKey: apiKey ? `KEY PROVIDED (${apiKey.substring(0, 10)}...)` : 'MISSING API KEY'
   });
 
-  // CRITICAL CHECK: Verify API key is present
   if (!apiKey || apiKey.trim() === '') {
-    console.error('❌ CRITICAL ERROR: No API key provided!');
     throw new Error('Google Maps API ključ je potreban za pretraživanje');
   }
-  
-  const selectedIndustry = industries.find(ind => ind.value === industry);
-  console.log('Selected industry:', selectedIndustry);
-  
-  // Build the search query properly
-  let finalQuery = '';
-  if (searchQuery && searchQuery.trim()) {
-    finalQuery = searchQuery.trim();
-  } else if (selectedIndustry) {
-    finalQuery = selectedIndustry.query;
-  } else {
-    finalQuery = 'business';
-  }
-  
-  // Add location to the query
-  const fullSearchQuery = `${finalQuery} in ${location}`;
-  console.log('🔍 FINAL GOOGLE MAPS QUERY:', `"${fullSearchQuery}"`);
-  
-  try {
-    // Use Google Maps Places Text Search API
-    const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(fullSearchQuery)}&key=${apiKey}`;
-    console.log('🌐 Google Maps API URL:', textSearchUrl.replace(apiKey, 'API_KEY_HIDDEN'));
-    
-    let response;
-    let method = 'direct';
-    
-    console.log('🚀 Attempting direct Google Maps API call...');
-    try {
-      response = await fetch(textSearchUrl);
-      console.log('✅ Direct API response status:', response.status);
-      console.log('📊 Response headers:', Object.fromEntries(response.headers.entries()));
-    } catch (corsError) {
-      console.log('❌ Direct API failed with CORS error:', corsError);
-      console.log('🔄 Trying CORS proxy...');
-      method = 'proxy';
-      const proxyUrl = 'https://api.allorigins.win/raw?url=';
-      const proxiedUrl = proxyUrl + encodeURIComponent(textSearchUrl);
-      console.log('🌐 Proxy URL:', proxiedUrl.replace(apiKey, 'API_KEY_HIDDEN'));
-      response = await fetch(proxiedUrl);
-      console.log('✅ Proxy API response status:', response.status);
-    }
-    
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('❌ API Error Response:', errorText);
-      
-      // Parse detailed error messages
-      let detailedError = '';
-      if (response.status === 403) {
-        detailedError = 'Google Maps API: Pristup zabranjen.\n\n' +
-          'Mogući razlozi:\n' +
-          '• Places API nije omogućen u Google Cloud Console\n' +
-          '• API ključ nema potrebna dopuštenja\n' +
-          '• API ključ ima postavljene restrikcije koje blokiraju ovaj zahtjev\n\n' +
-          'Provjerite: Google Cloud Console → APIs & Services → Places API';
-      } else if (response.status === 400) {
-        detailedError = 'Google Maps API: Neispravan zahtjev.\n\n' +
-          'Mogući razlozi:\n' +
-          '• API ključ je neispravan ili istekao\n' +
-          '• Format zahtjeva nije pravilan\n\n' +
-          'Provjerite da je API ključ točno kopiran.';
-      } else if (response.status === 429) {
-        detailedError = 'Google Maps API: Prekoračen limit zahtjeva.\n\n' +
-          'Dostigli ste dnevni ili mjesečni limit API poziva.\n' +
-          'Provjerite: Google Cloud Console → APIs & Services → Quotas';
-      } else {
-        detailedError = `Google Maps API greška: ${response.status}\n${errorText}`;
-      }
-      
-      throw new Error(detailedError);
-    }
-    
-    const data = await response.json();
-    console.log('=== GOOGLE MAPS API RESPONSE ===');
-    console.log('📈 Status:', data.status);
-    console.log('📊 Results count:', data.results ? data.results.length : 0);
-    console.log('⚠️ Error message:', data.error_message || 'none');
-    
-    // Check for API-level errors
-    if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
-      let detailedError = '';
-      
-      if (data.status === 'REQUEST_DENIED') {
-        detailedError = 'Google Maps API: Zahtjev odbijen.\n\n' +
-          'Mogući razlozi:\n' +
-          '• Places API nije omogućen - idite na Google Cloud Console → APIs & Services → Library → Places API → Enable\n' +
-          '• API ključ nema dopuštenja za Places API\n' +
-          '• API ključ ima postavljena HTTP referrer ograničenja\n\n' +
-          (data.error_message ? `Google poruka: ${data.error_message}` : '');
-      } else if (data.status === 'OVER_QUERY_LIMIT') {
-        detailedError = 'Google Maps API: Prekoračen limit.\n\n' +
-          'Mogući razlozi:\n' +
-          '• Billing nije postavljen u Google Cloud Console\n' +
-          '• Prekoračen dnevni/mjesečni limit poziva\n\n' +
-          'Provjerite: Google Cloud Console → Billing → Link a billing account';
-      } else if (data.status === 'INVALID_REQUEST') {
-        detailedError = 'Google Maps API: Neispravan zahtjev.\n\n' +
-          'Parametri pretrage nisu ispravni ili nedostaju.\n' +
-          (data.error_message ? `Google poruka: ${data.error_message}` : '');
-      } else {
-        detailedError = `Google Maps API status: ${data.status}\n${data.error_message || 'Nepoznata greška'}`;
-      }
-      
-      throw new Error(detailedError);
-    }
-    console.log('🏢 First 3 results preview:', data.results ? data.results.slice(0, 3).map(r => ({ 
-      name: r.name, 
-      address: r.formatted_address,
-      place_id: r.place_id 
-    })) : 'no results');
-    
-    if (data.status === 'REQUEST_DENIED') {
-      console.error('❌ REQUEST_DENIED:', data.error_message);
-      throw new Error(`Google Maps API zahtjev odbačen: ${data.error_message}`);
-    }
-    
-    if (data.status === 'INVALID_REQUEST') {
-      console.error('❌ INVALID_REQUEST:', data.error_message);
-      throw new Error(`Nevažeći zahtjev: ${data.error_message}`);
-    }
-    
-    if (data.status === 'ZERO_RESULTS') {
-      console.log('⚠️ No results found for query:', fullSearchQuery);
-      return [];
-    }
-    
-    if (data.status !== 'OK') {
-      console.error('❌ API Status not OK:', data.status, data.error_message);
-      throw new Error(`Google Maps API greška: ${data.status} - ${data.error_message || 'Nepoznata greška'}`);
-    }
-    
-    if (!data.results || data.results.length === 0) {
-      console.log('⚠️ No results returned from Google Maps');
-      return [];
-    }
-    
-    console.log('=== PROCESSING GOOGLE MAPS RESULTS ===');
-    console.log('🏢 Found places:', data.results.map(r => ({ 
-      name: r.name, 
-      place_id: r.place_id,
-      address: r.formatted_address
-    })));
-    
-    // Process real results from Google Maps
-    const realLeads: DiscoveredLead[] = [];
-    const maxResults = Math.min(data.results.length, 10);
-    
-    for (let i = 0; i < maxResults; i++) {
-      const place = data.results[i];
-      console.log(`\n--- Processing place ${i + 1}: ${place.name} ---`);
-      console.log('Place data:', {
-        name: place.name,
-        address: place.formatted_address,
-        place_id: place.place_id,
-        rating: place.rating,
-        types: place.types
-      });
-      
-      try {
-        // Get detailed information for each place
-        const details = await getPlaceDetails(place.place_id, apiKey);
-        
-        const lead: DiscoveredLead = {
-          name: place.name,
-          address: place.formatted_address || '',
-          phone: details?.formatted_phone_number || '',
-          website: details?.website || '',
-          rating: place.rating || details?.rating,
-          types: place.types || [],
-          place_id: place.place_id,
-          geometry: place.geometry,
-          business_status: place.business_status,
-          user_ratings_total: place.user_ratings_total
-        };
-        
-        // Try to scrape email and social profiles if website exists, otherwise try to discover website from social
-        let emailSource = '';
-        let socialProfiles = {};
 
-        if (lead.website) {
-          try {
+  const selectedIndustry = industries.find(ind => ind.value === industry);
+  const finalQuery = searchQuery?.trim() || selectedIndustry?.query || 'business';
+
+  try {
+    console.log('🚀 Calling google-maps-lead-search edge function...');
+
+    const { data, error } = await supabase.functions.invoke('google-maps-lead-search', {
+      body: {
+        query: finalQuery,
+        location,
+        apiKey,
+        maxResults: 10,
+      }
+    });
+
+    if (error) {
+      console.error('❌ Google Maps edge function error:', error);
+      throw new Error(error.message || 'Google Maps pretraga nije uspjela');
+    }
+
+    const places = Array.isArray(data?.leads) ? data.leads : [];
+    console.log('=== GOOGLE MAPS EDGE RESPONSE ===');
+    console.log('📊 Results count:', places.length);
+
+    if (places.length === 0) {
+      console.log('⚠️ No results returned from Google Maps edge function');
+      return [];
+    }
+
+    const realLeads: DiscoveredLead[] = [];
+
+    for (let i = 0; i < places.length; i++) {
+      const place = places[i];
+      console.log(`\n--- Processing place ${i + 1}: ${place.name} ---`);
+
+      const lead: DiscoveredLead = {
+        name: place.name,
+        address: place.address || '',
+        phone: place.phone || '',
+        website: place.website || '',
+        rating: place.rating,
+        types: place.types || [],
+        place_id: place.place_id,
+        geometry: place.geometry,
+        business_status: place.business_status,
+        user_ratings_total: place.user_ratings_total,
+      };
+
+      let emailSource = '';
+      let socialProfiles = {};
+
+      if (lead.website) {
+        try {
+          const email = await scrapeEmailFromWebsite(lead.website, lead.name);
+          if (email) {
+            lead.email = email;
+            lead.emailScraped = true;
+            emailSource = 'website';
+          }
+        } catch (emailError) {
+          console.error('❌ Email scraping failed:', emailError);
+        }
+      } else {
+        try {
+          const discovered = await discoverWebsiteFromSocial(lead.name);
+          if (discovered?.website) {
+            lead.website = discovered.website;
             const email = await scrapeEmailFromWebsite(lead.website, lead.name);
             if (email) {
               lead.email = email;
               lead.emailScraped = true;
               emailSource = 'website';
             }
-          } catch (emailError) {
-            console.error(`❌ Email scraping failed:`, emailError);
           }
-        } else {
-          // Discover website from social profiles (Facebook/LinkedIn About)
-          try {
-            const discovered = await discoverWebsiteFromSocial(lead.name);
-            if (discovered?.website) {
-              lead.website = discovered.website;
-              // Now scrape email from discovered website
-              const email = await scrapeEmailFromWebsite(lead.website, lead.name);
-              if (email) {
-                lead.email = email;
-                lead.emailScraped = true;
-                emailSource = 'website';
-              }
-            }
-          } catch (discoverErr) {
-            console.error('❌ Website discovery from social failed:', discoverErr);
-          }
+        } catch (discoverErr) {
+          console.error('❌ Website discovery from social failed:', discoverErr);
         }
-        
-        // Try enhanced email discovery with social media
-        try {
-          const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '', location);
-
-          // Only accept emails from the same company domain (avoid free providers)
-          if (!lead.email && lead.website) {
-            const companyRoot = getDomainRoot(new URL(lead.website).hostname);
-            const filtered = enhancedResult.emails.filter((e) => {
-              const domain = (e.split('@')[1] || '').toLowerCase();
-              return !isFreeEmailDomain(domain) && getDomainRoot(domain) === companyRoot;
-            });
-            if (filtered.length > 0) {
-              lead.email = filtered[0];
-              emailSource = enhancedResult.emailSources[filtered[0]] || 'social';
-            }
-          }
-
-          
-          // Store social profiles
-          socialProfiles = enhancedResult.socialProfiles;
-          
-        } catch (enhancedError) {
-          console.error(`❌ Enhanced discovery failed:`, enhancedError);
-        }
-        
-        // Add source and social profile information to lead
-        if (lead.email) {
-          lead.emailSource = emailSource;
-        }
-        if (Object.keys(socialProfiles).length > 0) {
-          lead.socialProfiles = socialProfiles as any;
-        }
-        
-        realLeads.push(lead);
-        console.log(`✅ Successfully processed: ${lead.name}`);
-        
-      } catch (placeError) {
-        console.error(`❌ Error processing place ${place.name}:`, placeError);
-        // Add basic info even if details fail
-        realLeads.push({
-          name: place.name,
-          address: place.formatted_address || '',
-          phone: '',
-          website: '',
-          rating: place.rating,
-          types: place.types || [],
-          place_id: place.place_id,
-          geometry: place.geometry,
-          business_status: place.business_status,
-          user_ratings_total: place.user_ratings_total
-        });
       }
+
+      try {
+        const enhancedResult = await enhancedEmailDiscovery(lead.name, lead.website || '', location);
+
+        if (!lead.email && lead.website) {
+          const companyRoot = getDomainRoot(new URL(lead.website).hostname);
+          const filtered = enhancedResult.emails.filter((e) => {
+            const domain = (e.split('@')[1] || '').toLowerCase();
+            return !isFreeEmailDomain(domain) && getDomainRoot(domain) === companyRoot;
+          });
+
+          if (filtered.length > 0) {
+            lead.email = filtered[0];
+            emailSource = enhancedResult.emailSources[filtered[0]] || 'social';
+          }
+        }
+
+        socialProfiles = enhancedResult.socialProfiles;
+      } catch (enhancedError) {
+        console.error('❌ Enhanced discovery failed:', enhancedError);
+      }
+
+      if (lead.email) {
+        lead.emailSource = emailSource;
+      }
+      if (Object.keys(socialProfiles).length > 0) {
+        lead.socialProfiles = socialProfiles as any;
+      }
+
+      realLeads.push(lead);
+      console.log(`✅ Successfully processed: ${lead.name}`);
     }
-    
-    // CRITICAL: Verify we're returning real data
-    if (realLeads.length > 0) {
-      console.log('✅ RETURNING REAL GOOGLE MAPS DATA');
-    } else {
-      console.log('⚠️ RETURNING EMPTY RESULTS');
-    }
-    
+
     return realLeads;
-    
   } catch (error) {
     console.error('=== GOOGLE MAPS SEARCH ERROR ===');
     console.error('❌ Error details:', error);
-    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace');
     throw error;
   }
 };
