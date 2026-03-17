@@ -255,6 +255,33 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     return htmlParagraphs.join('');
   };
 
+  const getRecipientWebhookData = (recipientEmail: string) => {
+    const leadFromDB = leads.find(lead => lead.email === recipientEmail);
+    const leadFromDiscovery = discoveredLeads.find((lead: any) => lead.email === recipientEmail);
+
+    const clientCompanyName =
+      leadFromDB?.company ||
+      leadFromDiscovery?.name ||
+      selectedCompany ||
+      recipientEmail.split('@')[0];
+
+    const clientName =
+      leadFromDiscovery?.contact_name ||
+      leadFromDiscovery?.contactName ||
+      leadFromDiscovery?.ownerName ||
+      leadFromDiscovery?.personName ||
+      leadFromDiscovery?.full_name ||
+      leadFromDiscovery?.fullName ||
+      undefined;
+
+    return {
+      to_email: recipientEmail,
+      company: clientCompanyName,
+      client_company_name: clientCompanyName,
+      ...(clientName && { client_name: clientName })
+    };
+  };
+
   const sendEmail = async () => {
     if (recipients.length === 0 || !subject || !emailContent) {
       toast({
@@ -274,16 +301,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       let successCount = 0;
       let failCount = 0;
 
-      // Prepare bulk payload with all recipients
-      const allEmails = getAllEmailAddresses();
-      const bulkRecipients = recipients.map(recipientEmail => {
-        const contact = allEmails.find(c => c.email === recipientEmail);
-        const companyName = contact?.company || selectedCompany || recipientEmail.split('@')[0];
-        return {
-          to_email: recipientEmail,
-          company: companyName
-        };
-      });
+      const bulkRecipients = recipients.map(getRecipientWebhookData);
+      const primaryRecipient = bulkRecipients[0];
 
       const bulkPayload = {
         subject: subject,
@@ -293,9 +312,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         ...(selectedProfile?.name && {
           company_name: selectedProfile.name
         }),
+        ...(primaryRecipient?.client_company_name && {
+          client_company_name: primaryRecipient.client_company_name
+        }),
+        ...(primaryRecipient?.client_name && {
+          client_name: primaryRecipient.client_name
+        }),
       };
 
-      // Send one webhook with all recipients
       const webhookTriggered = await triggerWebhook('sent', bulkPayload);
 
       if (!webhookTriggered) {
@@ -309,14 +333,12 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         return;
       }
 
-      // Loop only for saving to database and tracking progress
       for (let i = 0; i < recipients.length; i++) {
         const recipientEmail = recipients[i];
         successCount++;
         setBulkSendProgress(i + 1);
       }
 
-      // Save email records
       const newEmails: Email[] = recipients.map(r => ({
         id: Date.now() + Math.random(),
         to: r,
@@ -334,7 +356,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         setEmails(prev => [...newEmails, ...prev]);
       }
       
-      // Reset form
       resetForm();
 
       toast({
@@ -392,6 +413,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     ) : emailContent;
 
     const htmlContent = convertToHTML(personalizedContent);
+    const draftRecipients = recipients.map(getRecipientWebhookData);
+    const primaryRecipient = draftRecipients[0];
 
     const draftData = {
       to_email: recipientStr,
@@ -399,8 +422,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       content: htmlContent,
       timestamp: new Date().toISOString(),
       status: 'draft',
+      ...(draftRecipients.length > 0 && {
+        recipients: draftRecipients
+      }),
       ...(selectedProfile?.name && {
         company_name: selectedProfile.name
+      }),
+      ...(primaryRecipient?.client_company_name && {
+        client_company_name: primaryRecipient.client_company_name
+      }),
+      ...(primaryRecipient?.client_name && {
+        client_name: primaryRecipient.client_name
       }),
     };
 
@@ -437,7 +469,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   };
 
   const editDraft = (email: Email) => {
-    // Parse recipients from comma-separated string
     const parsedRecipients = email.to === 'Bez primatelja' ? [] : email.to.split(',').map(e => e.trim()).filter(Boolean);
     setRecipients(parsedRecipients);
     setSubject(email.subject);
@@ -484,10 +515,16 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       source: 'Lead Hunter'
     }));
     
-    const discoveredEmails = discoveredLeads.filter(lead => lead.email).map(lead => ({
+    const discoveredEmails = discoveredLeads.filter(lead => lead.email).map((lead: any) => ({
       email: lead.email,
       company: lead.name,
-      source: 'Lead Discovery'
+      source: 'Lead Discovery',
+      ...(lead.contact_name && { client_name: lead.contact_name }),
+      ...(lead.contactName && { client_name: lead.contactName }),
+      ...(lead.ownerName && { client_name: lead.ownerName }),
+      ...(lead.personName && { client_name: lead.personName }),
+      ...(lead.full_name && { client_name: lead.full_name }),
+      ...(lead.fullName && { client_name: lead.fullName })
     }));
     
     const allEmails = [...leadEmails, ...discoveredEmails];
