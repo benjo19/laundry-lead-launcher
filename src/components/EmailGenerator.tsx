@@ -257,17 +257,27 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     return htmlParagraphs.join('');
   };
 
+  const formatEmailIdentifier = (value: string) =>
+    value
+      .replace(/@.*$/, '')
+      .replace(/[._-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, char => char.toUpperCase());
+
   const getRecipientWebhookData = (recipientEmail: string) => {
-    const leadFromDB = leads.find(lead => lead.email === recipientEmail);
-    const leadFromDiscovery = discoveredLeads.find((lead: any) => lead.email === recipientEmail);
+    const normalizedEmail = recipientEmail.trim().toLowerCase();
+    const leadFromDB = leads.find(lead => lead.email?.trim().toLowerCase() === normalizedEmail);
+    const leadFromDiscovery = discoveredLeads.find((lead: any) => lead.email?.trim().toLowerCase() === normalizedEmail);
 
     const clientCompanyName =
       leadFromDB?.company ||
       leadFromDiscovery?.name ||
       selectedCompany ||
-      recipientEmail.split('@')[0];
+      formatEmailIdentifier(normalizedEmail);
 
     const clientName =
+      leadFromDB?.notes ||
       leadFromDiscovery?.contact_name ||
       leadFromDiscovery?.contactName ||
       leadFromDiscovery?.ownerName ||
