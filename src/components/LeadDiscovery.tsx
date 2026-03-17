@@ -10,6 +10,7 @@ import { useLeadAddition } from '@/hooks/useLeadAddition';
 import { useLeadDiscoverySearch } from './lead-discovery/LeadDiscoverySearch';
 import { useAuth } from '@/hooks/useAuth';
 import WebSearchTab from './lead-discovery/WebSearchTab';
+import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 
 interface LeadDiscoveryProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => Promise<boolean>;
@@ -43,8 +44,20 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
     toast,
     isAIConfigured
   } = useLeadDiscovery();
+  const {
+    profiles,
+    selectedProfile,
+    selectedProfileId,
+    setSelectedProfileId,
+    isLoading: isLoadingProfiles
+  } = useBusinessProfile();
 
-  const { addDiscoveredLead } = useLeadAddition({ onAddLead, setDiscoveredLeads, industry });
+  const { addDiscoveredLead } = useLeadAddition({
+    onAddLead,
+    setDiscoveredLeads,
+    industry,
+    selectedBusinessProfile: selectedProfile
+  });
 
   const { searchLeads } = useLeadDiscoverySearch({
     searchQuery,
@@ -87,6 +100,10 @@ const LeadDiscovery = ({ onAddLead, onNavigateToEmailGenerator }: LeadDiscoveryP
         onSearchLeads={searchLeads}
         onAnalyzeWithAI={analyzeWithAI}
         showApiKeyInput={!savedGoogleMapsApiKey}
+        businessProfiles={profiles}
+        selectedBusinessProfileId={selectedProfileId}
+        setSelectedBusinessProfileId={setSelectedProfileId}
+        isLoadingBusinessProfiles={isLoadingProfiles}
       />
 
       <LeadList 

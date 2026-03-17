@@ -230,6 +230,9 @@ export const useSupabaseLeads = () => {
         industry: newLeadData.industry || '',
         biljeske: newLeadData.notes || '',
         dateAdded: new Date().toISOString().split('T')[0],
+        business_profile_id: newLeadData.businessProfileId || '',
+        business_profile_name: newLeadData.businessProfileName || '',
+        business_company_name: newLeadData.businessCompanyName || '',
         action: 'ADDED'
       });
       
