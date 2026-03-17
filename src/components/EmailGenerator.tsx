@@ -269,22 +269,30 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     const normalizedEmail = recipientEmail.trim().toLowerCase();
     const leadFromDB = leads.find(lead => lead.email?.trim().toLowerCase() === normalizedEmail);
     const leadFromDiscovery = discoveredLeads.find((lead: any) => lead.email?.trim().toLowerCase() === normalizedEmail);
+    const [localPart = '', domainPart = ''] = normalizedEmail.split('@');
+    const domainName = domainPart.split('.')[0] || '';
+    const commonEmailProviders = new Set(['gmail', 'outlook', 'hotmail', 'yahoo', 'icloud', 'protonmail', 'aol', 'live']);
+    const inferredCompanyFromEmail = !commonEmailProviders.has(domainName) && domainName
+      ? formatEmailIdentifier(domainName)
+      : formatEmailIdentifier(localPart);
+    const inferredClientName = /[._-]/.test(localPart)
+      ? formatEmailIdentifier(localPart)
+      : undefined;
 
     const clientCompanyName =
       leadFromDB?.company ||
       leadFromDiscovery?.name ||
       selectedCompany ||
-      formatEmailIdentifier(normalizedEmail);
+      inferredCompanyFromEmail;
 
     const clientName =
-      leadFromDB?.notes ||
       leadFromDiscovery?.contact_name ||
       leadFromDiscovery?.contactName ||
       leadFromDiscovery?.ownerName ||
       leadFromDiscovery?.personName ||
       leadFromDiscovery?.full_name ||
       leadFromDiscovery?.fullName ||
-      undefined;
+      inferredClientName;
 
     return {
       to_email: recipientEmail,
