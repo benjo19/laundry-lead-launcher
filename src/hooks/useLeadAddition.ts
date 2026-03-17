@@ -3,14 +3,16 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Lead } from '@/types';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
+import { BusinessProfile } from './useBusinessProfile';
 
 interface UseLeadAdditionProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => Promise<boolean>;
   setDiscoveredLeads: (updater: (prevLeads: AnalyzedLead[]) => AnalyzedLead[]) => void;
   industry?: string;
+  selectedBusinessProfile?: BusinessProfile | null;
 }
 
-export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry }: UseLeadAdditionProps) => {
+export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry, selectedBusinessProfile }: UseLeadAdditionProps) => {
   const { user } = useAuthContext();
   const { toast } = useToast();
 
@@ -40,6 +42,9 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry }: Use
       potential: discoveredLead.aiAnalysis?.potential || 'Srednji',
       industry: industry || '',
       country: country,
+      businessProfileId: selectedBusinessProfile?.id,
+      businessProfileName: selectedBusinessProfile?.name,
+      businessCompanyName: selectedBusinessProfile?.company_name,
       notes: `Pronađeno putem Google Maps - Rating: ${discoveredLead.rating || 'N/A'}, Tipovi: ${discoveredLead.types.join(', ')}${discoveredLead.website ? `, Website: ${discoveredLead.website}` : ''}${discoveredLead.emailScraped ? ', Email automatski pronađen na web stranici' : ''}${!discoveredLead.email ? ', Email adresa nije pronađena' : ''}${discoveredLead.aiAnalysis ? `, AI Score: ${discoveredLead.aiAnalysis.score}/10, ${discoveredLead.aiAnalysis.reasoning}` : ''}`
     };
 

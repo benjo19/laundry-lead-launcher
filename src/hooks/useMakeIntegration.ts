@@ -259,7 +259,10 @@ export const useMakeIntegration = () => {
             potential: data.potential || '',
             industry: data.industry || '',
             biljeske: data.biljeske || '',
-            dateAdded: data.dateAdded || ''
+            dateAdded: data.dateAdded || '',
+            business_profile_id: data.business_profile_id || '',
+            business_profile_name: data.business_profile_name || '',
+            business_company_name: data.business_company_name || ''
           },
           schema: {
             company: 'string',
@@ -272,7 +275,10 @@ export const useMakeIntegration = () => {
             potential: 'string',
             industry: 'string',
             biljeske: 'string',
-            dateAdded: 'string'
+            dateAdded: 'string',
+            business_profile_id: 'string',
+            business_profile_name: 'string',
+            business_company_name: 'string'
           }
         };
       } else {
