@@ -190,13 +190,15 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       } else {
         const allEmails = getAllEmailAddresses();
         const selectedContact = allEmails.find(contact => contact.email === recipients[0]);
-        
-        const companyName = selectedCompany.toLowerCase();
+        const recipientData = recipients[0] ? getRecipientWebhookData(recipients[0]) : null;
+        const resolvedCompanyName = recipientData?.client_company_name || selectedCompany || '';
+        const companyName = resolvedCompanyName.toLowerCase();
+
         if (companyName.includes('praon') || companyName.includes('čišć') || companyName.includes('pranj')) {
           industry = 'profesionalne praone rublja';
         }
         
-        recipientCompany = selectedCompany || 'tvrtka';
+        recipientCompany = resolvedCompanyName || 'tvrtka';
         additionalContext = selectedContact?.source ? `Kontakt pronađen putem: ${selectedContact.source}` : '';
         
         if (recipients.length > 1) {
@@ -255,15 +257,33 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     return htmlParagraphs.join('');
   };
 
+  const formatEmailIdentifier = (value: string) =>
+    value
+      .replace(/@.*$/, '')
+      .replace(/[._-]+/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .replace(/\b\w/g, char => char.toUpperCase());
+
   const getRecipientWebhookData = (recipientEmail: string) => {
-    const leadFromDB = leads.find(lead => lead.email === recipientEmail);
-    const leadFromDiscovery = discoveredLeads.find((lead: any) => lead.email === recipientEmail);
+    const normalizedEmail = recipientEmail.trim().toLowerCase();
+    const leadFromDB = leads.find(lead => lead.email?.trim().toLowerCase() === normalizedEmail);
+    const leadFromDiscovery = discoveredLeads.find((lead: any) => lead.email?.trim().toLowerCase() === normalizedEmail);
+    const [localPart = '', domainPart = ''] = normalizedEmail.split('@');
+    const domainName = domainPart.split('.')[0] || '';
+    const commonEmailProviders = new Set(['gmail', 'outlook', 'hotmail', 'yahoo', 'icloud', 'protonmail', 'aol', 'live']);
+    const inferredCompanyFromEmail = !commonEmailProviders.has(domainName) && domainName
+      ? formatEmailIdentifier(domainName)
+      : formatEmailIdentifier(localPart);
+    const inferredClientName = /[._-]/.test(localPart)
+      ? formatEmailIdentifier(localPart)
+      : undefined;
 
     const clientCompanyName =
       leadFromDB?.company ||
       leadFromDiscovery?.name ||
       selectedCompany ||
-      recipientEmail.split('@')[0];
+      inferredCompanyFromEmail;
 
     const clientName =
       leadFromDiscovery?.contact_name ||
@@ -272,7 +292,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       leadFromDiscovery?.personName ||
       leadFromDiscovery?.full_name ||
       leadFromDiscovery?.fullName ||
-      undefined;
+      inferredClientName;
 
     return {
       to_email: recipientEmail,
