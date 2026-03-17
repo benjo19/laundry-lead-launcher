@@ -110,20 +110,31 @@ export const useMakeIntegration = () => {
               : [email.trim()];
           })
           .filter(Boolean);
-        // Clean subject and content: trim whitespace and strip markdown code fences
+        const normalizedRecipients = recipientsList
+          .map((recipient: any) => ({
+            to_email: recipient.to_email || '',
+            ...(recipient.company && { company: recipient.company }),
+            ...(recipient.client_company_name && { client_company_name: recipient.client_company_name }),
+            ...(recipient.client_name && { client_name: recipient.client_name })
+          }))
+          .filter((recipient: any) => recipient.to_email);
+        const primaryRecipient = normalizedRecipients[0];
+
         const cleanSubject = (data.subject || '').trim();
         const cleanContent = (data.content || '')
           .replace(/^```(?:html|text|markdown)?\s*\n?/i, '')
           .replace(/\n?```\s*$/i, '')
           .trim();
 
-        // If content is already HTML (from convertToHTML), use as-is; otherwise convert plain text to HTML
         const isAlreadyHTML = cleanContent.trim().startsWith('<!DOCTYPE') || cleanContent.trim().startsWith('<html') || cleanContent.trim().startsWith('<p');
         const htmlContent = isAlreadyHTML ? cleanContent : '<p>' + cleanContent
           .split('\n\n')
           .map(para => para.trim().replace(/\n/g, '<br>'))
           .filter(para => para.length > 0)
           .join('</p><p>') + '</p>';
+
+        const clientCompanyName = data.client_company_name || primaryRecipient?.client_company_name;
+        const clientName = data.client_name || primaryRecipient?.client_name;
 
         unifiedData = {
           event_type: eventType,
@@ -133,7 +144,19 @@ export const useMakeIntegration = () => {
             subject: cleanSubject,
             content: htmlContent,
             to_emails_list: toEmailsList,
-            ...(data.company_name && { company_name: data.company_name })
+            ...(normalizedRecipients.length > 0 && { recipients: normalizedRecipients }),
+            ...(data.company_name && { company_name: data.company_name }),
+            ...(clientCompanyName && { client_company_name: clientCompanyName }),
+            ...(clientName && { client_name: clientName })
+          },
+          schema: {
+            subject: 'string',
+            content: 'string',
+            to_emails_list: 'array',
+            recipients: 'array',
+            company_name: 'string',
+            client_company_name: 'string',
+            client_name: 'string'
           }
         };
       } else if (isCRMExportEvent) {
