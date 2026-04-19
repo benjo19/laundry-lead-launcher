@@ -26,6 +26,7 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
+  const [isEnriching, setIsEnriching] = useState(false);
   const { toast } = useToast();
   
   // Filter states - using 'all' instead of empty strings
