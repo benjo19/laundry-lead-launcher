@@ -15,6 +15,7 @@ const AISettings = () => {
   const [formData, setFormData] = useState({
     google_maps_api_key: '',
     search_provider: 'google_cse' as 'google_cse' | 'serpapi',
+    email_model: 'google/gemini-2.5-flash' as 'google/gemini-2.5-flash' | 'google/gemini-2.5-pro' | 'google/gemini-3-flash-preview' | 'google/gemini-3.1-pro-preview',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [showGoogleMapsKey, setShowGoogleMapsKey] = useState(false);
@@ -23,7 +24,8 @@ const AISettings = () => {
     if (aiSettings) {
       setFormData({
         google_maps_api_key: aiSettings.google_maps_api_key || '',
-        search_provider: aiSettings.search_provider || 'google_cse'
+        search_provider: aiSettings.search_provider || 'google_cse',
+        email_model: (aiSettings.email_model as any) || 'google/gemini-2.5-flash'
       });
     }
   }, [aiSettings]);
