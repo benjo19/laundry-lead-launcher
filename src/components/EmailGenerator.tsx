@@ -108,7 +108,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   ]);
 
-  const { leads } = useLeadManagement();
+  const { leads, updateLeadStatus } = useLeadManagement();
   const [discoveredLeads] = useLocalStorage<any[]>('discoveredLeads', []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
