@@ -161,8 +161,10 @@ async function generatePersonalizedEmail(
 async function generateWithLovableAI(
   systemPrompt: string, 
   userPrompt: string, 
-  apiKey: string
+  apiKey: string,
+  model: string = 'google/gemini-2.5-flash'
 ): Promise<GeneratedEmailContent> {
+  console.log('Using AI model:', model);
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
