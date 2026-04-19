@@ -269,9 +269,9 @@
   
   /* Professional glassmorphism effect */
   .glass {
-    background: rgba(255, 255, 255, 0.1);
+    background: hsl(var(--card) / 0.6);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid hsl(var(--border) / 0.5);
   }
   
   /* Loading states */
