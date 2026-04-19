@@ -7,6 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const ALLOWED_MODELS = [
+  'google/gemini-2.5-flash',
+  'google/gemini-2.5-pro',
+  'google/gemini-3-flash-preview',
+  'google/gemini-3.1-pro-preview',
+] as const;
+
 const requestSchema = z.object({
   recipientName: z.string().max(200),
   recipientCompany: z.string().min(1).max(200),
@@ -17,6 +24,7 @@ const requestSchema = z.object({
   emailType: z.enum(['cold', 'follow-up', 'proposal', 'introduction']),
   additionalContext: z.string().max(2000).optional(),
   businessContext: z.string().max(15000).optional(),
+  model: z.enum(ALLOWED_MODELS).optional(),
 });
 
 interface EmailGenerationRequest {
@@ -29,6 +37,7 @@ interface EmailGenerationRequest {
   emailType: 'cold' | 'follow-up' | 'proposal' | 'introduction';
   additionalContext?: string;
   businessContext?: string;
+  model?: typeof ALLOWED_MODELS[number];
 }
 
 interface GeneratedEmailContent {
