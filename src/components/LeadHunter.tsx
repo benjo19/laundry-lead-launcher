@@ -414,8 +414,5 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
 };
 
 export default LeadHunter;
-    </div>
-  );
-};
 
 export default LeadHunter;
