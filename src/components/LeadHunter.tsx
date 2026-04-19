@@ -204,6 +204,8 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         variant: "destructive",
       });
     } finally {
+      setIsEnriching(false);
+    }
   };
 
   const handleMergeDuplicates = async (
