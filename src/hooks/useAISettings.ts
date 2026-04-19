@@ -3,9 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 
+export type EmailAIModel =
+  | 'google/gemini-2.5-flash'
+  | 'google/gemini-2.5-pro'
+  | 'google/gemini-3-flash-preview'
+  | 'google/gemini-3.1-pro-preview';
+
 interface AISettings {
   google_maps_api_key?: string;
   search_provider?: 'google_cse' | 'serpapi';
+  email_model?: EmailAIModel;
 }
 
 export const useAISettings = () => {
