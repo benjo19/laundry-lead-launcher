@@ -414,5 +414,3 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
 };
 
 export default LeadHunter;
-
-export default LeadHunter;
