@@ -73,6 +73,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     if (preSelectedCompany) setSelectedCompany(preSelectedCompany);
   }, [preSelectedEmail, preSelectedCompany]);
 
+  // Backfill: when leads load, mark any 'Nova' lead whose email already received a sent email as 'Kontaktiran'
+  const [hasBackfilled, setHasBackfilled] = useState(false);
+
   const [emails, setEmails] = useLocalStorage<Email[]>('emails', [
     {
       id: 1,
