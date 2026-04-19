@@ -44,7 +44,8 @@ export const useAISettings = () => {
         if (settings && typeof settings === 'object') {
           setAISettings({
             google_maps_api_key: settings.google_maps_api_key || '',
-            search_provider: settings.search_provider || 'google_cse'
+            search_provider: settings.search_provider || 'google_cse',
+            email_model: settings.email_model || 'google/gemini-2.5-flash'
           });
         }
       }
