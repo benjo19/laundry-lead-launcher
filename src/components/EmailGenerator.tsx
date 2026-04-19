@@ -598,6 +598,26 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     });
   };
 
+  // Statistike za objašnjenje razlike između broja leadova i broja primatelja
+  const getRecipientStats = (mode: 'all' | 'industry') => {
+    const totalLeads = leads.length;
+    const leadsWithoutEmail = leads.filter(l => !l.email || !l.email.trim()).length;
+    const leadsWithEmail = totalLeads - leadsWithoutEmail;
+
+    if (mode === 'all') {
+      const uniqueEmails = getAllEmailAddresses().length;
+      const duplicates = Math.max(0, leadsWithEmail - uniqueEmails);
+      return { totalLeads, leadsWithoutEmail, duplicates, uniqueEmails };
+    }
+
+    // industry mode
+    const filteredCount = getFilteredEmailAddresses().length;
+    const allUnique = getAllEmailAddresses().length;
+    const notMatchingIndustry = Math.max(0, allUnique - filteredCount);
+    const duplicates = Math.max(0, leadsWithEmail - allUnique);
+    return { totalLeads, leadsWithoutEmail, duplicates, uniqueEmails: filteredCount, notMatchingIndustry };
+  };
+
   const addAllFromDatabase = () => {
     const filteredEmails = getFilteredEmailAddresses();
     const newRecipients = filteredEmails
@@ -808,6 +828,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                       Dodaj sve iz baze ({getAllEmailAddresses().length})
                     </Button>
                   </div>
+                  {(() => {
+                    const s = getRecipientStats('all');
+                    if (s.totalLeads === 0) return null;
+                    return (
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        {s.uniqueEmails} jedinstvenih primatelja od {s.totalLeads} leadova
+                        {s.leadsWithoutEmail > 0 && ` • ${s.leadsWithoutEmail} bez emaila`}
+                        {s.duplicates > 0 && ` • ${s.duplicates} duplikata spojeno`}
+                      </p>
+                    );
+                  })()}
 
                   {/* Selected recipients badges */}
                   {recipients.length > 0 && (
@@ -959,6 +990,18 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                       Dodaj sve iz baze ({getFilteredEmailAddresses().length})
                     </Button>
                   </div>
+                  {selectedIndustry && selectedIndustry !== 'opcenito' && (() => {
+                    const s = getRecipientStats('industry');
+                    if (s.totalLeads === 0) return null;
+                    return (
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        {s.uniqueEmails} primatelja za odabranu industriju od {s.totalLeads} leadova
+                        {s.leadsWithoutEmail > 0 && ` • ${s.leadsWithoutEmail} bez emaila`}
+                        {s.duplicates > 0 && ` • ${s.duplicates} duplikata spojeno`}
+                        {s.notMatchingIndustry !== undefined && s.notMatchingIndustry > 0 && ` • ${s.notMatchingIndustry} druge industrije`}
+                      </p>
+                    );
+                  })()}
 
                   {recipients.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 p-2 bg-purple-50 rounded-lg border border-purple-200 max-h-32 overflow-y-auto">
