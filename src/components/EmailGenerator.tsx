@@ -19,6 +19,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
