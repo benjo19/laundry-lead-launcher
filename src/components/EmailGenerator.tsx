@@ -828,6 +828,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                       Dodaj sve iz baze ({getAllEmailAddresses().length})
                     </Button>
                   </div>
+                  {(() => {
+                    const s = getRecipientStats('all');
+                    if (s.totalLeads === 0) return null;
+                    return (
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        {s.uniqueEmails} jedinstvenih primatelja od {s.totalLeads} leadova
+                        {s.leadsWithoutEmail > 0 && ` • ${s.leadsWithoutEmail} bez emaila`}
+                        {s.duplicates > 0 && ` • ${s.duplicates} duplikata spojeno`}
+                      </p>
+                    );
+                  })()}
 
                   {/* Selected recipients badges */}
                   {recipients.length > 0 && (
