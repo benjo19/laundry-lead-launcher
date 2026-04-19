@@ -8,11 +8,13 @@ import { scrapeEmailFromWebsite } from '@/utils/emailScraper';
 import { useAISettings } from '@/hooks/useAISettings';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { AILeadAnalysisService, AnalyzedLead } from '@/services/aiLeadAnalysisService';
+import { useLeadSearch } from '@/contexts/LeadSearchContext';
 
 export const useLeadDiscovery = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const { aiSettings, saveAISettings, isAIConfigured } = useAISettings();
+  const { isSearching, discoveredLeads, setDiscoveredLeads } = useLeadSearch();
   
   // Load saved form data from localStorage
   const [savedFormData, setSavedFormData] = useLocalStorage('leadDiscoveryForm', {
@@ -29,11 +31,11 @@ export const useLeadDiscovery = () => {
   const [country, setCountry] = useState(savedFormData.country || '');
   const [industry, setIndustry] = useState(savedFormData.industry || 'laundry');
   const [searchMethod, setSearchMethod] = useState<'google' | 'apify' | 'firecrawl'>(savedFormData.searchMethod || 'apify');
-  const [isSearching, setIsSearching] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [discoveredLeads, setDiscoveredLeads] = useLocalStorage<AnalyzedLead[]>('discoveredLeads', []);
   const [tempApiKey, setTempApiKey] = useState(savedFormData.tempApiKey || '');
   const [savedGoogleMapsApiKey, setSavedGoogleMapsApiKey] = useState('');
+  // Backwards-compat noop for legacy callers
+  const setIsSearching = (_v: boolean) => {};
 
   // Save form data to localStorage whenever fields change
   useEffect(() => {
