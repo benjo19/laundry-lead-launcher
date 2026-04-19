@@ -22,8 +22,9 @@ interface LeadHunterProps {
 }
 
 const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
-  const { leads, loading, error, addLead, updateLeadStatus, updateLeadNotes, deleteLead, refreshLeads } = useLeadManagement();
+  const { leads, loading, error, addLead, updateLead, updateLeadStatus, updateLeadNotes, deleteLead, refreshLeads } = useLeadManagement();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
