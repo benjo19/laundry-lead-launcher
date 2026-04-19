@@ -363,6 +363,42 @@ export const useSupabaseLeads = () => {
     }
   };
 
+  const updateLead = async (leadId: number, partial: Partial<Lead>): Promise<boolean> => {
+    if (!user) return false;
+    try {
+      const leadToUpdate = leads.find(l => l.id === leadId);
+      if (!leadToUpdate) return false;
+
+      const updatePayload: Record<string, any> = { updated_at: new Date().toISOString() };
+      if (partial.email !== undefined) updatePayload.email = partial.email || null;
+      if (partial.phone !== undefined) updatePayload.phone = partial.phone || null;
+      if (partial.website !== undefined) updatePayload.website = partial.website || null;
+      if (partial.location !== undefined) updatePayload.location = partial.location || null;
+      if (partial.industry !== undefined) updatePayload.industry = partial.industry || null;
+      if (partial.employees !== undefined) updatePayload.employees = partial.employees || null;
+      if (partial.notes !== undefined) updatePayload.notes = partial.notes || null;
+      if (partial.status !== undefined) updatePayload.status = partial.status;
+      if (partial.potential !== undefined) updatePayload.potential = partial.potential;
+
+      const { error } = await supabase
+        .from('leads')
+        .update(updatePayload)
+        .eq('user_id', user.id)
+        .eq('company', leadToUpdate.company);
+
+      if (error) {
+        console.error('Error updating lead:', error);
+        return false;
+      }
+
+      await fetchLeads();
+      return true;
+    } catch (err) {
+      console.error('Exception updating lead:', err);
+      return false;
+    }
+  };
+
   const deleteLead = async (leadId: number) => {
     if (!user) return;
 
