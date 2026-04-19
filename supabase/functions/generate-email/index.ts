@@ -7,6 +7,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+const ALLOWED_MODELS = [
+  'google/gemini-2.5-flash',
+  'google/gemini-2.5-pro',
+  'google/gemini-3-flash-preview',
+  'google/gemini-3.1-pro-preview',
+] as const;
+
 const requestSchema = z.object({
   recipientName: z.string().max(200),
   recipientCompany: z.string().min(1).max(200),
@@ -17,6 +24,7 @@ const requestSchema = z.object({
   emailType: z.enum(['cold', 'follow-up', 'proposal', 'introduction']),
   additionalContext: z.string().max(2000).optional(),
   businessContext: z.string().max(15000).optional(),
+  model: z.enum(ALLOWED_MODELS).optional(),
 });
 
 interface EmailGenerationRequest {
@@ -29,6 +37,7 @@ interface EmailGenerationRequest {
   emailType: 'cold' | 'follow-up' | 'proposal' | 'introduction';
   additionalContext?: string;
   businessContext?: string;
+  model?: typeof ALLOWED_MODELS[number];
 }
 
 interface GeneratedEmailContent {
@@ -142,7 +151,7 @@ async function generatePersonalizedEmail(
   const userPrompt = buildUserPrompt(params);
 
   try {
-    return await generateWithLovableAI(systemPrompt, userPrompt, apiKey);
+    return await generateWithLovableAI(systemPrompt, userPrompt, apiKey, params.model);
   } catch (error) {
     console.error('AI Email generation error:', error);
     throw error;
@@ -152,8 +161,10 @@ async function generatePersonalizedEmail(
 async function generateWithLovableAI(
   systemPrompt: string, 
   userPrompt: string, 
-  apiKey: string
+  apiKey: string,
+  model: string = 'google/gemini-2.5-flash'
 ): Promise<GeneratedEmailContent> {
+  console.log('Using AI model:', model);
   const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -161,7 +172,7 @@ async function generateWithLovableAI(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'google/gemini-2.5-flash',
+      model: model,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt }

@@ -15,6 +15,7 @@ const AISettings = () => {
   const [formData, setFormData] = useState({
     google_maps_api_key: '',
     search_provider: 'google_cse' as 'google_cse' | 'serpapi',
+    email_model: 'google/gemini-2.5-flash' as 'google/gemini-2.5-flash' | 'google/gemini-2.5-pro' | 'google/gemini-3-flash-preview' | 'google/gemini-3.1-pro-preview',
   });
   const [isSaving, setIsSaving] = useState(false);
   const [showGoogleMapsKey, setShowGoogleMapsKey] = useState(false);
@@ -23,7 +24,8 @@ const AISettings = () => {
     if (aiSettings) {
       setFormData({
         google_maps_api_key: aiSettings.google_maps_api_key || '',
-        search_provider: aiSettings.search_provider || 'google_cse'
+        search_provider: aiSettings.search_provider || 'google_cse',
+        email_model: (aiSettings.email_model as any) || 'google/gemini-2.5-flash'
       });
     }
   }, [aiSettings]);
@@ -90,6 +92,31 @@ const AISettings = () => {
             <li>✓ Knowledge Base chat</li>
             <li>✓ Analiza leadova</li>
           </ul>
+        </div>
+
+        {/* Email AI Model */}
+        <div>
+          <Label htmlFor="email_model" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            AI Model za generiranje emailova
+          </Label>
+          <Select
+            value={formData.email_model}
+            onValueChange={(value: any) => setFormData({ ...formData, email_model: value })}
+          >
+            <SelectTrigger id="email_model">
+              <SelectValue placeholder="Odaberite model" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash (brzo, jeftino) — zadano</SelectItem>
+              <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro (najbolja kvaliteta)</SelectItem>
+              <SelectItem value="google/gemini-3-flash-preview">Gemini 3 Flash Preview (najnovije, brzo)</SelectItem>
+              <SelectItem value="google/gemini-3.1-pro-preview">Gemini 3.1 Pro Preview (najnaprednije reasoning)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground mt-1">
+            Flash modeli su brži i jeftiniji. Pro modeli daju bolju personalizaciju i nijanse.
+          </p>
         </div>
 
         {/* Web Search Provider */}

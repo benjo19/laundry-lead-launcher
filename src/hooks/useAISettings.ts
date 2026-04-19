@@ -3,9 +3,16 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { useToast } from './use-toast';
 
+export type EmailAIModel =
+  | 'google/gemini-2.5-flash'
+  | 'google/gemini-2.5-pro'
+  | 'google/gemini-3-flash-preview'
+  | 'google/gemini-3.1-pro-preview';
+
 interface AISettings {
   google_maps_api_key?: string;
   search_provider?: 'google_cse' | 'serpapi';
+  email_model?: EmailAIModel;
 }
 
 export const useAISettings = () => {
@@ -37,7 +44,8 @@ export const useAISettings = () => {
         if (settings && typeof settings === 'object') {
           setAISettings({
             google_maps_api_key: settings.google_maps_api_key || '',
-            search_provider: settings.search_provider || 'google_cse'
+            search_provider: settings.search_provider || 'google_cse',
+            email_model: settings.email_model || 'google/gemini-2.5-flash'
           });
         }
       }
@@ -55,7 +63,8 @@ export const useAISettings = () => {
       // Clean settings - only save non-empty values
       const cleanSettings: AISettings = {
         google_maps_api_key: settings.google_maps_api_key?.trim() || undefined,
-        search_provider: settings.search_provider || 'google_cse'
+        search_provider: settings.search_provider || 'google_cse',
+        email_model: settings.email_model || 'google/gemini-2.5-flash'
       };
 
       const { data: existingData, error: selectError } = await supabase
