@@ -1,6 +1,4 @@
-
-import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
-import { performLeadSearch, performApifyLeadSearch, performFirecrawlLeadSearch } from './SearchOperations';
+import { useLeadSearch } from '@/contexts/LeadSearchContext';
 
 interface LeadDiscoverySearchProps {
   searchQuery: string;
@@ -13,7 +11,7 @@ interface LeadDiscoverySearchProps {
   saveGoogleMapsApiKey: (key: string) => Promise<void>;
   getPlaceDetails: (placeId: string, apiKey: string) => Promise<any>;
   setIsSearching: (searching: boolean) => void;
-  setDiscoveredLeads: (leads: AnalyzedLead[]) => void;
+  setDiscoveredLeads: (leads: any) => void;
   toast: any;
 }
 
@@ -27,25 +25,29 @@ export const useLeadDiscoverySearch = ({
   savedGoogleMapsApiKey,
   saveGoogleMapsApiKey,
   getPlaceDetails,
-  setIsSearching,
-  setDiscoveredLeads,
-  toast
+  toast,
 }: LeadDiscoverySearchProps) => {
+  const { startBackgroundSearch, isSearching } = useLeadSearch();
+
   const searchLeads = async () => {
-    // Only require API key for Google Maps method
+    if (isSearching) {
+      toast({
+        title: 'Pretraga u tijeku',
+        description: 'Već postoji aktivna pretraga u pozadini.',
+      });
+      return;
+    }
+
     if (searchMethod === 'google') {
       const currentApiKey = tempApiKey || savedGoogleMapsApiKey;
-      
       if (!currentApiKey) {
         toast({
-          title: "API ključ potreban",
-          description: "Molimo unesite Google Maps API ključ ili ga postavite u Settings.",
-          variant: "destructive",
+          title: 'API ključ potreban',
+          description: 'Molimo unesite Google Maps API ključ ili ga postavite u Settings.',
+          variant: 'destructive',
         });
         return;
       }
-
-      // Save the API key if it's entered manually and different from saved one
       if (tempApiKey && tempApiKey !== savedGoogleMapsApiKey) {
         await saveGoogleMapsApiKey(tempApiKey);
       }
@@ -53,70 +55,28 @@ export const useLeadDiscoverySearch = ({
 
     if (!location) {
       toast({
-        title: "Lokacija potrebna",
-        description: "Molimo unesite lokaciju za pretraživanje.",
-        variant: "destructive"
+        title: 'Lokacija potrebna',
+        description: 'Molimo unesite lokaciju za pretraživanje.',
+        variant: 'destructive',
       });
       return;
     }
 
-    setIsSearching(true);
-    try {
-      // Combine country and location if country is selected
-      const searchLocation = country && country !== "all" && country !== location 
-        ? `${location}, ${country}` 
-        : location;
-      
-      let detailedLeads;
-      
-      if (searchMethod === 'apify') {
-        console.log('🔥 Using Apify search method');
-        detailedLeads = await performApifyLeadSearch(
-          searchQuery,
-          searchLocation,
-          industry,
-          20 // maxResults
-        );
-      } else if (searchMethod === 'firecrawl') {
-        console.log('🌐 Using Firecrawl search method');
-        detailedLeads = await performFirecrawlLeadSearch(
-          searchQuery,
-          searchLocation,
-          country,
-          industry
-        );
-      } else {
-        console.log('🗺️ Using Google Maps search method');
-        const currentApiKey = tempApiKey || savedGoogleMapsApiKey;
-        detailedLeads = await performLeadSearch(
-          searchQuery,
-          searchLocation,
-          industry,
-          currentApiKey,
-          getPlaceDetails
-        );
-      }
-      
-      setDiscoveredLeads(detailedLeads);
-      
-      const emailsFound = detailedLeads.filter(lead => lead.email && lead.emailScraped).length;
-      const leadsWithoutEmail = detailedLeads.filter(lead => !lead.email).length;
-      
-      toast({
-        title: "Pretraživanje završeno",
-        description: `Pronađeno ${detailedLeads.length} leadova. ${emailsFound} email adresa pronađeno na web stranicama. ${leadsWithoutEmail} leadova nema dostupnu email adresu.`,
-      });
-    } catch (error) {
-      console.error('Search error:', error);
-      toast({
-        title: "Greška",
-        description: error instanceof Error ? error.message : "Dogodila se greška pri pretraživanju leadova.",
-        variant: "destructive",
-      });
-      setDiscoveredLeads([]);
-    } finally {
-      setIsSearching(false);
-    }
+    toast({
+      title: '🔍 Pretraga pokrenuta u pozadini',
+      description: 'Možete slobodno otići na drugu stranicu — javit ćemo vam kad završi.',
+    });
+
+    // Fire-and-forget: search continues even if component unmounts
+    void startBackgroundSearch({
+      searchQuery,
+      location,
+      country,
+      industry,
+      searchMethod,
+      apiKey: tempApiKey || savedGoogleMapsApiKey,
+      getPlaceDetails,
+    });
   };
 
   return { searchLeads };

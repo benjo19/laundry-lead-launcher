@@ -1,10 +1,11 @@
 
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Menu } from 'lucide-react';
+import { Menu, Loader2 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import LanguageToggle from '@/components/LanguageToggle';
 import ThemeToggle from '@/components/ThemeToggle';
+import { useLeadSearch } from '@/contexts/LeadSearchContext';
 
 interface MobileHeaderProps {
   onMenuClick: () => void;
@@ -13,6 +14,7 @@ interface MobileHeaderProps {
 
 const MobileHeader = ({ onMenuClick, title }: MobileHeaderProps) => {
   const { t } = useLanguage();
+  const { isSearching, searchLabel } = useLeadSearch();
   
   const displayTitle = title || t('marketing_agent');
 
@@ -22,6 +24,15 @@ const MobileHeader = ({ onMenuClick, title }: MobileHeaderProps) => {
         {displayTitle}
       </h1>
       <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        {isSearching && (
+          <div
+            className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-primary-foreground/15 border border-primary-foreground/25 text-primary-foreground text-xs"
+            title={`Pretraga u tijeku: ${searchLabel}`}
+          >
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span className="hidden sm:inline">Tražim…</span>
+          </div>
+        )}
         <ThemeToggle />
         <LanguageToggle />
         <Button 
