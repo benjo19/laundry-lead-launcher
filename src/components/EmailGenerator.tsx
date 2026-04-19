@@ -990,6 +990,18 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                       Dodaj sve iz baze ({getFilteredEmailAddresses().length})
                     </Button>
                   </div>
+                  {selectedIndustry && selectedIndustry !== 'opcenito' && (() => {
+                    const s = getRecipientStats('industry');
+                    if (s.totalLeads === 0) return null;
+                    return (
+                      <p className="text-xs text-muted-foreground -mt-1">
+                        {s.uniqueEmails} primatelja za odabranu industriju od {s.totalLeads} leadova
+                        {s.leadsWithoutEmail > 0 && ` • ${s.leadsWithoutEmail} bez emaila`}
+                        {s.duplicates > 0 && ` • ${s.duplicates} duplikata spojeno`}
+                        {s.notMatchingIndustry !== undefined && s.notMatchingIndustry > 0 && ` • ${s.notMatchingIndustry} druge industrije`}
+                      </p>
+                    );
+                  })()}
 
                   {recipients.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 p-2 bg-purple-50 rounded-lg border border-purple-200 max-h-32 overflow-y-auto">
