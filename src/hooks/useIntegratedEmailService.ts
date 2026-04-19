@@ -81,7 +81,8 @@ export const useIntegratedEmailService = () => {
         recipientRating: params.companyInfo?.rating,
         emailType: emailTypeMap[params.emailType] || 'cold',
         additionalContext: params.additionalContext,
-        businessContext: businessContext
+        businessContext: businessContext,
+        model: aiSettings?.email_model || 'google/gemini-2.5-flash'
       };
 
       console.log('Enhanced params with business context:', enhancedParams);
