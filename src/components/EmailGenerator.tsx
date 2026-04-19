@@ -123,6 +123,71 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
   const { triggerWebhook } = useMakeIntegration();
 
+  // Backfill effect: once leads are loaded, find any 'Nova' lead whose email already received a 'Sent' email
+  // and bump its status to 'Kontaktiran'. Runs once per mount.
+  useEffect(() => {
+    if (hasBackfilled) return;
+    if (!leads || leads.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: sentEmails, error } = await supabase
+          .from('emails')
+          .select('to_email')
+          .eq('status', 'Sent');
+
+        if (error) {
+          console.error('Backfill: failed to fetch sent emails', error);
+          return;
+        }
+        if (cancelled) return;
+
+        const sentSet = new Set(
+          (sentEmails || [])
+            .flatMap(e => (e.to_email || '').split(/[,;]/))
+            .map(s => s.trim().toLowerCase())
+            .filter(Boolean)
+        );
+
+        if (sentSet.size === 0) {
+          setHasBackfilled(true);
+          return;
+        }
+
+        const candidates = leads.filter(
+          l => l.status === 'Nova' && l.email && sentSet.has(l.email.trim().toLowerCase())
+        );
+
+        if (candidates.length === 0) {
+          setHasBackfilled(true);
+          return;
+        }
+
+        console.log(`📬 Backfill: updating ${candidates.length} lead(s) Nova → Kontaktiran`);
+        for (const lead of candidates) {
+          try {
+            await updateLeadStatus(lead.id, 'Kontaktiran');
+          } catch (e) {
+            console.error('Backfill update failed for', lead.company, e);
+          }
+        }
+        if (!cancelled && candidates.length > 0) {
+          toast({
+            title: 'Statusi sinkronizirani',
+            description: `${candidates.length} lead(ova) automatski označeno kao Kontaktiran (već primili email).`,
+          });
+        }
+      } finally {
+        if (!cancelled) setHasBackfilled(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [leads, hasBackfilled, updateLeadStatus, toast]);
+
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
   const [selectedIndustry, setSelectedIndustry] = useState('');
   const [generationType, setGenerationType] = useState<'recipient' | 'industry'>('recipient');
