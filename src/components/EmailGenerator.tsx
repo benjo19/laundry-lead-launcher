@@ -598,6 +598,26 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     });
   };
 
+  // Statistike za objašnjenje razlike između broja leadova i broja primatelja
+  const getRecipientStats = (mode: 'all' | 'industry') => {
+    const totalLeads = leads.length;
+    const leadsWithoutEmail = leads.filter(l => !l.email || !l.email.trim()).length;
+    const leadsWithEmail = totalLeads - leadsWithoutEmail;
+
+    if (mode === 'all') {
+      const uniqueEmails = getAllEmailAddresses().length;
+      const duplicates = Math.max(0, leadsWithEmail - uniqueEmails);
+      return { totalLeads, leadsWithoutEmail, duplicates, uniqueEmails };
+    }
+
+    // industry mode
+    const filteredCount = getFilteredEmailAddresses().length;
+    const allUnique = getAllEmailAddresses().length;
+    const notMatchingIndustry = Math.max(0, allUnique - filteredCount);
+    const duplicates = Math.max(0, leadsWithEmail - allUnique);
+    return { totalLeads, leadsWithoutEmail, duplicates, uniqueEmails: filteredCount, notMatchingIndustry };
+  };
+
   const addAllFromDatabase = () => {
     const filteredEmails = getFilteredEmailAddresses();
     const newRecipients = filteredEmails
