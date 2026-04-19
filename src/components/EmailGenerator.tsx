@@ -376,11 +376,24 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         setEmails(prev => [...newEmails, ...prev]);
       }
       
+      // Auto-update lead status: 'Nova' -> 'Kontaktiran' for recipients we just emailed
+      const recipientEmails = new Set(recipients.map(r => r.trim().toLowerCase()));
+      const leadsToUpdate = leads.filter(
+        l => l.email && recipientEmails.has(l.email.trim().toLowerCase()) && l.status === 'Nova'
+      );
+      for (const lead of leadsToUpdate) {
+        try {
+          await updateLeadStatus(lead.id, 'Kontaktiran');
+        } catch (e) {
+          console.error('Failed to auto-update lead status:', lead.company, e);
+        }
+      }
+
       resetForm();
 
       toast({
         title: "Emailovi poslani",
-        description: `Uspješno poslano: ${successCount}${failCount > 0 ? `, neuspješno: ${failCount}` : ''} od ${recipients.length} primatelja.`,
+        description: `Uspješno poslano: ${successCount}${failCount > 0 ? `, neuspješno: ${failCount}` : ''} od ${recipients.length} primatelja.${leadsToUpdate.length > 0 ? ` Status ažuriran za ${leadsToUpdate.length} lead(ova).` : ''}`,
       });
 
     } catch (error) {
