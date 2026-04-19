@@ -204,9 +204,35 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         variant: "destructive",
       });
     } finally {
-      setIsEnriching(false);
+  };
+
+  const handleMergeDuplicates = async (
+    masterId: number,
+    duplicateIds: number[],
+    mergedData: Partial<Lead>
+  ) => {
+    try {
+      if (mergedData && Object.keys(mergedData).length > 0) {
+        await updateLead(masterId, mergedData);
+      }
+      for (const dupId of duplicateIds) {
+        await deleteLead(dupId);
+      }
+      toast({
+        title: 'Spojeno',
+        description: `${duplicateIds.length} ${duplicateIds.length === 1 ? 'duplikat je obrisan' : 'duplikata je obrisano'}, master zapis ažuriran.`,
+      });
+      await refreshLeads();
+    } catch (err) {
+      console.error('Merge failed:', err);
+      toast({
+        title: 'Greška',
+        description: 'Spajanje duplikata nije uspjelo.',
+        variant: 'destructive',
+      });
     }
   };
+
 
   if (loading) {
     return (
