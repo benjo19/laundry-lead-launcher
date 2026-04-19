@@ -94,6 +94,31 @@ const AISettings = () => {
           </ul>
         </div>
 
+        {/* Email AI Model */}
+        <div>
+          <Label htmlFor="email_model" className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4" />
+            AI Model za generiranje emailova
+          </Label>
+          <Select
+            value={formData.email_model}
+            onValueChange={(value: any) => setFormData({ ...formData, email_model: value })}
+          >
+            <SelectTrigger id="email_model">
+              <SelectValue placeholder="Odaberite model" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="google/gemini-2.5-flash">Gemini 2.5 Flash (brzo, jeftino) — zadano</SelectItem>
+              <SelectItem value="google/gemini-2.5-pro">Gemini 2.5 Pro (najbolja kvaliteta)</SelectItem>
+              <SelectItem value="google/gemini-3-flash-preview">Gemini 3 Flash Preview (najnovije, brzo)</SelectItem>
+              <SelectItem value="google/gemini-3.1-pro-preview">Gemini 3.1 Pro Preview (najnaprednije reasoning)</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-sm text-muted-foreground mt-1">
+            Flash modeli su brži i jeftiniji. Pro modeli daju bolju personalizaciju i nijanse.
+          </p>
+        </div>
+
         {/* Web Search Provider */}
         <div>
           <Label htmlFor="search_provider">Web Search Provider</Label>
