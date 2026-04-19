@@ -401,6 +401,19 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         onOpenChange={setIsAddDialogOpen}
         onAddLead={addLead}
       />
+
+      {/* Duplicate Finder Dialog */}
+      <DuplicateFinderDialog
+        open={isDuplicateDialogOpen}
+        onOpenChange={setIsDuplicateDialogOpen}
+        leads={leads}
+        onMerge={handleMergeDuplicates}
+      />
+    </div>
+  );
+};
+
+export default LeadHunter;
     </div>
   );
 };
