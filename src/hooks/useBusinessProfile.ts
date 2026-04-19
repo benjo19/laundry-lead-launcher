@@ -193,42 +193,70 @@ export const useBusinessProfile = () => {
     }
   };
 
+  // Wrap a fetch with a timeout so a slow document never blocks generation
+  const fetchWithTimeout = async (url: string, ms: number): Promise<Response> => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), ms);
+    try {
+      return await fetch(url, { signal: controller.signal });
+    } finally {
+      clearTimeout(timer);
+    }
+  };
+
   const getDocumentsContent = async (profileId?: string): Promise<string> => {
     if (!user || !profileId) return '';
-    
-    try {
-      const folderPath = `${user.id}/${profileId}`;
-      const { data: files, error } = await supabase.storage
-        .from('business-documents')
-        .list(folderPath, { limit: 10 });
 
+    try {
+      // Cap the listing call at 4s — if storage is slow, give up and proceed without docs
+      const listPromise = supabase.storage
+        .from('business-documents')
+        .list(folderPath_(user.id, profileId), { limit: 10 });
+
+      const timeoutPromise = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('list-timeout')), 4000)
+      );
+
+      const result: any = await Promise.race([listPromise, timeoutPromise]).catch((e) => {
+        console.warn('Document list skipped:', e?.message);
+        return { data: null, error: e };
+      });
+
+      const { data: files, error } = result || {};
       if (error || !files || files.length === 0) {
         return '';
       }
 
+      const folderPath = `${user.id}/${profileId}`;
       const documentContents: string[] = [];
 
-      for (const file of files) {
+      // Process files in parallel with a per-file timeout (3s) so one slow file can't block others
+      const tasks = files.slice(0, 10).map(async (file: any) => {
         try {
           const { data: urlData } = await supabase.storage
             .from('business-documents')
-            .createSignedUrl(`${folderPath}/${file.name}`, 300); // 5 min expiry
+            .createSignedUrl(`${folderPath}/${file.name}`, 300);
 
-          if (urlData?.signedUrl) {
-            const response = await fetch(urlData.signedUrl);
-            const blob = await response.blob();
-            
-            if (file.metadata?.mimetype === 'text/plain' || file.metadata?.mimetype === 'text/csv') {
-              const content = await blob.text();
-              documentContents.push(`\n--- Dokument: ${file.name} ---\n${content.substring(0, 2000)}`);
-            } else {
-              documentContents.push(`\n--- Dokument: ${file.name} (${file.metadata?.mimetype || 'nepoznat format'}) ---`);
-            }
+          if (!urlData?.signedUrl) return null;
+
+          const isText =
+            file.metadata?.mimetype === 'text/plain' ||
+            file.metadata?.mimetype === 'text/csv';
+
+          if (isText) {
+            const response = await fetchWithTimeout(urlData.signedUrl, 3000);
+            const content = await response.text();
+            return `\n--- Dokument: ${file.name} ---\n${content.substring(0, 2000)}`;
           }
-        } catch (error) {
-          console.error(`Error reading document ${file.name}:`, error);
+          return `\n--- Dokument: ${file.name} (${file.metadata?.mimetype || 'nepoznat format'}) ---`;
+        } catch (e: any) {
+          console.warn(`Skipping document ${file.name}:`, e?.message);
+          return null;
         }
-      }
+      });
+
+      const results = await Promise.all(tasks);
+      results.forEach((r) => r && documentContents.push(r));
 
       return documentContents.join('\n');
     } catch (error) {
@@ -236,6 +264,12 @@ export const useBusinessProfile = () => {
       return '';
     }
   };
+
+  // helper to build folder path consistently
+  // (kept inline to avoid breaking other call-sites)
+  function folderPath_(userId: string, profileId: string) {
+    return `${userId}/${profileId}`;
+  }
 
   const getContextForAI = async (profileId?: string): Promise<string> => {
     const profile = profileId 

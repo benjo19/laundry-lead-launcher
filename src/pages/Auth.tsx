@@ -78,11 +78,12 @@ const Auth: React.FC = () => {
       }
     };
 
-    // Add timeout to prevent infinite loading
+    // Add timeout to prevent infinite loading — fail-open to login form
     const timeoutId = setTimeout(() => {
+      console.warn('Auth: session check timed out, showing login form');
       setIsCheckingAuth(false);
-      setAuthError('Authentication check timed out');
-    }, 8000);
+      setAuthError('Provjera sesije je trajala predugo. Molimo prijavite se.');
+    }, 4000);
 
     checkUser().finally(() => clearTimeout(timeoutId));
 
