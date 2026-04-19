@@ -469,6 +469,7 @@ export const useSupabaseLeads = () => {
     loading,
     error,
     addLead,
+    updateLead,
     updateLeadStatus,
     updateLeadNotes,
     deleteLead,
