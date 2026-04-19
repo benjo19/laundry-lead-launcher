@@ -68,53 +68,69 @@
   }
 
   .dark {
-    /* iOS/Android inspired dark mode */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    
-    /* System blue for dark mode */
-    --primary: 213 93% 68%;
-    --primary-foreground: 222.2 84% 4.9%;
-    --primary-hover: 213 93% 73%;
-    --primary-active: 213 93% 63%;
-    
-    /* Dark secondary */
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --secondary-hover: 217.2 32.6% 22.5%;
-    
-    /* Dark muted */
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    
-    /* Dark accent */
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --accent-hover: 217.2 32.6% 22.5%;
-    
-    /* Dark destructive */
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    
-    /* Dark borders */
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    
-    /* Dark success and warning */
-    --success: 142 76% 36%;
-    --success-foreground: 355.7 100% 97.3%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 48 96% 89%;
+    /* Refined neutral dark mode (Linear/GitHub inspired) */
+    --background: 222 18% 8%;
+    --foreground: 210 20% 96%;
+    --card: 222 16% 11%;
+    --card-foreground: 210 20% 96%;
+    --popover: 222 16% 11%;
+    --popover-foreground: 210 20% 96%;
 
-    /* Dark gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(213 93% 68%), hsl(213 93% 78%));
-    --gradient-card: linear-gradient(145deg, hsl(222.2 84% 4.9%), hsl(217.2 32.6% 17.5%));
-    --gradient-hover: linear-gradient(135deg, hsl(213 93% 73%), hsl(213 93% 68%));
+    /* Brighter, more vivid system blue for dark mode */
+    --primary: 213 94% 62%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 213 94% 68%;
+    --primary-active: 213 94% 56%;
+
+    /* Dark secondary */
+    --secondary: 222 14% 16%;
+    --secondary-foreground: 210 20% 96%;
+    --secondary-hover: 222 14% 20%;
+
+    /* Dark muted */
+    --muted: 222 14% 16%;
+    --muted-foreground: 215 16% 70%;
+
+    /* Dark accent */
+    --accent: 222 14% 18%;
+    --accent-foreground: 210 20% 96%;
+    --accent-hover: 222 14% 22%;
+
+    /* Dark destructive (more readable) */
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Dark borders & inputs (slightly visible) */
+    --border: 222 14% 20%;
+    --input: 222 14% 18%;
+    --ring: 213 94% 62%;
+
+    /* Dark success and warning */
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 55%;
+    --warning-foreground: 222 18% 8%;
+
+    /* Dark gradients (subtle) */
+    --gradient-primary: linear-gradient(135deg, hsl(213 94% 58%), hsl(213 94% 70%));
+    --gradient-card: linear-gradient(145deg, hsl(222 16% 11%), hsl(222 14% 14%));
+    --gradient-hover: linear-gradient(135deg, hsl(213 94% 64%), hsl(213 94% 58%));
+
+    /* Stronger shadows for dark mode depth */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.6), 0 4px 6px -4px rgb(0 0 0 / 0.6);
+    --shadow-elegant: 0 25px 50px -12px rgb(0 0 0 / 0.8);
+
+    /* Sidebar tokens for dark */
+    --sidebar-background: 222 18% 9%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 213 94% 62%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 14% 16%;
+    --sidebar-accent-foreground: 210 20% 96%;
+    --sidebar-border: 222 14% 18%;
+    --sidebar-ring: 213 94% 62%;
   }
 }
 
@@ -253,9 +269,9 @@
   
   /* Professional glassmorphism effect */
   .glass {
-    background: rgba(255, 255, 255, 0.1);
+    background: hsl(var(--card) / 0.6);
     backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid hsl(var(--border) / 0.5);
   }
   
   /* Loading states */
