@@ -6,6 +6,7 @@ import { Plus, Users, Search, TrendingUp } from 'lucide-react';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import LeadFilters from '@/components/lead-hunter/LeadFilters';
 import SelectableLeadList from '@/components/lead-hunter/SelectableLeadList';
 import BulkOperations from '@/components/lead-hunter/BulkOperations';
