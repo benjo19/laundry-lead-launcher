@@ -1,66 +1,55 @@
 
+Cilj: popraviti zapinjanje na “Generiranje AI sadržaja...” tako da generiranje emaila ili uspješno završi, ili jasno prijavi grešku i vrati gumb u normalno stanje.
 
-## Plan: Alat za pronalaženje i spajanje duplikata u Lead Hunteru
+Što sam našao
+- U `EmailGenerator.tsx` se `isGenerating` pali prije poziva i gasi tek kad se async lanac završi. Ako bilo koji korak “visi”, UI ostaje zauvijek u loading stanju.
+- U `useIntegratedEmailService.ts` nema timeouta ni za `getContextForAI(...)` ni za `supabase.functions.invoke('generate-email')`.
+- `useIntegratedEmailService` koristi vlastiti `useAuth()` umjesto centralnog `AuthContext` stanja, pa može doći do nesklada sesije.
+- `getContextForAI()` u `useBusinessProfile.ts` može čekati na storage/signed URL/dokumente bez zaštite od sporog ili blokiranog zahtjeva.
+- Replay pokazuje i problem sa zaglavljivanjem na `/auth`, što može blokirati pozive edge funkcija koje traže prijavu.
 
-Cilj: Dodati alat koji pronalazi duplikate leadova (po emailu ili nazivu firme), prikazuje ih u grupama, omogućuje pregled svake grupe te spajanje (zadržavanje jednog "master" zapisa s objedinjenim podacima i brisanje ostalih).
+Plan popravka
+1. Učvrstiti auth izvor
+- U `useIntegratedEmailService.ts` prebaciti provjeru korisnika na `useAuthContext()` umjesto zasebnog `useAuth()`.
+- Time će Email Generator koristiti isto auth stanje kao i `ProtectedRoute`.
 
-### Korisničko iskustvo
+2. Dodati timeout i fail-fast zaštitu za generiranje
+- U `useIntegratedEmailService.ts` dodati timeout wrapper za:
+  - dohvat business konteksta
+  - poziv `generate-email` edge funkciji
+- Ako timeout istekne:
+  - prikazati jasan toast tipa “Generiranje traje predugo, pokušajte ponovno”
+  - vratiti `null`
+  - omogućiti da se gumb odmah otključa
 
-1. U Lead Hunteru se pojavljuje novi gumb **"Pronađi duplikate"** (uz "Dodaj Lead").
-2. Klikom se otvara dijalog (Dialog) koji:
-   - Skenira leadove i grupira ih po:
-     - **Emailu** (normalizirano: lowercase, trim) — ignorira prazne
-     - **Nazivu firme** (normalizirano: lowercase, trim, uklonjeni d.o.o./j.d.o.o./obrt sufiksi i višestruki razmaci)
-   - Prikazuje listu grupa duplikata, svaka grupa pokazuje 2+ leadova.
-   - Toggle na vrhu: "Po emailu" / "Po nazivu firme" / "Oboje".
-3. Za svaku grupu korisnik:
-   - Vidi sve leadove u grupi (firma, email, telefon, lokacija, status, datum dodavanja).
-   - Bira **"master" zapis** (radio button) — defaultno najstariji ili onaj s najviše popunjenih polja.
-   - Klikom **"Spoji grupu"**: master dobiva objedinjena polja iz duplikata (popunjava prazna polja master-a vrijednostima iz duplikata, notes se konkatenira), ostali leadovi se brišu.
-4. Bulk akcija: **"Spoji sve grupe"** s automatskim odabirom mastera (najviše popunjenih polja, tie-breaker = najstariji).
-5. Toast s rezultatima nakon operacije; lista leadova se osvježava.
+3. Ograničiti rizik u business kontekstu
+- U `useBusinessProfile.ts` zaštititi dohvat dokumenata tako da spori ili neuspješni storage fetch ne blokira cijelo generiranje.
+- Ako dokumenti ne uspiju, generiranje treba nastaviti bez njih, samo s osnovnim profilom.
 
-### Tehnička implementacija
+4. Poboljšati UI ponašanje u Email Generatoru
+- U `src/components/EmailGenerator.tsx` dodati:
+  - jasniji loading tekst (“Pripremam kontekst...”, “Generiram email...” ako želimo jednostavnu faznu poruku)
+  - fallback poruku kad generiranje ne vrati rezultat
+  - opcionalno gumb “Pokušaj ponovno” bez ručnog refresh-a stranice
+- Bitno: nikad ne ostaviti `isGenerating` u true nakon greške ili timeouta.
 
-**Novi fajlovi:**
+5. Stabilizirati auth screen
+- U `src/pages/Auth.tsx` i po potrebi `src/hooks/useAuth.tsx` smanjiti šansu da korisnik ostane zaglavljen na “Provjera prijave...”.
+- Kad auth provjera pukne ili istekne, korisnik mora dobiti login formu i mogućnost nastavka, umjesto beskonačnog limba.
+- Po potrebi dodatno očistiti stale session handling da se ne blokira edge poziv.
 
-- `src/components/lead-hunter/DuplicateFinderDialog.tsx`
-  - Glavni dijalog. Prima `leads: Lead[]`, `onMerge: (masterId, duplicateIds, mergedData) => Promise<void>`, `onClose`.
-  - State: `mode: 'email' | 'company' | 'both'`, `selectedMasters: Record<groupId, leadId>`.
-  - Računa grupe duplikata pomoću `useMemo`.
-  - Renderira listu grupa s `Card` komponentama; svaki lead u grupi je redak s `RadioGroup` za odabir mastera.
-  - Gumbi: "Spoji ovu grupu", "Spoji sve grupe", "Zatvori".
+Tehnički detalji
+- Datoteke za izmjenu:
+  - `src/hooks/useIntegratedEmailService.ts`
+  - `src/hooks/useBusinessProfile.ts`
+  - `src/components/EmailGenerator.tsx`
+  - vjerojatno `src/pages/Auth.tsx`
+  - po potrebi `src/hooks/useAuth.tsx`
+- Ne očekujem promjene baze ni migracije.
+- Edge funkciju `supabase/functions/generate-email/index.ts` ne bih prvo mijenjao, jer glavni problem izgleda u klijentskom čekanju i auth/session sloju; po potrebi možemo naknadno dodati i server-side timeout/logging poruke.
 
-- `src/components/lead-hunter/utils/duplicateDetection.ts`
-  - `normalizeCompany(name: string): string` — lowercase, trim, ukloni `d.o.o.`, `j.d.o.o.`, `obrt`, `d.d.`, višestruke razmake.
-  - `normalizeEmail(email: string): string` — lowercase, trim.
-  - `findDuplicateGroups(leads: Lead[], mode: 'email' | 'company' | 'both'): DuplicateGroup[]`
-  - `pickBestMaster(leads: Lead[]): Lead` — najviše ne-praznih polja, tie-breaker = najstariji `dateAdded`.
-  - `mergeLeadData(master: Lead, duplicates: Lead[]): Partial<Lead>` — popuni prazna polja mastera, konkatenira `notes` s odvajačem.
-
-**Izmjene u postojećim fajlovima:**
-
-- `src/components/LeadHunter.tsx`:
-  - Dodati state `isDuplicateDialogOpen`.
-  - Dodati gumb **"Pronađi duplikate"** (s `Copy` ili `GitMerge` ikonom iz lucide) u header pored "Dodaj Lead".
-  - Implementirati `handleMergeDuplicates(masterId, duplicateIds, mergedData)`:
-    - `updateLead(masterId, mergedData)` — koristi postojeći `updateLeadNotes` i novi update poziv ili poziva direktno `supabase.from('leads').update(...)`.
-    - Za svaki duplikat: `deleteLead(duplicateId)`.
-    - Toast s brojem spojenih.
-    - `refreshLeads()`.
-
-- `src/hooks/useLeadManagement.ts` ili `useSupabaseLeads.ts`:
-  - Provjeriti postoji li generička `updateLead(id, partial)` funkcija; ako ne, dodati je (već postoje `updateLeadStatus` i `updateLeadNotes`, treba općenitiji update za spajanje više polja odjednom).
-
-### Edge cases
-
-- Grupe s leadovima koji imaju različit `business_profile_id` — prikazati upozorenje da master može biti samo jedan profil.
-- Email prazan = ne ulazi u email grupiranje.
-- "Both" mode: lead može pripadati u dvije grupe; rješavamo tako da koristimo Union-Find (disjoint set) — leadovi koji se podudaraju po bilo kojem kriteriju ulaze u istu grupu.
-- Ako korisnik već odabere mastera koji je u međuvremenu obrisan iz druge grupe — graciozno preskoči.
-
-### Datoteke koje će se kreirati/mijenjati
-
-- **Nove**: `src/components/lead-hunter/DuplicateFinderDialog.tsx`, `src/components/lead-hunter/utils/duplicateDetection.ts`
-- **Izmijenjene**: `src/components/LeadHunter.tsx`, `src/hooks/useLeadManagement.ts` (dodati generički `updateLead` ako ne postoji)
-
+Kako ću verificirati nakon implementacije
+- Generiranje s odabranim predloškom mora završiti uspjehom ili jasnom greškom unutar razumnog vremena.
+- Gumb više ne smije ostati trajno na “Generiranje AI sadržaja...”.
+- Ako business dokumenti kasne ili padnu, email se i dalje mora generirati bez njih.
+- Ako sesija nije valjana, korisnik treba odmah dobiti razumljivu auth poruku umjesto beskonačnog čekanja.
