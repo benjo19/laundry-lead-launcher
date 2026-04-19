@@ -332,6 +332,8 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         onDeselectAll={handleDeselectAll}
         onBulkDelete={handleBulkDelete}
         onBulkStatusChange={handleBulkStatusChange}
+        onBulkEnrich={handleBulkEnrich}
+        isEnriching={isEnriching}
       />
 
       {/* Search Results Info */}
