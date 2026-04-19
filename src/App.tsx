@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuthContext } from "@/contexts/AuthContext";
 import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
+import { LeadSearchProvider } from "@/contexts/LeadSearchContext";
 import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -67,6 +68,7 @@ const AppContent: React.FC = () => {
           <TooltipProvider>
             <ThemeProvider>
               <AuthProvider>
+              <LeadSearchProvider>
               <div className="min-h-screen w-full">
                 <Toaster />
                 <Sonner />
@@ -96,6 +98,7 @@ const AppContent: React.FC = () => {
                 </OAuthWrapper>
                 </BrowserRouter>
               </div>
+              </LeadSearchProvider>
             </AuthProvider>
             </ThemeProvider>
           </TooltipProvider>
