@@ -157,6 +157,55 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
     });
   };
 
+  const handleBulkEnrich = async () => {
+    if (selectedLeads.length === 0) return;
+
+    // Collect company names for selected leads that have NO email
+    const selectedSet = new Set(selectedLeads);
+    const eligibleCompanies = filteredLeads
+      .filter((l) => selectedSet.has(l.id) && (!l.email || !String(l.email).trim()))
+      .map((l) => l.company);
+
+    if (eligibleCompanies.length === 0) {
+      toast({
+        title: "Nema leadova za obogaćivanje",
+        description: "Svi odabrani leadovi već imaju email adresu.",
+      });
+      return;
+    }
+
+    try {
+      setIsEnriching(true);
+      const { data, error } = await supabase.functions.invoke('bulk-enrich-leads', {
+        body: { companies: eligibleCompanies },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Obogaćivanje pokrenuto",
+        description: `Tražimo emailove za ${data?.eligible ?? eligibleCompanies.length} leadova. Ovo može potrajati par minuta — osvježit će se automatski.`,
+      });
+
+      // Refresh after a short delay so users see updates as they come in
+      setTimeout(() => {
+        refreshLeads();
+      }, 8000);
+      setTimeout(() => {
+        refreshLeads();
+      }, 25000);
+    } catch (err) {
+      console.error('Bulk enrich failed:', err);
+      toast({
+        title: "Greška",
+        description: "Pokretanje obogaćivanja nije uspjelo. Pokušajte ponovno.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsEnriching(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="p-6">
