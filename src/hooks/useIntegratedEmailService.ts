@@ -1,6 +1,6 @@
 
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from './use-toast';
 import { useAISettings } from './useAISettings';
 import { useBusinessProfile } from './useBusinessProfile';
@@ -25,8 +25,27 @@ interface GeneratedEmailContent {
   content: string;
 }
 
+// Wrap a promise with a timeout. Rejects with an Error if it doesn't resolve in time.
+const withTimeout = <T>(promise: Promise<T>, ms: number, label: string): Promise<T> => {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      reject(new Error(`TIMEOUT:${label}`));
+    }, ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      }
+    );
+  });
+};
+
 export const useIntegratedEmailService = () => {
-  const { user } = useAuth();
+  const { user } = useAuthContext();
   const { toast } = useToast();
   const { aiSettings, isAIConfigured } = useAISettings();
   const { getContextForAI } = useBusinessProfile();
@@ -55,12 +74,16 @@ export const useIntegratedEmailService = () => {
     try {
       console.log('Generating email with params:', params);
 
-      // Add business context to the parameters with error handling
+      // Add business context — protected by timeout. If it fails or hangs, we proceed without it.
       let businessContext = '';
       try {
-        businessContext = await getContextForAI(params.profileId);
-      } catch (error) {
-        console.warn('Error getting business context:', error);
+        businessContext = await withTimeout(
+          getContextForAI(params.profileId),
+          8000,
+          'business-context'
+        );
+      } catch (error: any) {
+        console.warn('Business context unavailable, continuing without it:', error?.message);
         businessContext = '';
       }
 
@@ -87,9 +110,12 @@ export const useIntegratedEmailService = () => {
 
       console.log('Enhanced params with business context:', enhancedParams);
 
-      const { data, error } = await supabase.functions.invoke('generate-email', {
-        body: enhancedParams
-      });
+      // Call edge function — protected by 45s timeout (AI generation can take a while).
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke('generate-email', { body: enhancedParams }),
+        45000,
+        'generate-email'
+      );
 
       console.log('Supabase function response:', { data, error });
 
@@ -110,18 +136,20 @@ export const useIntegratedEmailService = () => {
 
       return data as GeneratedEmailContent;
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error generating email:', error);
-      
+
       let errorMessage = 'Dogodila se greška pri generiranju emaila.';
-      
-      if (error.message?.includes('AI settings not configured')) {
+
+      if (error?.message?.startsWith('TIMEOUT:')) {
+        errorMessage = 'Generiranje traje predugo. Molimo pokušajte ponovno za nekoliko sekundi.';
+      } else if (error?.message?.includes('AI settings not configured')) {
         errorMessage = 'AI postavke nisu konfigurirane. Molimo postavite AI API ključ u Postavkama.';
-      } else if (error.message?.includes('AI API key not found')) {
+      } else if (error?.message?.includes('AI API key not found')) {
         errorMessage = 'AI API ključ nije pronađen. Molimo konfigurirajte ga u Postavkama.';
-      } else if (error.message?.includes('Invalid authorization')) {
+      } else if (error?.message?.includes('Invalid authorization')) {
         errorMessage = 'Problem s autorizacijom. Molimo osvježite stranicu i pokušajte ponovo.';
-      } else if (error.message) {
+      } else if (error?.message) {
         errorMessage = `Greška: ${error.message}`;
       }
 
