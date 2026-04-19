@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Users, Search, TrendingUp } from 'lucide-react';
+import { Plus, Users, Search, TrendingUp, GitMerge } from 'lucide-react';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +11,7 @@ import LeadFilters from '@/components/lead-hunter/LeadFilters';
 import SelectableLeadList from '@/components/lead-hunter/SelectableLeadList';
 import BulkOperations from '@/components/lead-hunter/BulkOperations';
 import AddLeadDialog from '@/components/AddLeadDialog';
+import DuplicateFinderDialog from '@/components/lead-hunter/DuplicateFinderDialog';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import ErrorMessage from '@/components/ui/error-message';
 import { Input } from '@/components/ui/input';
@@ -21,8 +22,9 @@ interface LeadHunterProps {
 }
 
 const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
-  const { leads, loading, error, addLead, updateLeadStatus, updateLeadNotes, deleteLead, refreshLeads } = useLeadManagement();
+  const { leads, loading, error, addLead, updateLead, updateLeadStatus, updateLeadNotes, deleteLead, refreshLeads } = useLeadManagement();
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [isDuplicateDialogOpen, setIsDuplicateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
   const [selectedLeads, setSelectedLeads] = useState<number[]>([]);
@@ -206,6 +208,34 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
     }
   };
 
+  const handleMergeDuplicates = async (
+    masterId: number,
+    duplicateIds: number[],
+    mergedData: Partial<Lead>
+  ) => {
+    try {
+      if (mergedData && Object.keys(mergedData).length > 0) {
+        await updateLead(masterId, mergedData);
+      }
+      for (const dupId of duplicateIds) {
+        await deleteLead(dupId);
+      }
+      toast({
+        title: 'Spojeno',
+        description: `${duplicateIds.length} ${duplicateIds.length === 1 ? 'duplikat je obrisan' : 'duplikata je obrisano'}, master zapis ažuriran.`,
+      });
+      await refreshLeads();
+    } catch (err) {
+      console.error('Merge failed:', err);
+      toast({
+        title: 'Greška',
+        description: 'Spajanje duplikata nije uspjelo.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+
   if (loading) {
     return (
       <div className="p-6">
@@ -240,6 +270,14 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-64"
           />
+          <Button
+            onClick={() => setIsDuplicateDialogOpen(true)}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <GitMerge className="h-4 w-4" />
+            Pronađi duplikate
+          </Button>
           <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Dodaj Lead
@@ -362,6 +400,14 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         open={isAddDialogOpen}
         onOpenChange={setIsAddDialogOpen}
         onAddLead={addLead}
+      />
+
+      {/* Duplicate Finder Dialog */}
+      <DuplicateFinderDialog
+        open={isDuplicateDialogOpen}
+        onOpenChange={setIsDuplicateDialogOpen}
+        leads={leads}
+        onMerge={handleMergeDuplicates}
       />
     </div>
   );

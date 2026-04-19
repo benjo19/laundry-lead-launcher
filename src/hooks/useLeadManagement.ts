@@ -32,6 +32,10 @@ export const useLeadManagement = () => {
       console.log('Please log in to add leads');
       return false;
     },
+    updateLead: async () => {
+      console.log('Please log in to update leads');
+      return false;
+    },
     updateLeadStatus: async () => {
       console.log('Please log in to update leads');
     },
