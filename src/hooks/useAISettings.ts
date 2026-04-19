@@ -63,7 +63,8 @@ export const useAISettings = () => {
       // Clean settings - only save non-empty values
       const cleanSettings: AISettings = {
         google_maps_api_key: settings.google_maps_api_key?.trim() || undefined,
-        search_provider: settings.search_provider || 'google_cse'
+        search_provider: settings.search_provider || 'google_cse',
+        email_model: settings.email_model || 'google/gemini-2.5-flash'
       };
 
       const { data: existingData, error: selectError } = await supabase
