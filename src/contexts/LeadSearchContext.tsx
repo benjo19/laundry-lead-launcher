@@ -18,7 +18,7 @@ interface SearchParams {
 interface LeadSearchContextValue {
   isSearching: boolean;
   discoveredLeads: AnalyzedLead[];
-  setDiscoveredLeads: (leads: AnalyzedLead[]) => void;
+  setDiscoveredLeads: React.Dispatch<React.SetStateAction<AnalyzedLead[]>>;
   startBackgroundSearch: (params: SearchParams) => Promise<void>;
   searchLabel: string;
 }
@@ -62,13 +62,16 @@ export const LeadSearchProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [searchLabel, setSearchLabel] = useState('');
   const activeSearchRef = useRef<Promise<void> | null>(null);
 
-  const updateLeads = useCallback((leads: AnalyzedLead[]) => {
-    setDiscoveredLeads(leads);
-    try {
-      localStorage.setItem('discoveredLeads', JSON.stringify(leads));
-    } catch (e) {
-      console.warn('Failed to persist leads', e);
-    }
+  const updateLeads = useCallback<React.Dispatch<React.SetStateAction<AnalyzedLead[]>>>((value) => {
+    setDiscoveredLeads((prev) => {
+      const next = typeof value === 'function' ? (value as (p: AnalyzedLead[]) => AnalyzedLead[])(prev) : value;
+      try {
+        localStorage.setItem('discoveredLeads', JSON.stringify(next));
+      } catch (e) {
+        console.warn('Failed to persist leads', e);
+      }
+      return next;
+    });
   }, []);
 
   const startBackgroundSearch = useCallback(async (params: SearchParams) => {
