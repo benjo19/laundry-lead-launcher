@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Users, Search, TrendingUp } from 'lucide-react';
+import { Plus, Users, Search, TrendingUp, GitMerge } from 'lucide-react';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
@@ -11,6 +11,7 @@ import LeadFilters from '@/components/lead-hunter/LeadFilters';
 import SelectableLeadList from '@/components/lead-hunter/SelectableLeadList';
 import BulkOperations from '@/components/lead-hunter/BulkOperations';
 import AddLeadDialog from '@/components/AddLeadDialog';
+import DuplicateFinderDialog from '@/components/lead-hunter/DuplicateFinderDialog';
 import LoadingSpinner from '@/components/ui/loading-spinner';
 import ErrorMessage from '@/components/ui/error-message';
 import { Input } from '@/components/ui/input';
