@@ -19,6 +19,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { supabase } from '@/integrations/supabase/client';
 
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
@@ -72,6 +73,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     if (preSelectedCompany) setSelectedCompany(preSelectedCompany);
   }, [preSelectedEmail, preSelectedCompany]);
 
+  // Backfill: when leads load, mark any 'Nova' lead whose email already received a sent email as 'Kontaktiran'
+  const [hasBackfilled, setHasBackfilled] = useState(false);
+
   const [emails, setEmails] = useLocalStorage<Email[]>('emails', [
     {
       id: 1,
@@ -108,7 +112,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
   ]);
 
-  const { leads } = useLeadManagement();
+  const { leads, updateLeadStatus } = useLeadManagement();
   const [discoveredLeads] = useLocalStorage<any[]>('discoveredLeads', []);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -118,6 +122,71 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { aiSettings, isAIConfigured } = useAISettings();
   const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
   const { triggerWebhook } = useMakeIntegration();
+
+  // Backfill effect: once leads are loaded, find any 'Nova' lead whose email already received a 'Sent' email
+  // and bump its status to 'Kontaktiran'. Runs once per mount.
+  useEffect(() => {
+    if (hasBackfilled) return;
+    if (!leads || leads.length === 0) return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data: sentEmails, error } = await supabase
+          .from('emails')
+          .select('to_email')
+          .eq('status', 'Sent');
+
+        if (error) {
+          console.error('Backfill: failed to fetch sent emails', error);
+          return;
+        }
+        if (cancelled) return;
+
+        const sentSet = new Set(
+          (sentEmails || [])
+            .flatMap(e => (e.to_email || '').split(/[,;]/))
+            .map(s => s.trim().toLowerCase())
+            .filter(Boolean)
+        );
+
+        if (sentSet.size === 0) {
+          setHasBackfilled(true);
+          return;
+        }
+
+        const candidates = leads.filter(
+          l => l.status === 'Nova' && l.email && sentSet.has(l.email.trim().toLowerCase())
+        );
+
+        if (candidates.length === 0) {
+          setHasBackfilled(true);
+          return;
+        }
+
+        console.log(`📬 Backfill: updating ${candidates.length} lead(s) Nova → Kontaktiran`);
+        for (const lead of candidates) {
+          try {
+            await updateLeadStatus(lead.id, 'Kontaktiran');
+          } catch (e) {
+            console.error('Backfill update failed for', lead.company, e);
+          }
+        }
+        if (!cancelled && candidates.length > 0) {
+          toast({
+            title: 'Statusi sinkronizirani',
+            description: `${candidates.length} lead(ova) automatski označeno kao Kontaktiran (već primili email).`,
+          });
+        }
+      } finally {
+        if (!cancelled) setHasBackfilled(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [leads, hasBackfilled, updateLeadStatus, toast]);
 
   const [showTemplateBuilder, setShowTemplateBuilder] = useState(false);
   const [selectedIndustry, setSelectedIndustry] = useState('');
@@ -376,11 +445,24 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         setEmails(prev => [...newEmails, ...prev]);
       }
       
+      // Auto-update lead status: 'Nova' -> 'Kontaktiran' for recipients we just emailed
+      const recipientEmails = new Set(recipients.map(r => r.trim().toLowerCase()));
+      const leadsToUpdate = leads.filter(
+        l => l.email && recipientEmails.has(l.email.trim().toLowerCase()) && l.status === 'Nova'
+      );
+      for (const lead of leadsToUpdate) {
+        try {
+          await updateLeadStatus(lead.id, 'Kontaktiran');
+        } catch (e) {
+          console.error('Failed to auto-update lead status:', lead.company, e);
+        }
+      }
+
       resetForm();
 
       toast({
         title: "Emailovi poslani",
-        description: `Uspješno poslano: ${successCount}${failCount > 0 ? `, neuspješno: ${failCount}` : ''} od ${recipients.length} primatelja.`,
+        description: `Uspješno poslano: ${successCount}${failCount > 0 ? `, neuspješno: ${failCount}` : ''} od ${recipients.length} primatelja.${leadsToUpdate.length > 0 ? ` Status ažuriran za ${leadsToUpdate.length} lead(ova).` : ''}`,
       });
 
     } catch (error) {
