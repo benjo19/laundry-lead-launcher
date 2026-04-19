@@ -151,7 +151,7 @@ async function generatePersonalizedEmail(
   const userPrompt = buildUserPrompt(params);
 
   try {
-    return await generateWithLovableAI(systemPrompt, userPrompt, apiKey);
+    return await generateWithLovableAI(systemPrompt, userPrompt, apiKey, params.model);
   } catch (error) {
     console.error('AI Email generation error:', error);
     throw error;
