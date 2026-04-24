@@ -19,6 +19,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { Link } from 'react-router-dom';
 import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
+import { useEmailService } from '@/hooks/useEmailService';
 import { supabase } from '@/integrations/supabase/client';
 
 interface EmailGeneratorProps {
@@ -118,6 +119,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [isSending, setIsSending] = useState(false);
 
   const { toast } = useToast();
+  const { sendEmail: sendEmailViaService } = useEmailService();
   const { generateEmail } = useIntegratedEmailService();
   const { aiSettings, isAIConfigured } = useAISettings();
   const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
