@@ -394,10 +394,29 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
       const bulkRecipients = recipients.map(getRecipientWebhookData);
       const primaryRecipient = bulkRecipients[0];
+      const htmlContent = convertToHTML(emailContent);
+
+      for (let i = 0; i < recipients.length; i++) {
+        const recipientEmail = recipients[i];
+
+        try {
+          await sendEmailViaService(recipientEmail, subject, emailContent);
+          successCount++;
+        } catch (error) {
+          console.error('Error sending email to recipient:', recipientEmail, error);
+          failCount++;
+        }
+
+        setBulkSendProgress(i + 1);
+      }
+
+      if (successCount === 0) {
+        throw new Error('All email sends failed');
+      }
 
       const bulkPayload = {
         subject: subject,
-        content: convertToHTML(emailContent),
+        content: htmlContent,
         total_recipients: recipients.length,
         recipients: bulkRecipients,
         ...(selectedProfile?.name && {
@@ -415,19 +434,9 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
       if (!webhookTriggered) {
         toast({
-          title: "Webhook nije konfiguriran",
-          description: "Molimo postavite Email webhook URL u postavkama Make.com integracije.",
-          variant: "destructive"
+          title: "Email poslan bez webhooka",
+          description: "Email je poslan, ali Email webhook URL nije konfiguriran u Make.com postavkama.",
         });
-        setIsSending(false);
-        setIsBulkSending(false);
-        return;
-      }
-
-      for (let i = 0; i < recipients.length; i++) {
-        const recipientEmail = recipients[i];
-        successCount++;
-        setBulkSendProgress(i + 1);
       }
 
       const newEmails: Email[] = recipients.map(r => ({
