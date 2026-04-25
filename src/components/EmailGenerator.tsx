@@ -54,6 +54,12 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [bulkSendTotal, setBulkSendTotal] = useState(0);
   const [isBulkSending, setIsBulkSending] = useState(false);
 
+  // Per-recipient send status (pending / success / fail) shown in UI after webhook response
+  type SendStatus = 'pending' | 'success' | 'fail';
+  const [sendStatuses, setSendStatuses] = useState<Record<string, SendStatus>>({});
+  const [lastSendError, setLastSendError] = useState<string | null>(null);
+  const [lastSendCompletedAt, setLastSendCompletedAt] = useState<Date | null>(null);
+
   // Save form data to localStorage whenever fields change
   useEffect(() => {
     setSavedFormData({
