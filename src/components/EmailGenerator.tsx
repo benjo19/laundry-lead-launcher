@@ -1291,7 +1291,80 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
               </Button>
             </div>
-            
+
+            {/* Send Status Panel — prikazuje per-recipient status nakon webhook odgovora */}
+            {Object.keys(sendStatuses).length > 0 && (
+              <div className="mt-3 p-3 rounded-lg border bg-card space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">
+                    Status slanja
+                    {lastSendCompletedAt && (
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">
+                        ({lastSendCompletedAt.toLocaleTimeString('hr-HR')})
+                      </span>
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSendStatuses({});
+                      setLastSendError(null);
+                      setLastSendCompletedAt(null);
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Očisti
+                  </button>
+                </div>
+
+                {/* Sažetak */}
+                {(() => {
+                  const entries = Object.entries(sendStatuses);
+                  const pending = entries.filter(([, s]) => s === 'pending').length;
+                  const success = entries.filter(([, s]) => s === 'success').length;
+                  const fail = entries.filter(([, s]) => s === 'fail').length;
+                  return (
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {pending > 0 && (
+                        <Badge variant="secondary">⏳ Pending: {pending}</Badge>
+                      )}
+                      {success > 0 && (
+                        <Badge className="bg-green-600 hover:bg-green-700 text-white">✓ Uspješno: {success}</Badge>
+                      )}
+                      {fail > 0 && (
+                        <Badge variant="destructive">✗ Neuspješno: {fail}</Badge>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {lastSendError && (
+                  <p className="text-xs text-destructive">{lastSendError}</p>
+                )}
+
+                {/* Lista po primatelju */}
+                <div className="max-h-40 overflow-y-auto space-y-1 pt-1">
+                  {Object.entries(sendStatuses).map(([recipient, status]) => (
+                    <div
+                      key={recipient}
+                      className="flex items-center justify-between text-xs px-2 py-1 rounded bg-muted/50"
+                    >
+                      <span className="truncate mr-2 text-foreground">{recipient}</span>
+                      {status === 'pending' && (
+                        <Badge variant="secondary" className="shrink-0">⏳ Pending</Badge>
+                      )}
+                      {status === 'success' && (
+                        <Badge className="shrink-0 bg-green-600 hover:bg-green-700 text-white">✓ Poslano</Badge>
+                      )}
+                      {status === 'fail' && (
+                        <Badge variant="destructive" className="shrink-0">✗ Greška</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {recipients.length === 0 && emailContent && (
               <div className="mt-2 text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-700">
