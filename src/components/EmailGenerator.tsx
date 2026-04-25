@@ -391,7 +391,16 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setIsBulkSending(recipients.length > 1);
     setBulkSendTotal(recipients.length);
     setBulkSendProgress(0);
-    
+    setLastSendError(null);
+    setLastSendCompletedAt(null);
+    // Inicijaliziraj sve primatelje kao 'pending' dok webhook ne odgovori
+    setSendStatuses(
+      recipients.reduce((acc, r) => {
+        acc[r] = 'pending';
+        return acc;
+      }, {} as Record<string, SendStatus>)
+    );
+
     try {
       let successCount = 0;
       let failCount = 0;
@@ -418,6 +427,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       const webhookTriggered = await triggerWebhook('sent', bulkPayload);
 
       if (!webhookTriggered) {
+        // Označi sve kao neuspjeh u UI-u
+        setSendStatuses(prev => {
+          const next = { ...prev };
+          recipients.forEach(r => { next[r] = 'fail'; });
+          return next;
+        });
+        setLastSendError('Webhook nije konfiguriran ili je vratio grešku.');
+        setLastSendCompletedAt(new Date());
         toast({
           title: "Webhook nije konfiguriran",
           description: "Molimo postavite Email webhook URL u postavkama Make.com integracije.",
@@ -428,10 +445,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         return;
       }
 
+      // Webhook je primljen → svi primatelji su uspješno predani na slanje
       for (let i = 0; i < recipients.length; i++) {
+        const recipient = recipients[i];
+        setSendStatuses(prev => ({ ...prev, [recipient]: 'success' }));
         successCount++;
         setBulkSendProgress(i + 1);
       }
+      setLastSendCompletedAt(new Date());
 
       const newEmails: Email[] = recipients.map(r => ({
         id: Date.now() + Math.random(),
@@ -463,6 +484,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         }
       }
 
+      // Resetira formu, ali zadržava sendStatuses kako bi korisnik vidio rezultate
       resetForm();
 
       toast({
@@ -472,6 +494,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
     } catch (error) {
       console.error('Error triggering email webhook:', error);
+      // Sve označi kao fail
+      setSendStatuses(prev => {
+        const next = { ...prev };
+        recipients.forEach(r => { next[r] = 'fail'; });
+        return next;
+      });
+      setLastSendError(error instanceof Error ? error.message : 'Nepoznata greška');
+      setLastSendCompletedAt(new Date());
       toast({
         title: "Greška",
         description: "Dogodila se greška pri slanju email podataka.",
