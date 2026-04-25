@@ -54,6 +54,12 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [bulkSendTotal, setBulkSendTotal] = useState(0);
   const [isBulkSending, setIsBulkSending] = useState(false);
 
+  // Per-recipient send status (pending / success / fail) shown in UI after webhook response
+  type SendStatus = 'pending' | 'success' | 'fail';
+  const [sendStatuses, setSendStatuses] = useState<Record<string, SendStatus>>({});
+  const [lastSendError, setLastSendError] = useState<string | null>(null);
+  const [lastSendCompletedAt, setLastSendCompletedAt] = useState<Date | null>(null);
+
   // Save form data to localStorage whenever fields change
   useEffect(() => {
     setSavedFormData({
@@ -385,7 +391,16 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setIsBulkSending(recipients.length > 1);
     setBulkSendTotal(recipients.length);
     setBulkSendProgress(0);
-    
+    setLastSendError(null);
+    setLastSendCompletedAt(null);
+    // Inicijaliziraj sve primatelje kao 'pending' dok webhook ne odgovori
+    setSendStatuses(
+      recipients.reduce((acc, r) => {
+        acc[r] = 'pending';
+        return acc;
+      }, {} as Record<string, SendStatus>)
+    );
+
     try {
       let successCount = 0;
       let failCount = 0;
@@ -412,6 +427,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       const webhookTriggered = await triggerWebhook('sent', bulkPayload);
 
       if (!webhookTriggered) {
+        // Označi sve kao neuspjeh u UI-u
+        setSendStatuses(prev => {
+          const next = { ...prev };
+          recipients.forEach(r => { next[r] = 'fail'; });
+          return next;
+        });
+        setLastSendError('Webhook nije konfiguriran ili je vratio grešku.');
+        setLastSendCompletedAt(new Date());
         toast({
           title: "Webhook nije konfiguriran",
           description: "Molimo postavite Email webhook URL u postavkama Make.com integracije.",
@@ -422,10 +445,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         return;
       }
 
+      // Webhook je primljen → svi primatelji su uspješno predani na slanje
       for (let i = 0; i < recipients.length; i++) {
+        const recipient = recipients[i];
+        setSendStatuses(prev => ({ ...prev, [recipient]: 'success' }));
         successCount++;
         setBulkSendProgress(i + 1);
       }
+      setLastSendCompletedAt(new Date());
 
       const newEmails: Email[] = recipients.map(r => ({
         id: Date.now() + Math.random(),
@@ -457,6 +484,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         }
       }
 
+      // Resetira formu, ali zadržava sendStatuses kako bi korisnik vidio rezultate
       resetForm();
 
       toast({
@@ -466,6 +494,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
     } catch (error) {
       console.error('Error triggering email webhook:', error);
+      // Sve označi kao fail
+      setSendStatuses(prev => {
+        const next = { ...prev };
+        recipients.forEach(r => { next[r] = 'fail'; });
+        return next;
+      });
+      setLastSendError(error instanceof Error ? error.message : 'Nepoznata greška');
+      setLastSendCompletedAt(new Date());
       toast({
         title: "Greška",
         description: "Dogodila se greška pri slanju email podataka.",
@@ -1255,7 +1291,80 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
               </Button>
             </div>
-            
+
+            {/* Send Status Panel — prikazuje per-recipient status nakon webhook odgovora */}
+            {Object.keys(sendStatuses).length > 0 && (
+              <div className="mt-3 p-3 rounded-lg border bg-card space-y-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">
+                    Status slanja
+                    {lastSendCompletedAt && (
+                      <span className="ml-2 text-xs text-muted-foreground font-normal">
+                        ({lastSendCompletedAt.toLocaleTimeString('hr-HR')})
+                      </span>
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSendStatuses({});
+                      setLastSendError(null);
+                      setLastSendCompletedAt(null);
+                    }}
+                    className="text-xs text-muted-foreground hover:text-foreground"
+                  >
+                    Očisti
+                  </button>
+                </div>
+
+                {/* Sažetak */}
+                {(() => {
+                  const entries = Object.entries(sendStatuses);
+                  const pending = entries.filter(([, s]) => s === 'pending').length;
+                  const success = entries.filter(([, s]) => s === 'success').length;
+                  const fail = entries.filter(([, s]) => s === 'fail').length;
+                  return (
+                    <div className="flex flex-wrap gap-2 text-xs">
+                      {pending > 0 && (
+                        <Badge variant="secondary">⏳ Pending: {pending}</Badge>
+                      )}
+                      {success > 0 && (
+                        <Badge className="bg-green-600 hover:bg-green-700 text-white">✓ Uspješno: {success}</Badge>
+                      )}
+                      {fail > 0 && (
+                        <Badge variant="destructive">✗ Neuspješno: {fail}</Badge>
+                      )}
+                    </div>
+                  );
+                })()}
+
+                {lastSendError && (
+                  <p className="text-xs text-destructive">{lastSendError}</p>
+                )}
+
+                {/* Lista po primatelju */}
+                <div className="max-h-40 overflow-y-auto space-y-1 pt-1">
+                  {Object.entries(sendStatuses).map(([recipient, status]) => (
+                    <div
+                      key={recipient}
+                      className="flex items-center justify-between text-xs px-2 py-1 rounded bg-muted/50"
+                    >
+                      <span className="truncate mr-2 text-foreground">{recipient}</span>
+                      {status === 'pending' && (
+                        <Badge variant="secondary" className="shrink-0">⏳ Pending</Badge>
+                      )}
+                      {status === 'success' && (
+                        <Badge className="shrink-0 bg-green-600 hover:bg-green-700 text-white">✓ Poslano</Badge>
+                      )}
+                      {status === 'fail' && (
+                        <Badge variant="destructive" className="shrink-0">✗ Greška</Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {recipients.length === 0 && emailContent && (
               <div className="mt-2 text-center p-3 bg-blue-50 rounded-lg border border-blue-200">
                 <p className="text-sm text-blue-700">
