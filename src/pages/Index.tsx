@@ -160,7 +160,7 @@ const Index = () => {
               onMenuClick={() => setSidebarOpen(true)}
               title={getModuleTitle()}
             />
-            <main className="flex-1 overflow-auto p-2 sm:p-3 md:p-4 bg-gradient-to-br from-background to-muted/20">
+            <main className="flex-1 overflow-auto p-2 sm:p-3 md:p-4 bg-app-gradient">
               <div className="animate-fade-in w-full max-w-full">
                 {renderActiveModule()}
               </div>
@@ -178,7 +178,7 @@ const Index = () => {
   return (
     <div className="flex min-h-screen bg-background w-full">
       <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
-      <main className="flex-1 overflow-auto min-w-0 bg-gradient-to-br from-background to-muted/30">
+      <main className="flex-1 overflow-auto min-w-0 bg-app-gradient">
         <div className="animate-fade-in">
           {renderActiveModule()}
         </div>
