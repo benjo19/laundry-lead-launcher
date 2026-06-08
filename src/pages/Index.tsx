@@ -11,6 +11,8 @@ import Settings from '@/components/Settings';
 import KnowledgeBase from '@/components/KnowledgeBase';
 import AIKnowledgeChat from '@/components/AIKnowledgeChat';
 import AdminDashboard from '@/components/AdminDashboard';
+import CRMPipeline from '@/components/crm/CRMPipeline';
+import Ponude from '@/components/Ponude';
 
 import MobileHeader from '@/components/MobileHeader';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -74,7 +76,9 @@ const Index = () => {
       case 'knowledge-base': return 'Knowledge Base';
       case 'ai-chat': return 'AI Asistent';
       case 'email-generator': return t('email_generator');
+      case 'crm-pipeline': return 'CRM Pipeline';
       case 'crm-reminder': return 'CRM Datoteke';
+      case 'ponude': return 'Ponude';
       case 'content-booster': return t('content_booster');
       case 'analytics': return t('analytics');
       case 'settings': return t('settings');
@@ -111,6 +115,12 @@ const Index = () => {
               preSelectedCompany={emailGeneratorData.company}
             />
           );
+        case 'crm-pipeline':
+          console.log('Index: Rendering CRMPipeline');
+          return <CRMPipeline />;
+        case 'ponude':
+          console.log('Index: Rendering Ponude');
+          return <Ponude />;
         case 'crm-reminder':
           console.log('Index: Rendering CRMReminder');
           return <CRMReminder />;

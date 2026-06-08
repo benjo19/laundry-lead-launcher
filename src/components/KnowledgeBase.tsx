@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, FileText, Image, Globe, Trash2, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
+import { useUserSettings } from '@/hooks/useUserSettings';
+import GoogleDrivePicker from '@/components/GoogleDrivePicker';
 
 interface KnowledgeItem {
   id: string;
@@ -29,6 +31,11 @@ const KnowledgeBase = () => {
   const [uploading, setUploading] = useState(false);
   const [websiteUrl, setWebsiteUrl] = useState('');
   const [websiteTitle, setWebsiteTitle] = useState('');
+
+  const { value: gcalSettings } = useUserSettings<{ client_id?: string }>(
+    'google_calendar_settings', {}
+  );
+  const googleClientId = gcalSettings?.client_id || '';
 
   useEffect(() => {
     if (user) {
@@ -56,6 +63,27 @@ const KnowledgeBase = () => {
       });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDriveFilePicked = async (file: File) => {
+    if (!user) return;
+    try {
+      setUploading(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('title', file.name.replace('.pdf', ''));
+
+      const { data, error } = await supabase.functions.invoke('analyze-pdf', { body: formData });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || 'Upload neuspješan');
+
+      toast({ title: 'Uspjeh', description: 'PDF iz Google Drivea je uspješno uvezen i analiziran!' });
+      fetchKnowledgeItems();
+    } catch (err: any) {
+      toast({ title: 'Greška', description: err?.message || 'Greška pri uvozu iz Google Drivea', variant: 'destructive' });
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -280,6 +308,23 @@ const KnowledgeBase = () => {
                   <p className="text-xs text-muted-foreground">
                     PDF dokumenti se automatski analiziraju i ekstraktuje se tekst sa AI sažetkom.
                   </p>
+                  <div className="relative flex items-center">
+                    <div className="flex-grow border-t border-gray-200" />
+                    <span className="mx-2 text-xs text-gray-400">ili</span>
+                    <div className="flex-grow border-t border-gray-200" />
+                  </div>
+                  <GoogleDrivePicker
+                    clientId={googleClientId}
+                    onFilePicked={handleDriveFilePicked}
+                    disabled={uploading}
+                    label="Uvezi PDF iz Google Drivea"
+                    accept="application/pdf"
+                  />
+                  {!googleClientId && (
+                    <p className="text-xs text-amber-600">
+                      Za Google Drive: konfiguriraj Google Client ID u Postavkama.
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>

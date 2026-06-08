@@ -8,13 +8,13 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
 import LanguageToggle from '@/components/LanguageToggle';
 import ThemeToggle from '@/components/ThemeToggle';
-import { 
-  LayoutDashboard, 
-  Search, 
-  Compass, 
-  Mail, 
-  Calendar, 
-  TrendingUp, 
+import {
+  LayoutDashboard,
+  Search,
+  Compass,
+  Mail,
+  Calendar,
+  TrendingUp,
   BarChart3,
   Settings,
   LogOut,
@@ -22,7 +22,9 @@ import {
   Database,
   Brain,
   CreditCard,
-  Shield
+  Shield,
+  Kanban,
+  FileText
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -40,10 +42,12 @@ const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
     { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
     { id: 'lead-hunter', label: t('lead_hunter'), icon: Search },
     { id: 'lead-discovery', label: t('lead_discovery'), icon: Compass },
+    { id: 'crm-pipeline', label: 'CRM Pipeline', icon: Kanban },
+    { id: 'crm-reminder', label: 'CRM Datoteke', icon: Calendar },
+    { id: 'ponude', label: 'Ponude', icon: FileText },
     { id: 'knowledge-base', label: 'Knowledge Base', icon: Database },
     { id: 'ai-chat', label: 'AI Asistent', icon: Brain },
     { id: 'email-generator', label: t('email_generator'), icon: Mail },
-    { id: 'crm-reminder', label: 'CRM Datoteke', icon: Calendar },
     { id: 'content-booster', label: t('content_booster'), icon: TrendingUp },
     { id: 'analytics', label: t('analytics'), icon: BarChart3 },
     { id: 'subscription', label: 'Subscription', icon: CreditCard },

@@ -43,5 +43,39 @@ export interface Reminder {
   calendarEventId?: string;
 }
 
+export interface OfferItem {
+  id: string;
+  offer_id: string;
+  redni_broj: number;
+  naziv: string;
+  opis?: string;
+  kolicina: number;
+  jedinica_mjere: string;
+  cijena_bez_pdv: number;
+  popust: number;
+}
+
+export interface Offer {
+  id: string;
+  user_id: string;
+  lead_id?: string;
+  broj_ponude: string;
+  naslov: string;
+  klijent_ime: string;
+  klijent_email?: string;
+  klijent_adresa?: string;
+  klijent_oib?: string;
+  status: 'Nacrt' | 'Poslana' | 'Prihvaćena' | 'Odbijena' | 'Istekla';
+  datum_ponude: string;
+  datum_valjanosti?: string;
+  napomena?: string;
+  popust_ukupno: number;
+  pdv_stopa: number;
+  currency: string;
+  created_at: string;
+  updated_at: string;
+  items?: OfferItem[];
+}
+
 // Re-export ContentPost from contentTypes
 export type { ContentPost, ContentGenerationParams, GeneratedContent } from './contentTypes';
