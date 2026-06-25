@@ -535,6 +535,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   };
 
   const saveDraft = async () => {
+    if (isSavingDraft) {
+      // Spriječi dvostruke klikove dok webhook još nije odgovorio
+      return;
+    }
     if (!subject || !emailContent) {
       toast({
         title: "Nedostaju podaci",
@@ -543,6 +547,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       });
       return;
     }
+
+    setIsSavingDraft(true);
 
     const recipientStr = recipients.join(', ') || '';
     const personalizedContent = recipientStr ? personalizeContent(
