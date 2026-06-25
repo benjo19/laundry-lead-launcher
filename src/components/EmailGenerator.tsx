@@ -59,7 +59,8 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [sendStatuses, setSendStatuses] = useState<Record<string, SendStatus>>({});
   const [lastSendError, setLastSendError] = useState<string | null>(null);
   const [lastSendCompletedAt, setLastSendCompletedAt] = useState<Date | null>(null);
-  const [isEquipmentSale, setIsEquipmentSale] = useState<boolean>(false);
+  // Auto-detect equipment sale flow based on selected business profile
+  // Triggers when profile name/company/industry suggests laundry equipment sales (e.g. "Brentareno")
   const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
 
   // Save form data to localStorage with 500ms debounce, ne na svaki keystroke
