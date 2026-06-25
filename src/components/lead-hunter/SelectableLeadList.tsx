@@ -165,26 +165,6 @@ const SelectableLeadList = ({
       />
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border">
-                <TableHead className="w-10"></TableHead>
-                <SortHeader k="company">Tvrtka</SortHeader>
-                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Kontakt
-                </TableHead>
-                <SortHeader k="location">Lokacija</SortHeader>
-                <SortHeader k="status">Status</SortHeader>
-                <SortHeader k="potential">Potencijal</SortHeader>
-                <SortHeader k="dateAdded" className="hidden lg:table-cell">Dodano</SortHeader>
-                <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  Akcije
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
         {/* Desktop / tablet table */}
         <div className="hidden md:block overflow-x-auto">
           <Table>
