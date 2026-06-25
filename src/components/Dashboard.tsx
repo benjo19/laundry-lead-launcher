@@ -366,6 +366,15 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
             />
           </div>
 
+          {/* Sales funnel snapshot */}
+          <SalesFunnel
+            leads={leads}
+            variant="compact"
+            onStageClick={() => onNavigateToModule?.('lead-hunter')}
+          />
+
+
+
           {/* Prioritet danas */}
           <section className="surface-card">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
