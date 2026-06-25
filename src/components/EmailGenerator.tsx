@@ -1214,14 +1214,20 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             {/* Generate Button */}
             <Button 
               onClick={generateEmailContent} 
-              disabled={isGenerating || !isAIConfigured() || 
+              disabled={isGenerating || !isAIConfigured() || !template ||
                 (generationType === 'industry' && !selectedIndustry)}
               className="w-full bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-sm"
+              title={!template ? 'Odaberite predložak (npr. Uvodni email)' : (generationType === 'industry' && !selectedIndustry ? 'Odaberite industriju' : '')}
             >
               <Sparkles className="h-4 w-4 mr-2" />
               {isGenerating ? 'Generiranje AI sadržaja...' : 
                 generationType === 'industry' ? 'Generiraj Template za Industriju' : 'Generiraj Personalizirani Email'}
             </Button>
+            {!template && (
+              <p className="text-xs text-orange-600 font-medium mt-2">
+                ⚠️ Odaberite predložak (Predložak ↑) prije generiranja
+              </p>
+            )}
           </CardContent>
         </Card>
 
