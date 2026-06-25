@@ -334,28 +334,7 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        {[
-          { label: 'Ukupno Leadova', value: leads.length, Icon: Users, tone: 'text-primary bg-primary/10' },
-          { label: 'Zainteresirani', value: leads.filter(l => l.status === 'Zainteresiran').length, Icon: TrendingUp, tone: 'text-success bg-success/10' },
-          { label: 'Novi', value: leads.filter(l => l.status === 'Nova').length, Icon: Search, tone: 'text-warning bg-warning/10' },
-          { label: 'Kontaktirani', value: leads.filter(l => l.status === 'Kontaktiran').length, Icon: Users, tone: 'text-accent-foreground bg-accent' },
-        ].map(({ label, value, Icon, tone }) => (
-          <Card key={label} className="shadow-sm">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tone}`}>
-                  <Icon className="h-5 w-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">{label}</p>
-                  <p className="text-xl sm:text-2xl font-bold text-foreground leading-tight">{value}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <KpiCards leads={leads} />
 
       {/* Sales Funnel */}
       <SalesFunnel
