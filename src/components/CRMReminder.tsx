@@ -226,11 +226,11 @@ const CRMReminder = () => {
       {/* Summary Statistics */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-blue-200 bg-blue-50 dark:bg-blue-950/20 dark:border-blue-900">
-          <CardContent className="pt-4 pb-3">
+          <CardContent className={compact ? "pt-2 pb-2" : "pt-4 pb-3"}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Danas</p>
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                <div className={cn("font-bold text-blue-600 dark:text-blue-400", compact ? "text-lg" : "text-2xl")}>
                   {reminders.filter(r => r.date === new Date().toISOString().split('T')[0] && r.status === 'Aktivan').length}
                 </div>
               </div>
@@ -240,11 +240,11 @@ const CRMReminder = () => {
         </Card>
         
         <Card className="border-orange-200 bg-orange-50 dark:bg-orange-950/20 dark:border-orange-900">
-          <CardContent className="pt-4 pb-3">
+          <CardContent className={compact ? "pt-2 pb-2" : "pt-4 pb-3"}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Visok prioritet</p>
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">
+                <div className={cn("font-bold text-orange-600 dark:text-orange-400", compact ? "text-lg" : "text-2xl")}>
                   {reminders.filter(r => r.priority === 'Visok' && r.status === 'Aktivan').length}
                 </div>
               </div>
@@ -254,11 +254,11 @@ const CRMReminder = () => {
         </Card>
         
         <Card className="border-purple-200 bg-purple-50 dark:bg-purple-950/20 dark:border-purple-900">
-          <CardContent className="pt-4 pb-3">
+          <CardContent className={compact ? "pt-2 pb-2" : "pt-4 pb-3"}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Ovaj tjedan</p>
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                <div className={cn("font-bold text-purple-600 dark:text-purple-400", compact ? "text-lg" : "text-2xl")}>
                   {reminders.filter(r => {
                     const reminderDate = new Date(r.date);
                     const weekFromNow = new Date();
@@ -273,11 +273,11 @@ const CRMReminder = () => {
         </Card>
         
         <Card className="border-green-200 bg-green-50 dark:bg-green-950/20 dark:border-green-900">
-          <CardContent className="pt-4 pb-3">
+          <CardContent className={compact ? "pt-2 pb-2" : "pt-4 pb-3"}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground mb-0.5">Ukupno završeno</p>
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                <div className={cn("font-bold text-green-600 dark:text-green-400", compact ? "text-lg" : "text-2xl")}>
                   {reminders.filter(r => r.status === 'Završen').length}
                 </div>
               </div>
