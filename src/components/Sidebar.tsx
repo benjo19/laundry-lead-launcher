@@ -1,28 +1,26 @@
-
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
-import LanguageToggle from '@/components/LanguageToggle';
-import ThemeToggle from '@/components/ThemeToggle';
-import { 
-  LayoutDashboard, 
-  Search, 
-  Compass, 
-  Mail, 
-  Calendar, 
-  TrendingUp, 
-  BarChart3,
-  Settings,
+import {
+  LayoutDashboard,
+  Users,
+  Briefcase,
+  FileText,
+  CalendarCheck,
+  FolderOpen,
+  Mail,
+  Plug,
+  Settings as SettingsIcon,
   LogOut,
-  User,
+  Shield,
+  ChevronDown,
+  Compass,
   Database,
   Brain,
+  TrendingUp,
+  BarChart3,
   CreditCard,
-  Shield
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -30,111 +28,147 @@ interface SidebarProps {
   onModuleChange: (module: string) => void;
 }
 
+type NavItem = {
+  id: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+};
+
+const primaryNav: NavItem[] = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'lead-hunter', label: 'Leadovi', icon: Users },
+  { id: 'clients', label: 'Klijenti', icon: Briefcase },
+  { id: 'offers', label: 'Ponude', icon: FileText },
+  { id: 'crm-reminder', label: 'Follow-up', icon: CalendarCheck },
+  { id: 'documents', label: 'Dokumenti', icon: FolderOpen },
+  { id: 'email-generator', label: 'AI Mail', icon: Mail },
+  { id: 'integrations', label: 'Integracije', icon: Plug },
+  { id: 'settings', label: 'Postavke', icon: SettingsIcon },
+];
+
+const secondaryNav: NavItem[] = [
+  { id: 'lead-discovery', label: 'Lead Discovery', icon: Compass },
+  { id: 'knowledge-base', label: 'Knowledge Base', icon: Database },
+  { id: 'ai-chat', label: 'AI Asistent', icon: Brain },
+  { id: 'content-booster', label: 'Content Booster', icon: TrendingUp },
+  { id: 'analytics', label: 'Analitika', icon: BarChart3 },
+  { id: 'subscription', label: 'Pretplata', icon: CreditCard },
+];
+
 const Sidebar = ({ activeModule, onModuleChange }: SidebarProps) => {
   const { user, signOut } = useAuthContext();
-  const navigate = useNavigate();
-  const { t } = useLanguage();
   const { isAdmin } = useAdminStatus();
+  const [moreOpen, setMoreOpen] = React.useState(
+    secondaryNav.some((i) => i.id === activeModule)
+  );
 
-  const baseMenuItems = [
-    { id: 'dashboard', label: t('dashboard'), icon: LayoutDashboard },
-    { id: 'lead-hunter', label: t('lead_hunter'), icon: Search },
-    { id: 'lead-discovery', label: t('lead_discovery'), icon: Compass },
-    { id: 'knowledge-base', label: 'Knowledge Base', icon: Database },
-    { id: 'ai-chat', label: 'AI Asistent', icon: Brain },
-    { id: 'email-generator', label: t('email_generator'), icon: Mail },
-    { id: 'crm-reminder', label: 'CRM Datoteke', icon: Calendar },
-    { id: 'content-booster', label: t('content_booster'), icon: TrendingUp },
-    { id: 'analytics', label: t('analytics'), icon: BarChart3 },
-    { id: 'subscription', label: 'Subscription', icon: CreditCard },
-  ];
+  const initials = (user?.user_metadata?.full_name || user?.email || 'BR')
+    .split(/[\s@.]/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s: string) => s[0]?.toUpperCase())
+    .join('');
 
-  // Add Admin Dashboard for admin users
-  const menuItems = isAdmin 
-    ? [...baseMenuItems, { id: 'admin-dashboard', label: 'Admin Dashboard', icon: Shield }]
-    : baseMenuItems;
-
-  const handleSignOut = async () => {
-    await signOut();
-  };
-
-  const handleSettingsClick = () => {
-    navigate('/settings');
+  const renderItem = (item: NavItem) => {
+    const Icon = item.icon;
+    const isActive = activeModule === item.id;
+    return (
+      <button
+        key={item.id}
+        onClick={() => onModuleChange(item.id)}
+        className={cn(
+          'group relative w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+          isActive
+            ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+            : 'text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground'
+        )}
+      >
+        <span
+          className={cn(
+            'absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.5 rounded-r-full transition-all',
+            isActive ? 'bg-sidebar-primary' : 'bg-transparent'
+          )}
+          aria-hidden
+        />
+        <Icon className="h-4 w-4 shrink-0" />
+        <span className="truncate">{item.label}</span>
+      </button>
+    );
   };
 
   return (
-    <div className="w-64 bg-card border-r border-border flex flex-col h-full shadow-elegant">
-      <div className="p-4 sm:p-6 border-b border-border bg-gradient-primary">
-        <div className="flex items-center justify-between">
-          <div className="min-w-0 flex-1">
-            <h1 className="text-lg sm:text-xl font-bold text-primary-foreground truncate">{t('marketing_agent')}</h1>
-            <p className="text-xs sm:text-sm text-primary-foreground/80 mt-1 truncate">{t('ai_assistant')}</p>
+    <aside className="w-64 bg-sidebar flex flex-col h-full border-r border-sidebar-border">
+      {/* Brand */}
+      <div className="px-5 py-5 border-b border-sidebar-border">
+        <div className="flex items-center gap-2.5">
+          <div className="h-9 w-9 rounded-md bg-sidebar-primary/15 border border-sidebar-primary/30 flex items-center justify-center">
+            <span className="text-sidebar-primary text-sm font-bold tracking-tight">B</span>
           </div>
-          <div className="ml-2 shrink-0 flex items-center space-x-2">
-            <ThemeToggle />
-            <LanguageToggle />
+          <div className="min-w-0">
+            <p className="text-sidebar-accent-foreground text-sm font-semibold leading-tight">
+              Brentareno CRM
+            </p>
+            <p className="text-sidebar-foreground/70 text-[11px] leading-tight">
+              Prodajni cockpit
+            </p>
           </div>
         </div>
       </div>
-      
-      <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
-        {menuItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = activeModule === item.id;
-          return (
-            <Button
-              key={item.id}
-              variant={isActive ? "premium" : "ghost"}
+
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto px-2.5 py-4 space-y-0.5">
+        {primaryNav.map(renderItem)}
+
+        {/* Više / secondary */}
+        <div className="pt-4">
+          <button
+            onClick={() => setMoreOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-3 py-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/50 hover:text-sidebar-foreground transition-colors"
+          >
+            <span>Više</span>
+            <ChevronDown
               className={cn(
-                "w-full justify-start text-sm font-medium p-3 h-12 rounded-lg transition-all duration-200",
-                isActive 
-                  ? "shadow-elegant scale-105" 
-                  : "text-muted-foreground hover:text-foreground hover:bg-accent-hover hover:scale-102"
+                'h-3.5 w-3.5 transition-transform',
+                moreOpen ? 'rotate-180' : ''
               )}
-              onClick={() => onModuleChange(item.id)}
-            >
-              <Icon className="h-5 w-5 mr-3 shrink-0" />
-              <span className="truncate">{item.label}</span>
-            </Button>
-          );
-        })}
+            />
+          </button>
+          {moreOpen && (
+            <div className="mt-1 space-y-0.5">
+              {secondaryNav.map(renderItem)}
+              {isAdmin &&
+                renderItem({ id: 'admin-dashboard', label: 'Admin', icon: Shield })}
+            </div>
+          )}
+        </div>
       </nav>
 
-      <div className="p-4 border-t border-border space-y-3 bg-muted/30">
-        <div className="flex items-center space-x-3 p-3 rounded-lg bg-card shadow-sm">
-          <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
-            <User className="h-5 w-5 text-primary-foreground" />
+      {/* User */}
+      <div className="border-t border-sidebar-border p-3">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-md">
+          <div className="h-9 w-9 rounded-full bg-sidebar-primary/20 border border-sidebar-primary/30 flex items-center justify-center shrink-0">
+            <span className="text-sidebar-accent-foreground text-xs font-semibold">
+              {initials || 'U'}
+            </span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">
-              {user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0]}
-              {isAdmin && <span className="ml-2 text-xs text-primary">(Admin)</span>}
+            <p className="text-sidebar-accent-foreground text-sm font-medium truncate">
+              {user?.user_metadata?.full_name ||
+                user?.user_metadata?.name ||
+                user?.email?.split('@')[0]}
             </p>
-            <p className="text-xs text-muted-foreground truncate">
-              {user?.email}
-            </p>
+            <p className="text-sidebar-foreground/60 text-xs truncate">{user?.email}</p>
           </div>
         </div>
-        
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-accent-hover text-sm p-3 h-11 rounded-lg transition-all duration-200"
-          onClick={handleSettingsClick}
+        <button
+          onClick={() => signOut()}
+          className="mt-1 w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium text-sidebar-foreground hover:bg-sidebar-accent/60 hover:text-destructive transition-colors"
         >
-          <Settings className="h-4 w-4 mr-3 shrink-0" />
-          <span className="truncate">{t('settings')}</span>
-        </Button>
-        
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10 text-sm p-3 h-11 rounded-lg transition-all duration-200"
-          onClick={handleSignOut}
-        >
-          <LogOut className="h-4 w-4 mr-3 shrink-0" />
-          <span className="truncate">{t('logout')}</span>
-        </Button>
+          <LogOut className="h-4 w-4" />
+          <span>Odjavi se</span>
+        </button>
       </div>
-    </div>
+    </aside>
   );
 };
 

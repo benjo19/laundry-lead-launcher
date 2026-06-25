@@ -11,44 +11,53 @@ import Settings from '@/components/Settings';
 import KnowledgeBase from '@/components/KnowledgeBase';
 import AIKnowledgeChat from '@/components/AIKnowledgeChat';
 import AdminDashboard from '@/components/AdminDashboard';
+import BusinessDocuments from '@/components/BusinessDocuments';
+import MakeIntegration from '@/components/MakeIntegration';
 
 import MobileHeader from '@/components/MobileHeader';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { HelpChatbox } from '@/components/HelpChatbox';
-import { Lead } from '@/types';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { SubscriptionPlans } from '@/components/SubscriptionPlans';
 import { useLocation } from 'react-router-dom';
 
+const MODULE_TITLES: Record<string, string> = {
+  dashboard: 'Dashboard',
+  'lead-hunter': 'Leadovi',
+  clients: 'Klijenti',
+  offers: 'Ponude',
+  'crm-reminder': 'Follow-up',
+  documents: 'Dokumenti',
+  'email-generator': 'AI Mail',
+  integrations: 'Integracije',
+  settings: 'Postavke',
+  'lead-discovery': 'Lead Discovery',
+  'knowledge-base': 'Knowledge Base',
+  'ai-chat': 'AI Asistent',
+  'content-booster': 'Content Booster',
+  analytics: 'Analitika',
+  subscription: 'Pretplata',
+  'admin-dashboard': 'Admin Dashboard',
+};
+
 const Index = () => {
-  console.log('Index: Component starting to render');
   const location = useLocation();
   const [activeModule, setActiveModule] = useState('dashboard');
-  console.log('Index: Active module state set:', activeModule);
   const { addLead } = useLeadManagement();
-  console.log('Index: useLeadManagement hook called');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
-  console.log('Index: isMobile:', isMobile);
-  const { t } = useLanguage();
-  console.log('Index: useLanguage hook called');
 
-  // Check if coming from /admin route and set admin-dashboard as active module
   useEffect(() => {
     if (location.pathname === '/admin') {
       setActiveModule('admin-dashboard');
     }
   }, [location]);
-  
-  // State for passing email data to EmailGenerator
+
   const [emailGeneratorData, setEmailGeneratorData] = useState<{
     email?: string;
     company?: string;
   }>({});
-
 
   const handleNavigateToEmailGenerator = (email: string, company: string) => {
     setEmailGeneratorData({ email, company });
@@ -66,107 +75,108 @@ const Index = () => {
     if (isMobile) setSidebarOpen(false);
   };
 
-  const getModuleTitle = () => {
-    switch (activeModule) {
-      case 'dashboard': return t('dashboard');
-      case 'lead-hunter': return t('lead_hunter');
-      case 'lead-discovery': return t('lead_discovery');
-      case 'knowledge-base': return 'Knowledge Base';
-      case 'ai-chat': return 'AI Asistent';
-      case 'email-generator': return t('email_generator');
-      case 'crm-reminder': return 'CRM Datoteke';
-      case 'content-booster': return t('content_booster');
-      case 'analytics': return t('analytics');
-      case 'settings': return t('settings');
-      case 'subscription': return 'Subscription';
-      case 'admin-dashboard': return 'Admin Dashboard';
-      default: return t('marketing_agent');
-    }
-  };
+  const getModuleTitle = () => MODULE_TITLES[activeModule] ?? 'Brentareno CRM';
 
   const renderActiveModule = () => {
     try {
-      console.log('Index: Rendering module:', activeModule);
       switch (activeModule) {
         case 'dashboard':
-          console.log('Index: Rendering Dashboard');
           return <Dashboard onNavigateToModule={handleNavigateToModule} />;
         case 'lead-hunter':
-          console.log('Index: Rendering LeadHunter');
           return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
-        case 'lead-discovery':
-          console.log('Index: Rendering LeadDiscovery');
-          return <LeadDiscovery onAddLead={addLead} onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
-        case 'knowledge-base':
-          console.log('Index: Rendering KnowledgeBase');
-          return <KnowledgeBase />;
-        case 'ai-chat':
-          console.log('Index: Rendering AIKnowledgeChat');
-          return <AIKnowledgeChat />;
-        case 'email-generator':
-          console.log('Index: Rendering EmailGenerator');
+        case 'clients':
+          // Placeholder — bit će zamijenjeno dedicated Klijenti stranicom u idućoj fazi
+          return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
+        case 'offers':
+          // Placeholder — bit će zamijenjeno Ponude Kanbanom
           return (
-            <EmailGenerator 
+            <div className="p-6">
+              <div className="surface-card p-8 text-center">
+                <h2 className="text-xl font-semibold mb-2">Ponude</h2>
+                <p className="text-sm text-muted-foreground">
+                  Pipeline ponuda (Kanban) dolazi u sljedećoj fazi redizajna.
+                </p>
+              </div>
+            </div>
+          );
+        case 'crm-reminder':
+          return <CRMReminder />;
+        case 'documents':
+          return <BusinessDocuments />;
+        case 'email-generator':
+          return (
+            <EmailGenerator
               preSelectedEmail={emailGeneratorData.email}
               preSelectedCompany={emailGeneratorData.company}
             />
           );
-        case 'crm-reminder':
-          console.log('Index: Rendering CRMReminder');
-          return <CRMReminder />;
+        case 'integrations':
+          return (
+            <div className="p-6">
+              <MakeIntegration />
+            </div>
+          );
+        case 'settings':
+          return <Settings />;
+        case 'lead-discovery':
+          return (
+            <LeadDiscovery
+              onAddLead={addLead}
+              onNavigateToEmailGenerator={handleNavigateToEmailGenerator}
+            />
+          );
+        case 'knowledge-base':
+          return <KnowledgeBase />;
+        case 'ai-chat':
+          return <AIKnowledgeChat />;
         case 'content-booster':
-          console.log('Index: Rendering ContentBooster');
           return <ContentBooster />;
         case 'analytics':
-          console.log('Index: Rendering Analytics');
           return <Analytics />;
-        case 'settings':
-          console.log('Index: Rendering Settings');
-          return <Settings />;
         case 'subscription':
-          console.log('Index: Rendering SubscriptionPlans');
           return <SubscriptionPlans />;
         case 'admin-dashboard':
-          console.log('Index: Rendering AdminDashboard');
           return <AdminDashboard />;
         default:
-          console.log('Index: Rendering default Dashboard');
           return <Dashboard onNavigateToModule={handleNavigateToModule} />;
       }
     } catch (error) {
       console.error('Index: Error rendering module:', error);
       return (
         <div className="p-6">
-          <h2 className="text-xl font-bold text-destructive mb-4">Greška pri učitavanju modula</h2>
-          <p className="text-muted-foreground mb-4">Dogodila se greška: {error?.toString()}</p>
-          <button 
-            onClick={() => setActiveModule('dashboard')} 
-            className="px-4 py-2 bg-primary text-primary-foreground rounded"
-          >
-            Povratak na Dashboard
-          </button>
+          <div className="surface-card p-6">
+            <h2 className="text-lg font-semibold text-destructive mb-2">
+              Greška pri učitavanju modula
+            </h2>
+            <p className="text-sm text-muted-foreground mb-4">{error?.toString()}</p>
+            <button
+              onClick={() => setActiveModule('dashboard')}
+              className="px-4 py-2 bg-primary text-primary-foreground rounded-md text-sm font-medium hover:bg-primary-hover transition-colors"
+            >
+              Povratak na Dashboard
+            </button>
+          </div>
         </div>
       );
     }
   };
 
-  console.log('Index: About to render, isMobile:', isMobile);
   if (isMobile) {
     return (
       <div className="flex min-h-screen bg-background w-full">
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <div className="flex-1 flex flex-col min-w-0">
-            <MobileHeader 
+            <MobileHeader
               onMenuClick={() => setSidebarOpen(true)}
               title={getModuleTitle()}
             />
-            <main className="flex-1 overflow-auto p-2 sm:p-3 md:p-4 bg-app-gradient">
+            <main className="flex-1 overflow-auto bg-background">
               <div className="animate-fade-in w-full max-w-full">
                 {renderActiveModule()}
               </div>
             </main>
           </div>
-          <SheetContent side="left" className="w-[280px] sm:w-80 p-0 border-r border-border/40">
+          <SheetContent side="left" className="w-[280px] sm:w-80 p-0 border-r border-sidebar-border">
             <Sidebar activeModule={activeModule} onModuleChange={handleModuleChange} />
           </SheetContent>
         </Sheet>
@@ -178,10 +188,8 @@ const Index = () => {
   return (
     <div className="flex min-h-screen bg-background w-full">
       <Sidebar activeModule={activeModule} onModuleChange={setActiveModule} />
-      <main className="flex-1 overflow-auto min-w-0 bg-app-gradient">
-        <div className="animate-fade-in">
-          {renderActiveModule()}
-        </div>
+      <main className="flex-1 overflow-auto min-w-0 bg-background">
+        <div className="animate-fade-in">{renderActiveModule()}</div>
       </main>
       <HelpChatbox />
     </div>
