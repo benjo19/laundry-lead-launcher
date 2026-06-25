@@ -19,7 +19,11 @@ export function useDensity() {
     } catch {
       /* ignore */
     }
+    if (typeof document !== 'undefined') {
+      document.documentElement.dataset.density = density;
+    }
   }, [density]);
+
 
   // Cross-tab / cross-component sync
   useEffect(() => {
