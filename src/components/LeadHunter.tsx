@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, Users, Search, TrendingUp, GitMerge } from 'lucide-react';
+import { Plus, Users, Search, TrendingUp, GitMerge, FileSpreadsheet } from 'lucide-react';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useToast } from '@/hooks/use-toast';
@@ -236,6 +236,56 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
   };
 
 
+  const handleExportCSV = () => {
+    if (filteredLeads.length === 0) {
+      toast({
+        title: "Nema leadova za izvoz",
+        description: "Trenutno nema leadova koji odgovaraju filterima.",
+      });
+      return;
+    }
+
+    const escapeCsv = (value: string | null | undefined) => {
+      const str = value == null ? "" : String(value);
+      if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headers = ["Tvrtka", "Email", "Telefon", "Lokacija", "Broj zaposlenika", "Tip poslovanja", "Status", "Potencijal", "Datum dodavanja", "Bilješke", "Website"];
+    const rows = filteredLeads.map(lead => [
+      lead.company,
+      lead.email,
+      lead.phone,
+      lead.location,
+      lead.employees,
+      lead.industry,
+      lead.status,
+      lead.potential,
+      lead.dateAdded,
+      lead.notes,
+      lead.website
+    ].map(escapeCsv));
+
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `leadovi-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV izvezen",
+      description: `Izvezeno ${filteredLeads.length} leadova.`,
+    });
+  };
+
+
   if (loading) {
     return (
       <div className="p-6">
@@ -277,6 +327,14 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
           >
             <GitMerge className="h-4 w-4" />
             Pronađi duplikate
+          </Button>
+          <Button
+            onClick={handleExportCSV}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Izvezi CSV
           </Button>
           <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
