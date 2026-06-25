@@ -574,7 +574,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       }),
     };
 
-    await triggerWebhook('draft', draftData);
+    let webhookOk = false;
+    try {
+      webhookOk = await triggerWebhook(isEquipmentSale ? 'equipment_sale' : 'draft', draftData);
+    } catch (err: any) {
+      console.error('Draft webhook error:', err);
+      toast({
+        title: "Greška pri slanju drafta na webhook",
+        description: err?.message || 'Nepoznata greška.',
+        variant: "destructive",
+      });
+    }
 
     if (editingDraftId) {
       setEmails(emails.map(email => 
@@ -584,7 +594,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       ));
       toast({
         title: "Draft ažuriran",
-        description: "Email draft je uspješno ažuriran i poslan na webhook.",
+        description: webhookOk
+          ? "Draft je ažuriran i poslan na webhook."
+          : "Draft je ažuriran lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.",
+        variant: webhookOk ? "default" : "destructive",
       });
     } else {
       const draft: Email = {
@@ -599,12 +612,14 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       setEmails([draft, ...emails]);
       toast({
         title: "Draft spremljen",
-        description: recipientStr
-          ? "Email draft je uspješno spremljen i poslan na webhook."
-          : "Email draft je spremljen. Dodajte primatelja prije slanja.",
+        description: webhookOk
+          ? "Draft je spremljen i poslan na webhook."
+          : "Draft je spremljen lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.",
+        variant: webhookOk ? "default" : "destructive",
       });
     }
   };
+
 
   const editDraft = (email: Email) => {
     const parsedRecipients = email.to === 'Bez primatelja' ? [] : email.to.split(',').map(e => e.trim()).filter(Boolean);
