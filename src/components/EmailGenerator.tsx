@@ -76,12 +76,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recipients, selectedCompany, subject, emailContent, template]);
 
-  // Override with pre-selected values when they change
+  // Override with pre-selected values when they change (clicking "Kontakt" on a lead)
   useEffect(() => {
     if (preSelectedEmail && !recipients.includes(preSelectedEmail)) {
       setRecipients(prev => [...prev, preSelectedEmail]);
     }
     if (preSelectedCompany) setSelectedCompany(preSelectedCompany);
+    // Auto-pripremi: ako još nije izabran template, postavi 'intro' da korisnik može odmah generirati
+    if (preSelectedEmail && !template) {
+      setTemplate('intro');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preSelectedEmail, preSelectedCompany]);
 
   // Backfill: when leads load, mark any 'Nova' lead whose email already received a sent email as 'Kontaktiran'
@@ -643,6 +648,28 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       setIsSavingDraft(false);
     }
 
+    // Auto-update lead status: 'Nova' / 'Kvalificiran' -> 'Kontaktiran' za sve primatelje koje smo upravo draftali
+    let draftLeadsUpdated = 0;
+    if (recipients.length > 0) {
+      const recipientEmailsLc = new Set(recipients.map(r => r.trim().toLowerCase()));
+      const draftLeadsToUpdate = leads.filter(
+        l =>
+          l.email &&
+          recipientEmailsLc.has(l.email.trim().toLowerCase()) &&
+          (l.status === 'Nova' || l.status === 'Kvalificiran')
+      );
+      for (const lead of draftLeadsToUpdate) {
+        try {
+          await updateLeadStatus(lead.id, 'Kontaktiran');
+          draftLeadsUpdated++;
+        } catch (e) {
+          console.error('Failed to auto-update lead status on draft:', lead.company, e);
+        }
+      }
+    }
+
+
+
     if (editingDraftId) {
       setEmails(emails.map(email => 
         email.id === editingDraftId 
@@ -651,9 +678,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       ));
       toast({
         title: "Draft ažuriran",
-        description: webhookOk
-          ? "Draft je ažuriran i poslan na webhook."
-          : "Draft je ažuriran lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.",
+        description:
+          (webhookOk
+            ? "Draft je ažuriran i poslan na webhook."
+            : "Draft je ažuriran lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.") +
+          (draftLeadsUpdated > 0 ? ` Status ažuriran za ${draftLeadsUpdated} lead(ova).` : ''),
         variant: webhookOk ? "default" : "destructive",
       });
     } else {
@@ -669,9 +698,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       setEmails([draft, ...emails]);
       toast({
         title: "Draft spremljen",
-        description: webhookOk
-          ? "Draft je spremljen i poslan na webhook."
-          : "Draft je spremljen lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.",
+        description:
+          (webhookOk
+            ? "Draft je spremljen i poslan na webhook."
+            : "Draft je spremljen lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.") +
+          (draftLeadsUpdated > 0 ? ` Status ažuriran za ${draftLeadsUpdated} lead(ova).` : ''),
         variant: webhookOk ? "default" : "destructive",
       });
     }
