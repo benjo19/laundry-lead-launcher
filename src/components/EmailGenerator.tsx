@@ -259,6 +259,15 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     }
 
     setIsGenerating(true);
+    // Safety net: forsiraj otključavanje gumba nakon 60s, čak i ako poziv nikad ne resolve-a
+    const safetyTimer = window.setTimeout(() => {
+      setIsGenerating(false);
+      toast({
+        title: "Generiranje predugo traje",
+        description: "Otključao sam gumb. Pokušajte ponovno — ako se ponovi, osvježite stranicu.",
+        variant: "destructive",
+      });
+    }, 60000);
     
     try {
       let industry = 'općenito';
@@ -316,6 +325,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     } catch (error) {
       console.error('AI generation error:', error);
     } finally {
+      window.clearTimeout(safetyTimer);
       setIsGenerating(false);
     }
   };
