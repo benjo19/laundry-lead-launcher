@@ -82,6 +82,7 @@ export const performLeadSearch = async (
         geometry: place.geometry,
         business_status: place.business_status,
         user_ratings_total: place.user_ratings_total,
+        address_components: place.address_components || [],
       };
 
       let emailSource = '';
