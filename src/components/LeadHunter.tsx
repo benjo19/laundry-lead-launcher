@@ -288,98 +288,71 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto w-full max-w-[1400px] space-y-5 px-3 sm:px-5 lg:px-6 py-4">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">Leadovi</h1>
-          <p className="text-sm text-muted-foreground">Prodajni pipeline i upravljanje potencijalnim klijentima</p>
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-foreground leading-tight">Leadovi</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">Prodajni pipeline i upravljanje potencijalnim klijentima</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2">
           <Input
             placeholder="Pretraži leadove..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-64"
+            className="w-full sm:w-56 lg:w-64"
           />
-          <Button
-            onClick={() => setIsDuplicateDialogOpen(true)}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <GitMerge className="h-4 w-4" />
-            Pronađi duplikate
-          </Button>
-          <Button
-            onClick={handleExportCSV}
-            variant="outline"
-            className="flex items-center gap-2"
-          >
-            <FileSpreadsheet className="h-4 w-4" />
-            Izvezi CSV
-          </Button>
-          <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Dodaj Lead
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={() => setIsDuplicateDialogOpen(true)}
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none flex items-center gap-2"
+            >
+              <GitMerge className="h-4 w-4" />
+              <span className="hidden sm:inline">Pronađi duplikate</span>
+              <span className="sm:hidden">Duplikati</span>
+            </Button>
+            <Button
+              onClick={handleExportCSV}
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none flex items-center gap-2"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              <span className="hidden sm:inline">Izvezi CSV</span>
+              <span className="sm:hidden">CSV</span>
+            </Button>
+            <Button onClick={() => setIsAddDialogOpen(true)} size="sm" className="flex-1 sm:flex-none flex items-center gap-2">
+              <Plus className="h-4 w-4" />
+              Dodaj Lead
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-blue-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Ukupno Leadova</p>
-                <p className="text-2xl font-bold text-slate-900">{leads.length}</p>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {[
+          { label: 'Ukupno Leadova', value: leads.length, Icon: Users, tone: 'text-primary bg-primary/10' },
+          { label: 'Zainteresirani', value: leads.filter(l => l.status === 'Zainteresiran').length, Icon: TrendingUp, tone: 'text-success bg-success/10' },
+          { label: 'Novi', value: leads.filter(l => l.status === 'Nova').length, Icon: Search, tone: 'text-warning bg-warning/10' },
+          { label: 'Kontaktirani', value: leads.filter(l => l.status === 'Kontaktiran').length, Icon: Users, tone: 'text-accent-foreground bg-accent' },
+        ].map(({ label, value, Icon, tone }) => (
+          <Card key={label} className="shadow-sm">
+            <CardContent className="p-3 sm:p-4">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${tone}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">{label}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-foreground leading-tight">{value}</p>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Zainteresirani</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {leads.filter(lead => lead.status === 'Zainteresiran').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Search className="h-8 w-8 text-orange-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Novi</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {leads.filter(lead => lead.status === 'Nova').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center">
-              <Users className="h-8 w-8 text-purple-600" />
-              <div className="ml-4">
-                <p className="text-sm font-medium text-slate-600">Kontaktirani</p>
-                <p className="text-2xl font-bold text-slate-900">
-                  {leads.filter(lead => lead.status === 'Kontaktiran').length}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
       {/* Sales Funnel */}
@@ -387,8 +360,6 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         leads={leads}
         onStageClick={(status) => setSelectedStatus(status)}
       />
-
-
 
       {/* Filters */}
       <LeadFilters
@@ -424,9 +395,9 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
 
       {/* Search Results Info */}
       {debouncedSearchQuery && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-          <p className="text-sm text-blue-800">
-            Prikazano {filteredLeads.length} od {leads.length} leadova za pretraživanje "{debouncedSearchQuery}"
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-3 py-2">
+          <p className="text-xs sm:text-sm text-foreground">
+            Prikazano <span className="font-semibold">{filteredLeads.length}</span> od {leads.length} leadova za "{debouncedSearchQuery}"
           </p>
         </div>
       )}
