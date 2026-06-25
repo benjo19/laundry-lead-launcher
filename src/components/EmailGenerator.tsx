@@ -693,9 +693,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       setEmails([draft, ...emails]);
       toast({
         title: "Draft spremljen",
-        description: webhookOk
-          ? "Draft je spremljen i poslan na webhook."
-          : "Draft je spremljen lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.",
+        description:
+          (webhookOk
+            ? "Draft je spremljen i poslan na webhook."
+            : "Draft je spremljen lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.") +
+          (draftLeadsUpdated > 0 ? ` Status ažuriran za ${draftLeadsUpdated} lead(ova).` : ''),
         variant: webhookOk ? "default" : "destructive",
       });
     }
