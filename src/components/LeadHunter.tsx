@@ -19,6 +19,37 @@ import { Lead } from '@/types';
 import { parseLocation } from '@/utils/locationParser';
 import SalesFunnel from '@/components/SalesFunnel';
 import DensityToggle from '@/components/ui/density-toggle';
+import { useDensity } from '@/hooks/useDensity';
+
+const KpiCards = ({ leads }: { leads: Lead[] }) => {
+  const { density } = useDensity();
+  const compact = density === 'compact';
+  const items = [
+    { label: 'Ukupno Leadova', value: leads.length, Icon: Users, tone: 'text-primary bg-primary/10' },
+    { label: 'Zainteresirani', value: leads.filter(l => l.status === 'Zainteresiran').length, Icon: TrendingUp, tone: 'text-success bg-success/10' },
+    { label: 'Novi', value: leads.filter(l => l.status === 'Nova').length, Icon: Search, tone: 'text-warning bg-warning/10' },
+    { label: 'Kontaktirani', value: leads.filter(l => l.status === 'Kontaktiran').length, Icon: Users, tone: 'text-accent-foreground bg-accent' },
+  ];
+  return (
+    <div className={`grid grid-cols-2 lg:grid-cols-4 ${compact ? 'gap-2' : 'gap-3'}`}>
+      {items.map(({ label, value, Icon, tone }) => (
+        <Card key={label} className="shadow-sm">
+          <CardContent className={compact ? 'p-2.5' : 'p-3 sm:p-4'}>
+            <div className={`flex items-center ${compact ? 'gap-2' : 'gap-3'}`}>
+              <div className={`flex shrink-0 items-center justify-center rounded-lg ${tone} ${compact ? 'h-8 w-8' : 'h-10 w-10'}`}>
+                <Icon className={compact ? 'h-4 w-4' : 'h-5 w-5'} />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] sm:text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">{label}</p>
+                <p className={`font-bold text-foreground leading-tight ${compact ? 'text-lg' : 'text-xl sm:text-2xl'}`}>{value}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+    </div>
+  );
+};
 
 interface LeadHunterProps {
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
