@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail, Phone, MapPin, Globe, Users, Building2, Calendar, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { LEAD_STATUS_OPTIONS } from '@/lib/leadStatus';
 
 interface LeadDetailDialogProps {
   lead: Lead | null;
@@ -206,11 +207,14 @@ const LeadDetailDialog = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Nova">Nova</SelectItem>
-                <SelectItem value="Kontaktiran">Kontaktiran</SelectItem>
-                <SelectItem value="Zainteresiran">Zainteresiran</SelectItem>
-                <SelectItem value="Odbačen">Odbačen</SelectItem>
-                <SelectItem value="Zatvoren">Zatvoren</SelectItem>
+                {LEAD_STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${opt.dotClass}`} />
+                      {opt.label}
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>

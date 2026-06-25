@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trash2, CheckSquare, Square, Sparkles, Loader2 } from 'lucide-react';
 import { Lead } from '@/types';
+import { LEAD_STATUS_OPTIONS } from '@/lib/leadStatus';
 
 interface BulkOperationsProps {
   selectedLeads: number[];
@@ -69,11 +70,14 @@ const BulkOperations = ({
               <SelectValue placeholder="Promijeni status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="Nova">Nova</SelectItem>
-              <SelectItem value="Kontaktiran">Kontaktiran</SelectItem>
-              <SelectItem value="Zainteresiran">Zainteresiran</SelectItem>
-              <SelectItem value="Odbačen">Odbačen</SelectItem>
-              <SelectItem value="Zatvoren">Zatvoren</SelectItem>
+              {LEAD_STATUS_OPTIONS.map((opt) => (
+                <SelectItem key={opt.value} value={opt.value}>
+                  <div className="flex items-center gap-2">
+                    <span className={`h-2 w-2 rounded-full ${opt.dotClass}`} />
+                    {opt.label}
+                  </div>
+                </SelectItem>
+              ))}
             </SelectContent>
           </Select>
 
