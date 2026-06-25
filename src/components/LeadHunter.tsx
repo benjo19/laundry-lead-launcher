@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Lead } from '@/types';
 import { parseLocation } from '@/utils/locationParser';
 import SalesFunnel from '@/components/SalesFunnel';
+import DensityToggle from '@/components/ui/density-toggle';
 
 interface LeadHunterProps {
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
