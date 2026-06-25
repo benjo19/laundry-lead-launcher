@@ -697,38 +697,6 @@ const MakeIntegration = () => {
             </div>
           </div>
 
-          {/* Equipment Sales Integration Section */}
-          <div className="border-t pt-6 mt-6">
-            <div className="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4">
-              <h4 className="font-medium text-amber-900 mb-2">🧺 Prodaja opreme za pranje</h4>
-              <p className="text-sm text-amber-800">
-                Zaseban webhook za emailove vezane uz prodaju opreme za pranje. Koristi isti payload format kao Email integracija.
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="equipment_sales_webhook_url">Equipment Sales Webhook URL</Label>
-              <Input
-                id="equipment_sales_webhook_url"
-                type="url"
-                value={settings.equipment_sales_webhook_url || ''}
-                onChange={(e) => setSettings({ ...settings, equipment_sales_webhook_url: e.target.value })}
-                placeholder="https://hook.eu2.make.com/xxxxxxxx"
-                className="mt-1"
-              />
-            </div>
-
-            <div className="flex items-center space-x-2 mt-4">
-              <input
-                type="checkbox"
-                id="equipment_sales_auto_trigger"
-                checked={settings.equipment_sales_auto_trigger || false}
-                onChange={(e) => setSettings({ ...settings, equipment_sales_auto_trigger: e.target.checked })}
-                className="rounded"
-              />
-              <Label htmlFor="equipment_sales_auto_trigger">Automatski šalji emailove o prodaji opreme na webhook</Label>
-            </div>
-          </div>
 
           {/* Content Booster Integration Section */}
           <div className="border-t pt-6 mt-6">
