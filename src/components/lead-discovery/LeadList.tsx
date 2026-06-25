@@ -1,9 +1,11 @@
 
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 import LeadCard from './LeadCard';
-import { Search, Brain } from 'lucide-react';
+import { Search, Brain, FileSpreadsheet } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 interface LeadListProps {
   discoveredLeads: AnalyzedLead[];
