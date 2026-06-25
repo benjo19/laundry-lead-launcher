@@ -59,7 +59,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [sendStatuses, setSendStatuses] = useState<Record<string, SendStatus>>({});
   const [lastSendError, setLastSendError] = useState<string | null>(null);
   const [lastSendCompletedAt, setLastSendCompletedAt] = useState<Date | null>(null);
-  const [isEquipmentSale, setIsEquipmentSale] = useState<boolean>(false);
   const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
 
   // Save form data to localStorage with 500ms debounce, ne na svaki keystroke
@@ -134,6 +133,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { aiSettings, isAIConfigured } = useAISettings();
   const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
   const { triggerWebhook } = useMakeIntegration();
+
+  // Auto-detect equipment sale flow from selected business profile (e.g. Brentareno / praonice rublja)
+  const isEquipmentSale = (() => {
+    if (!selectedProfile) return false;
+    const haystack = `${selectedProfile.name || ''} ${selectedProfile.company_name || ''} ${selectedProfile.industry || ''}`.toLowerCase();
+    return /brentareno|oprema za pran|praonic|laundry equipment/.test(haystack);
+  })();
 
   // Backfill efekt: ne blokira UI — koristi requestIdleCallback i ograničava obim.
   useEffect(() => {
@@ -1340,18 +1346,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               </div>
             )}
 
-            <div className="flex items-center space-x-2 p-3 rounded-lg border border-amber-200 bg-amber-50">
-              <input
-                type="checkbox"
-                id="is_equipment_sale"
-                checked={isEquipmentSale}
-                onChange={(e) => setIsEquipmentSale(e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="is_equipment_sale" className="text-sm font-medium text-amber-900 cursor-pointer">
-                🧺 Prodaja opreme za pranje (označi u payloadu za routing u Make.com)
-              </label>
-            </div>
+            {isEquipmentSale && (
+              <div className="flex items-center space-x-2 p-3 rounded-lg border border-amber-200 bg-amber-50">
+                <span className="text-sm font-medium text-amber-900">
+                  🧺 Automatski označeno: Prodaja opreme za pranje (routing u Make.com prema profilu "{selectedProfile?.name}")
+                </span>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               <Button 
