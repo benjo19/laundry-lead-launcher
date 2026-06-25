@@ -1346,18 +1346,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               </div>
             )}
 
-            <div className="flex items-center space-x-2 p-3 rounded-lg border border-amber-200 bg-amber-50">
-              <input
-                type="checkbox"
-                id="is_equipment_sale"
-                checked={isEquipmentSale}
-                onChange={(e) => setIsEquipmentSale(e.target.checked)}
-                className="rounded"
-              />
-              <label htmlFor="is_equipment_sale" className="text-sm font-medium text-amber-900 cursor-pointer">
-                🧺 Prodaja opreme za pranje (označi u payloadu za routing u Make.com)
-              </label>
-            </div>
+            {isEquipmentSale && (
+              <div className="flex items-center space-x-2 p-3 rounded-lg border border-amber-200 bg-amber-50">
+                <span className="text-sm font-medium text-amber-900">
+                  🧺 Automatski označeno: Prodaja opreme za pranje (routing u Make.com prema profilu "{selectedProfile?.name}")
+                </span>
+              </div>
+            )}
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               <Button 
