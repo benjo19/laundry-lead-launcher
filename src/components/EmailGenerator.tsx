@@ -62,16 +62,20 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [isEquipmentSale, setIsEquipmentSale] = useState<boolean>(false);
   const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
 
-  // Save form data to localStorage whenever fields change
+  // Save form data to localStorage with 500ms debounce, ne na svaki keystroke
   useEffect(() => {
-    setSavedFormData({
-      recipients,
-      selectedCompany,
-      subject,
-      emailContent,
-      template
-    });
-  }, [recipients, selectedCompany, subject, emailContent, template, setSavedFormData]);
+    const handle = setTimeout(() => {
+      setSavedFormData({
+        recipients,
+        selectedCompany,
+        subject,
+        emailContent,
+        template
+      });
+    }, 500);
+    return () => clearTimeout(handle);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recipients, selectedCompany, subject, emailContent, template]);
 
   // Override with pre-selected values when they change
   useEffect(() => {
@@ -131,19 +135,30 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
   const { triggerWebhook } = useMakeIntegration();
 
-  // Backfill effect: once leads are loaded, find any 'Nova' lead whose email already received a 'Sent' email
-  // and bump its status to 'Kontaktiran'. Runs once per mount.
+  // Backfill efekt: ne blokira UI — koristi requestIdleCallback i ograničava obim.
   useEffect(() => {
     if (hasBackfilled) return;
     if (!leads || leads.length === 0) return;
+    if (leads.length > 1000) {
+      // Preskoči backfill za jako velike baze — preskupo bi bilo na svakom mountu
+      setHasBackfilled(true);
+      return;
+    }
 
     let cancelled = false;
-    (async () => {
+    const ric: (cb: () => void) => number =
+      (window as any).requestIdleCallback || ((cb: () => void) => window.setTimeout(cb, 200));
+    const cic: (id: number) => void =
+      (window as any).cancelIdleCallback || window.clearTimeout;
+
+    const handle = ric(async () => {
       try {
         const { data: sentEmails, error } = await supabase
           .from('emails')
           .select('to_email')
-          .eq('status', 'Sent');
+          .eq('status', 'Sent')
+          .order('created_at', { ascending: false })
+          .limit(500);
 
         if (error) {
           console.error('Backfill: failed to fetch sent emails', error);
@@ -158,29 +173,20 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
             .filter(Boolean)
         );
 
-        if (sentSet.size === 0) {
-          setHasBackfilled(true);
-          return;
-        }
+        if (sentSet.size === 0) return;
 
         const candidates = leads.filter(
           l => l.status === 'Nova' && l.email && sentSet.has(l.email.trim().toLowerCase())
         );
 
-        if (candidates.length === 0) {
-          setHasBackfilled(true);
-          return;
-        }
+        if (candidates.length === 0) return;
 
         console.log(`📬 Backfill: updating ${candidates.length} lead(s) Nova → Kontaktiran`);
-        for (const lead of candidates) {
-          try {
-            await updateLeadStatus(lead.id, 'Kontaktiran');
-          } catch (e) {
-            console.error('Backfill update failed for', lead.company, e);
-          }
-        }
-        if (!cancelled && candidates.length > 0) {
+        // Paralelno, ne sekvencijalno
+        await Promise.allSettled(
+          candidates.map(lead => updateLeadStatus(lead.id, 'Kontaktiran'))
+        );
+        if (!cancelled) {
           toast({
             title: 'Statusi sinkronizirani',
             description: `${candidates.length} lead(ova) automatski označeno kao Kontaktiran (već primili email).`,
@@ -189,10 +195,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       } finally {
         if (!cancelled) setHasBackfilled(true);
       }
-    })();
+    });
 
     return () => {
       cancelled = true;
+      cic(handle);
     };
   }, [leads, hasBackfilled, updateLeadStatus, toast]);
 
