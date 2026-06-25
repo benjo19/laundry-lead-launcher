@@ -328,6 +328,14 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
             <GitMerge className="h-4 w-4" />
             Pronađi duplikate
           </Button>
+          <Button
+            onClick={handleExportCSV}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            Izvezi CSV
+          </Button>
           <Button onClick={() => setIsAddDialogOpen(true)} className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
             Dodaj Lead
