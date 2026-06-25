@@ -441,9 +441,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         ...(primaryRecipient?.client_name && {
           client_name: primaryRecipient.client_name
         }),
+        ...(isEquipmentSale && { is_equipment_sale: true }),
       };
 
-      const webhookTriggered = await triggerWebhook(isEquipmentSale ? 'equipment_sale' : 'sent', bulkPayload);
+      const webhookTriggered = await triggerWebhook('sent', bulkPayload);
 
       if (!webhookTriggered) {
         // Označi sve kao neuspjeh u UI-u
