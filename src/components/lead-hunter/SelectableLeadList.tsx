@@ -15,6 +15,7 @@ import { Mail, Phone, MapPin, Trash2, ArrowUpDown, ExternalLink, Inbox, Flame, C
 import LeadDetailDialog from './LeadDetailDialog';
 import { LEAD_STATUS_OPTIONS, getStatusMeta, POTENTIAL_META } from '@/lib/leadStatus';
 import { parseLocation } from '@/utils/locationParser';
+import { useDensity } from '@/hooks/useDensity';
 
 type Priority = 'hot' | 'warm' | 'cold';
 
