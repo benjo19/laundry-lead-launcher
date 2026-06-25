@@ -100,7 +100,7 @@ export const useMakeIntegration = () => {
       let unifiedData: MakeWebhookData;
       const hasImageBlob = data.image instanceof Blob;
 
-      if (isEmailEvent || isEquipmentEvent) {
+      if (isEmailEvent) {
         const recipientsList = data.recipients || [{ to_email: data.to_email || '' }];
         const toEmailsList = recipientsList
           .flatMap((r: any) => {
