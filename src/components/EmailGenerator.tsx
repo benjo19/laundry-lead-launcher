@@ -522,7 +522,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
       toast({
         title: "Emailovi poslani",
-        description: `Uspješno poslano: ${successCount}${failCount > 0 ? `, neuspješno: ${failCount}` : ''} od ${recipients.length} primatelja.${leadsToUpdate.length > 0 ? ` Status ažuriran za ${leadsToUpdate.length} lead(ova).` : ''}`,
+        description: `Uspješno poslano: ${successCount}${failCount > 0 ? `, neuspješno: ${failCount}` : ''} od ${recipients.length} primatelja.${leadsToUpdate.length > 0 ? ` ${leadsToUpdate.length} lead(ova) prebačeno u "Ponuda poslana".` : ''}`,
       });
 
     } catch (error) {
