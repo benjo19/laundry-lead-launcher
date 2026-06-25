@@ -15,7 +15,7 @@ const requestSchema = z.object({
   maxResults: z.number().int().min(1).max(20).optional().default(10),
 });
 
-const detailsFields = 'name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours';
+const detailsFields = 'name,formatted_address,formatted_phone_number,website,rating,user_ratings_total,types,geometry,business_status,opening_hours,address_components';
 
 async function fetchJsonWithTimeout(url: string, timeoutMs = 15000) {
   const controller = new AbortController();
@@ -147,6 +147,7 @@ serve(async (req) => {
             geometry: place.geometry || details?.geometry,
             business_status: place.business_status || details?.business_status,
             user_ratings_total: place.user_ratings_total || details?.user_ratings_total,
+            address_components: details?.address_components || place.address_components || [],
           };
         } catch (error) {
           console.error('[google-maps-lead-search] Place details failed:', place.place_id, error);

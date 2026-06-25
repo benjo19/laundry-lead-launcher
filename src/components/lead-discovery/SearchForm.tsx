@@ -32,6 +32,7 @@ export interface DiscoveredLead {
   geometry?: any;
   business_status?: string;
   user_ratings_total?: number;
+  address_components?: Array<{ long_name: string; short_name: string; types: string[] }>;
 }
 
 // Export industries from IndustrySelector for consistency

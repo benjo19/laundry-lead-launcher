@@ -145,6 +145,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          city: string | null
           company: string
           contact_person: string | null
           country: string | null
@@ -167,6 +168,7 @@ export type Database = {
           website: string | null
         }
         Insert: {
+          city?: string | null
           company: string
           contact_person?: string | null
           country?: string | null
@@ -189,6 +191,7 @@ export type Database = {
           website?: string | null
         }
         Update: {
+          city?: string | null
           company?: string
           contact_person?: string | null
           country?: string | null
