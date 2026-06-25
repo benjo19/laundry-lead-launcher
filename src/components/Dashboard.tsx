@@ -486,7 +486,11 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 {overdueOffers.slice(0, 5).map((o) => (
                   <li
                     key={o.id}
-                    className="px-5 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                    className={cn(
+                      'flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer',
+                      rowPx,
+                      rowPy
+                    )}
                     onClick={() => onNavigateToModule?.("offers")}
                   >
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
