@@ -7,7 +7,19 @@ export interface Lead {
   phone: string;
   email: string;
   website?: string;
-  status: 'Nova' | 'Kontaktiran' | 'Zainteresiran' | 'Odbačen' | 'Zatvoren';
+  status:
+    | 'Nova'
+    | 'Kvalificiran'
+    | 'Kontaktiran'
+    | 'Sastanak'
+    | 'Ponuda'
+    | 'Pregovori'
+    | 'Dobiveno'
+    | 'Izgubljeno'
+    // Legacy values kept for backwards-compat with existing Supabase rows
+    | 'Zainteresiran'
+    | 'Odbačen'
+    | 'Zatvoren';
   potential: 'Visok' | 'Srednji' | 'Nizak';
   dateAdded: string;
   industry?: string;
