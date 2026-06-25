@@ -1344,9 +1344,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 onClick={saveDraft} 
                 variant="outline" 
                 className="flex-1 text-sm"
-                disabled={!subject || !emailContent}
+                disabled={!subject || !emailContent || isSavingDraft}
               >
-                {editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft'}
+                {isSavingDraft
+                  ? 'Spremam...'
+                  : (editingDraftId ? 'Ažuriraj Draft' : 'Spremi Draft')}
               </Button>
             </div>
 
