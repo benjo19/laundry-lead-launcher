@@ -502,14 +502,16 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         setEmails(prev => [...newEmails, ...prev]);
       }
       
-      // Auto-update lead status: 'Nova' -> 'Kontaktiran' for recipients we just emailed
+      // Auto-update lead status: poslan e-mail → 'Ponuda' (Ponuda poslana)
+      // Promoviramo samo statuse ranije u funnelu — nikad ne degradiramo Sastanak/Pregovori/Dobiveno/Izgubljeno.
       const recipientEmails = new Set(recipients.map(r => r.trim().toLowerCase()));
+      const promotableSentStatuses = new Set(['Nova', 'Kvalificiran', 'Kontaktiran', 'Zainteresiran']);
       const leadsToUpdate = leads.filter(
-        l => l.email && recipientEmails.has(l.email.trim().toLowerCase()) && l.status === 'Nova'
+        l => l.email && recipientEmails.has(l.email.trim().toLowerCase()) && promotableSentStatuses.has(l.status)
       );
       for (const lead of leadsToUpdate) {
         try {
-          await updateLeadStatus(lead.id, 'Kontaktiran');
+          await updateLeadStatus(lead.id, 'Ponuda');
         } catch (e) {
           console.error('Failed to auto-update lead status:', lead.company, e);
         }
