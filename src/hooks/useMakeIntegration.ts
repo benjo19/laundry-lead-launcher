@@ -92,17 +92,13 @@ export const useMakeIntegration = () => {
         return false;
       }
 
-      // Fallback: ako event-specifični webhook nije konfiguriran, koristi glavni
-      // webhook_url + auto_trigger (back-compat s ranijim setupom gdje je jedan
-      // webhook pokrivao sve event-ove).
-      if (!webhookUrl && (isEmailEvent || isEquipmentEvent || isContentEvent || isCRMExportEvent)) {
-        if (settings?.webhook_url) {
-          console.log(`Make.com: koristim fallback webhook_url za ${eventType}`);
-          webhookUrl = settings.webhook_url;
-          if (autoTrigger === undefined || autoTrigger === false) {
-            autoTrigger = settings.auto_trigger;
-          }
-        }
+      // Fallback: equipment_sale ide na email_webhook_url ako vlastiti nije postavljen
+      // (isti flow kao i obični email-ovi). Glavni `webhook_url` je rezerviran za CRM/lead
+      // evente i NE smije primiti sadržaj emaila.
+      if (!webhookUrl && isEquipmentEvent && settings?.email_webhook_url) {
+        console.log('Make.com: koristim email_webhook_url kao fallback za equipment_sale');
+        webhookUrl = settings.email_webhook_url;
+        autoTrigger = settings.email_auto_trigger;
       }
 
       if (!webhookUrl) {
