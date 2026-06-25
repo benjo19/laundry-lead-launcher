@@ -10,6 +10,13 @@ const readInitial = (): Density => {
   return v === 'compact' || v === 'comfortable' ? v : 'comfortable';
 };
 
+// Eagerly reflect density on <html> at module load so dialogs opened
+// before any useDensity() consumer mounts still pick up compact styling.
+if (typeof document !== 'undefined') {
+  document.documentElement.dataset.density = readInitial();
+}
+
+
 export function useDensity() {
   const [density, setDensityState] = useState<Density>(readInitial);
 
