@@ -17,6 +17,7 @@ import ErrorMessage from '@/components/ui/error-message';
 import { Input } from '@/components/ui/input';
 import { Lead } from '@/types';
 import { parseLocation } from '@/utils/locationParser';
+import SalesFunnel from '@/components/SalesFunnel';
 
 interface LeadHunterProps {
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
