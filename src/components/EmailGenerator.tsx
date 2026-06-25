@@ -561,12 +561,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     const draftRecipients = recipients.map(getRecipientWebhookData);
     const primaryRecipient = draftRecipients[0];
 
+    // Stabilan idempotency key — koristi se za sve interne retry pokušaje istog drafta,
+    // pa Make.com (preko Data Store / filter) može dedupirati duplikate.
+    const idempotencyKey = `draft-${editingDraftId ?? 'new'}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
     const draftData = {
       to_email: recipientStr,
       subject: subject,
       content: htmlContent,
       timestamp: new Date().toISOString(),
       status: 'draft',
+      idempotency_key: idempotencyKey,
       ...(draftRecipients.length > 0 && {
         recipients: draftRecipients
       }),
@@ -583,24 +588,25 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
     let webhookOk = false;
     try {
-      // 20s hard timeout — Make.com zna biti spor (vidjeli smo 12s+ kašnjenja)
+      // triggerWebhook već radi retry (3x) s exponential backoffom za 5xx i timeout/network
+      // greške, uz per-attempt timeout od 20s. Outer guard od 90s spriječava beskonačno čekanje.
       const webhookPromise = triggerWebhook(isEquipmentSale ? 'equipment_sale' : 'draft', draftData);
       const timeoutPromise = new Promise<boolean>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 20000)
+        setTimeout(() => reject(new Error('TIMEOUT')), 90000)
       );
       webhookOk = await Promise.race([webhookPromise, timeoutPromise]);
     } catch (err: any) {
       console.error('Draft webhook error:', err);
-      if (err?.message === 'TIMEOUT') {
+      if (err?.message === 'TIMEOUT' || err?.name === 'AbortError') {
         toast({
           title: "Webhook predugo odgovara",
-          description: "Make.com nije odgovorio u 20s. Draft je spremljen lokalno — provjerite Make.com scenarij.",
+          description: "Make.com nije odgovorio ni nakon 3 pokušaja. Draft je spremljen lokalno — provjerite Make.com scenarij.",
           variant: "destructive",
         });
       } else {
         toast({
           title: "Greška pri slanju drafta",
-          description: err?.message || 'Nepoznata greška.',
+          description: (err?.message || 'Nepoznata greška.') + ' Draft je spremljen lokalno.',
           variant: "destructive",
         });
       }
