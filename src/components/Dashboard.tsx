@@ -90,6 +90,7 @@ const Kpi = ({
   icon: Icon,
   tone = 'neutral',
   onClick,
+  compact = false,
 }: {
   label: string;
   value: string;
@@ -97,6 +98,7 @@ const Kpi = ({
   icon: React.ComponentType<{ className?: string }>;
   tone?: 'neutral' | 'warning' | 'danger' | 'success';
   onClick?: () => void;
+  compact?: boolean;
 }) => {
   const toneRing: Record<string, string> = {
     neutral: 'bg-muted text-muted-foreground',
@@ -108,16 +110,30 @@ const Kpi = ({
     <button
       type="button"
       onClick={onClick}
-      className="surface-card text-left p-4 hover:border-foreground/20 hover:shadow-lg transition-all group"
+      className={cn(
+        'surface-card text-left hover:border-foreground/20 hover:shadow-lg transition-all group',
+        compact ? 'p-2.5' : 'p-4'
+      )}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className={cn('flex items-start justify-between', compact ? 'gap-2' : 'gap-3')}>
         <p className="section-title">{label}</p>
-        <span className={cn('h-8 w-8 rounded-md flex items-center justify-center', toneRing[tone])}>
-          <Icon className="h-4 w-4" />
+        <span
+          className={cn(
+            'rounded-md flex items-center justify-center',
+            compact ? 'h-6 w-6' : 'h-8 w-8',
+            toneRing[tone]
+          )}
+        >
+          <Icon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
         </span>
       </div>
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
+      <div className={cn('flex items-baseline gap-2', compact ? 'mt-1.5' : 'mt-3')}>
+        <span
+          className={cn(
+            'font-semibold tabular-nums tracking-tight text-foreground',
+            compact ? 'text-xl' : 'text-3xl'
+          )}
+        >
           {value}
         </span>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
