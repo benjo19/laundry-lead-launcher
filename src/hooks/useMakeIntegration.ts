@@ -292,21 +292,66 @@ export const useMakeIntegration = () => {
         return false;
       }
 
-      const response = await fetch(webhookUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(unifiedData),
-      });
+      // Idempotency key — proslijedi iz callera ili generiraj. Make.com scenarij ga može
+      // koristiti za dedupe (npr. Data Store) kad isti request stigne više puta zbog retrya.
+      const idempotencyKey =
+        (data && typeof data.idempotency_key === 'string' && data.idempotency_key) ||
+        `${eventType}-${user.id}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+      (unifiedData as any).idempotency_key = idempotencyKey;
 
-      if (!response.ok && response.status !== 0) {
-        console.error(`Make.com webhook error: ${response.status} ${response.statusText}`);
-        return false;
+      // Retry s exponential backoffom za 5xx i timeout/network greške.
+      const MAX_ATTEMPTS = 3;
+      const PER_ATTEMPT_TIMEOUT_MS = 20000;
+      const BASE_BACKOFF_MS = 1000;
+
+      let lastError: any = null;
+      for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), PER_ATTEMPT_TIMEOUT_MS);
+        try {
+          const response = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Idempotency-Key': idempotencyKey,
+            },
+            body: JSON.stringify(unifiedData),
+            signal: controller.signal,
+          });
+          clearTimeout(timeoutId);
+
+          if (response.ok || response.status === 0) {
+            console.log(`Make.com webhook triggered for event: ${eventType} (attempt ${attempt})`);
+            return true;
+          }
+
+          // 5xx = retriable. 4xx = permanent.
+          if (response.status >= 500 && response.status < 600 && attempt < MAX_ATTEMPTS) {
+            const backoff = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
+            console.warn(`Make.com webhook ${response.status} — retry ${attempt}/${MAX_ATTEMPTS - 1} za ${backoff}ms`);
+            await new Promise(r => setTimeout(r, backoff));
+            continue;
+          }
+
+          console.error(`Make.com webhook error: ${response.status} ${response.statusText}`);
+          return false;
+        } catch (err: any) {
+          clearTimeout(timeoutId);
+          lastError = err;
+          const isAbort = err?.name === 'AbortError';
+          const isNetwork = err instanceof TypeError; // fetch network failure
+          const retriable = isAbort || isNetwork;
+          if (retriable && attempt < MAX_ATTEMPTS) {
+            const backoff = BASE_BACKOFF_MS * Math.pow(2, attempt - 1);
+            console.warn(`Make.com webhook ${isAbort ? 'timeout' : 'network error'} — retry ${attempt}/${MAX_ATTEMPTS - 1} za ${backoff}ms`);
+            await new Promise(r => setTimeout(r, backoff));
+            continue;
+          }
+          throw err;
+        }
       }
-
-      console.log(`Make.com webhook triggered for event: ${eventType}`);
-      return true;
+      if (lastError) throw lastError;
+      return false;
     } catch (error) {
       console.error('Error triggering Make.com webhook:', error);
       return false;
