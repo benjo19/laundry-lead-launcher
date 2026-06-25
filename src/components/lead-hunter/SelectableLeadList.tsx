@@ -167,7 +167,13 @@ const SelectableLeadList = ({
         onEmailClick={onEmailClick}
       />
 
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div
+        className={`rounded-xl border border-border bg-card shadow-sm overflow-hidden ${
+          compact
+            ? '[&_td]:py-1.5 [&_td]:px-2 [&_th]:h-9 [&_th]:px-2 text-[13px]'
+            : ''
+        }`}
+      >
         {/* Desktop / tablet table */}
         <div className="hidden md:block overflow-x-auto">
           <Table>
