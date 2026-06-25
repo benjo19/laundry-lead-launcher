@@ -73,6 +73,8 @@ const SelectableLeadList = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('dateAdded');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const { density } = useDensity();
+  const compact = density === 'compact';
 
   const cityOf = (lead: Lead) => lead.city || parseLocation(lead.location).city || '';
   const countryOf = (lead: Lead) => lead.country || parseLocation(lead.location).country || '';
