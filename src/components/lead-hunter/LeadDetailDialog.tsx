@@ -206,11 +206,14 @@ const LeadDetailDialog = ({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Nova">Nova</SelectItem>
-                <SelectItem value="Kontaktiran">Kontaktiran</SelectItem>
-                <SelectItem value="Zainteresiran">Zainteresiran</SelectItem>
-                <SelectItem value="Odbačen">Odbačen</SelectItem>
-                <SelectItem value="Zatvoren">Zatvoren</SelectItem>
+                {LEAD_STATUS_OPTIONS.map((opt) => (
+                  <SelectItem key={opt.value} value={opt.value}>
+                    <div className="flex items-center gap-2">
+                      <span className={`h-2 w-2 rounded-full ${opt.dotClass}`} />
+                      {opt.label}
+                    </div>
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
