@@ -328,13 +328,16 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
             Koga danas zovem, što stoji i gdje je novac.
           </p>
         </div>
-        <div className="text-xs text-muted-foreground tabular-nums">
-          {today.toLocaleDateString('hr-HR', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
+        <div className="flex items-center gap-3">
+          <DensityToggle />
+          <div className="text-xs text-muted-foreground tabular-nums">
+            {today.toLocaleDateString('hr-HR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </div>
         </div>
       </header>
 
