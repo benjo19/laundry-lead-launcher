@@ -205,7 +205,7 @@ export const useIntegratedEmailService = () => {
       }
 
       toast({
-        title: "Greška pri generiranju",
+        title: errorTitle,
         description: errorMessage,
         variant: "destructive",
       });
