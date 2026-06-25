@@ -130,6 +130,7 @@ export const useIntegratedEmailService = () => {
         console.warn('Business context unavailable, continuing without it:', error?.message);
         businessContext = '';
       }
+      console.log('[generateEmail] context ready, invoking edge function');
 
       // Map emailType to match edge function schema
       const emailTypeMap: Record<string, 'cold' | 'follow-up' | 'proposal' | 'introduction'> = {
@@ -159,6 +160,8 @@ export const useIntegratedEmailService = () => {
         supabase.functions.invoke('generate-email', { body: enhancedParams }),
         45000,
         'generate-email'
+      );
+      console.log('[generateEmail] edge function returned');
       );
 
       console.log('Supabase function response:', { data, error });
