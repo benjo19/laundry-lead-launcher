@@ -146,6 +146,8 @@ export type Database = {
       leads: {
         Row: {
           company: string
+          contact_person: string | null
+          country: string | null
           created_at: string | null
           email: string | null
           employees: string | null
@@ -154,15 +156,20 @@ export type Database = {
           location: string | null
           notes: string | null
           phone: string | null
+          phone2: string | null
+          pipeline_stage: string | null
           potential: string | null
           source: string | null
           status: string | null
+          tags: string[] | null
           updated_at: string | null
           user_id: string
           website: string | null
         }
         Insert: {
           company: string
+          contact_person?: string | null
+          country?: string | null
           created_at?: string | null
           email?: string | null
           employees?: string | null
@@ -171,15 +178,20 @@ export type Database = {
           location?: string | null
           notes?: string | null
           phone?: string | null
+          phone2?: string | null
+          pipeline_stage?: string | null
           potential?: string | null
           source?: string | null
           status?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           user_id: string
           website?: string | null
         }
         Update: {
           company?: string
+          contact_person?: string | null
+          country?: string | null
           created_at?: string | null
           email?: string | null
           employees?: string | null
@@ -188,9 +200,12 @@ export type Database = {
           location?: string | null
           notes?: string | null
           phone?: string | null
+          phone2?: string | null
+          pipeline_stage?: string | null
           potential?: string | null
           source?: string | null
           status?: string | null
+          tags?: string[] | null
           updated_at?: string | null
           user_id?: string
           website?: string | null
@@ -232,6 +247,124 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      offer_items: {
+        Row: {
+          cijena_bez_pdv: number
+          created_at: string | null
+          id: string
+          jedinica_mjere: string | null
+          kolicina: number
+          naziv: string
+          offer_id: string
+          opis: string | null
+          popust: number | null
+          redni_broj: number
+        }
+        Insert: {
+          cijena_bez_pdv?: number
+          created_at?: string | null
+          id?: string
+          jedinica_mjere?: string | null
+          kolicina?: number
+          naziv: string
+          offer_id: string
+          opis?: string | null
+          popust?: number | null
+          redni_broj?: number
+        }
+        Update: {
+          cijena_bez_pdv?: number
+          created_at?: string | null
+          id?: string
+          jedinica_mjere?: string | null
+          kolicina?: number
+          naziv?: string
+          offer_id?: string
+          opis?: string | null
+          popust?: number | null
+          redni_broj?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_items_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      offers: {
+        Row: {
+          broj_ponude: string
+          created_at: string | null
+          currency: string | null
+          datum_ponude: string
+          datum_valjanosti: string | null
+          id: string
+          klijent_adresa: string | null
+          klijent_email: string | null
+          klijent_ime: string
+          klijent_oib: string | null
+          lead_id: string | null
+          napomena: string | null
+          naslov: string
+          pdv_stopa: number | null
+          popust_ukupno: number | null
+          status: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          broj_ponude: string
+          created_at?: string | null
+          currency?: string | null
+          datum_ponude?: string
+          datum_valjanosti?: string | null
+          id?: string
+          klijent_adresa?: string | null
+          klijent_email?: string | null
+          klijent_ime: string
+          klijent_oib?: string | null
+          lead_id?: string | null
+          napomena?: string | null
+          naslov: string
+          pdv_stopa?: number | null
+          popust_ukupno?: number | null
+          status?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          broj_ponude?: string
+          created_at?: string | null
+          currency?: string | null
+          datum_ponude?: string
+          datum_valjanosti?: string | null
+          id?: string
+          klijent_adresa?: string | null
+          klijent_email?: string | null
+          klijent_ime?: string
+          klijent_oib?: string | null
+          lead_id?: string | null
+          napomena?: string | null
+          naslov?: string
+          pdv_stopa?: number | null
+          popust_ukupno?: number | null
+          status?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
