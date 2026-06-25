@@ -382,6 +382,14 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
         </Card>
       </div>
 
+      {/* Sales Funnel */}
+      <SalesFunnel
+        leads={leads}
+        onStageClick={(status) => setSelectedStatus(status)}
+      />
+
+
+
       {/* Filters */}
       <LeadFilters
         selectedStatus={selectedStatus}
