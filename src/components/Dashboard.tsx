@@ -187,6 +187,10 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
   const { user } = useAuthContext();
   const { leads } = useLeadManagement();
   const { reminders } = useReminders();
+  const { density } = useDensity();
+  const compact = density === 'compact';
+  const rowPy = compact ? 'py-1.5' : 'py-3';
+  const rowPx = compact ? 'px-3' : 'px-5';
 
   const [offers, setOffers] = useState<OfferRow[]>([]);
   const [offerItems, setOfferItems] = useState<OfferItemRow[]>([]);
