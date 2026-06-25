@@ -134,6 +134,13 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
   const { triggerWebhook } = useMakeIntegration();
 
+  // Auto-detect equipment sale flow from selected business profile (e.g. Brentareno / praonice rublja)
+  const isEquipmentSale = (() => {
+    if (!selectedProfile) return false;
+    const haystack = `${selectedProfile.name || ''} ${selectedProfile.company_name || ''} ${selectedProfile.industry || ''}`.toLowerCase();
+    return /brentareno|oprema za pran|praonic|laundry equipment/.test(haystack);
+  })();
+
   // Backfill efekt: ne blokira UI — koristi requestIdleCallback i ograničava obim.
   useEffect(() => {
     if (hasBackfilled) return;
