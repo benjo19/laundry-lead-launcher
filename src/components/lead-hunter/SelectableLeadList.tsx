@@ -15,6 +15,7 @@ import { Mail, Phone, MapPin, Trash2, ArrowUpDown, ExternalLink, Inbox, Flame, C
 import LeadDetailDialog from './LeadDetailDialog';
 import { LEAD_STATUS_OPTIONS, getStatusMeta, POTENTIAL_META } from '@/lib/leadStatus';
 import { parseLocation } from '@/utils/locationParser';
+import { useDensity } from '@/hooks/useDensity';
 
 type Priority = 'hot' | 'warm' | 'cold';
 
@@ -72,6 +73,8 @@ const SelectableLeadList = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [sortKey, setSortKey] = useState<SortKey>('dateAdded');
   const [sortDir, setSortDir] = useState<SortDir>('desc');
+  const { density } = useDensity();
+  const compact = density === 'compact';
 
   const cityOf = (lead: Lead) => lead.city || parseLocation(lead.location).city || '';
   const countryOf = (lead: Lead) => lead.country || parseLocation(lead.location).country || '';
@@ -164,7 +167,13 @@ const SelectableLeadList = ({
         onEmailClick={onEmailClick}
       />
 
-      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+      <div
+        className={`rounded-xl border border-border bg-card shadow-sm overflow-hidden ${
+          compact
+            ? '[&_td]:py-1.5 [&_td]:px-2 [&_th]:h-9 [&_th]:px-2 text-[13px]'
+            : ''
+        }`}
+      >
         {/* Desktop / tablet table */}
         <div className="hidden md:block overflow-x-auto">
           <Table>
@@ -366,7 +375,7 @@ const SelectableLeadList = ({
             return (
               <div
                 key={lead.id}
-                className={`p-4 transition-colors ${isSelected ? 'bg-primary/5' : 'bg-card'} active:bg-muted/50`}
+                className={`${compact ? 'p-2.5' : 'p-4'} transition-colors ${isSelected ? 'bg-primary/5' : 'bg-card'} active:bg-muted/50`}
                 onClick={(e) => {
                   if ((e.target as HTMLElement).closest('button, input, [role="combobox"], a')) return;
                   handleLeadClick(lead);
