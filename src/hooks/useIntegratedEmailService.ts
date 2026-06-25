@@ -179,17 +179,29 @@ export const useIntegratedEmailService = () => {
       console.error('Error generating email:', error);
 
       let errorMessage = 'Dogodila se greška pri generiranju emaila.';
+      let errorTitle = 'Greška pri generiranju';
 
-      if (error?.message?.startsWith('TIMEOUT:')) {
-        errorMessage = 'Generiranje traje predugo. Molimo pokušajte ponovno za nekoliko sekundi.';
-      } else if (error?.message?.includes('AI settings not configured')) {
+      const msg = (error?.message || '').toString();
+      const status = error?.status || error?.context?.status;
+      const isAuthError =
+        status === 401 || status === 403 ||
+        /jwt|JWT|token|unauthor|Invalid authorization|session/i.test(msg);
+
+      if (msg.startsWith('TIMEOUT:')) {
+        errorTitle = 'Isteklo vrijeme';
+        errorMessage = 'Generiranje traje predugo. Moguće je da je sesija istekla — osvježite stranicu (F5) i pokušajte ponovno.';
+      } else if (isAuthError) {
+        errorTitle = 'Sesija je istekla';
+        errorMessage = 'Vaša prijava više nije valjana. Osvježite stranicu (F5) i prijavite se ponovno.';
+      } else if (msg.includes('AI settings not configured')) {
         errorMessage = 'AI postavke nisu konfigurirane. Molimo postavite AI API ključ u Postavkama.';
-      } else if (error?.message?.includes('AI API key not found')) {
+      } else if (msg.includes('AI API key not found')) {
         errorMessage = 'AI API ključ nije pronađen. Molimo konfigurirajte ga u Postavkama.';
-      } else if (error?.message?.includes('Invalid authorization')) {
-        errorMessage = 'Problem s autorizacijom. Molimo osvježite stranicu i pokušajte ponovo.';
-      } else if (error?.message) {
-        errorMessage = `Greška: ${error.message}`;
+      } else if (/Failed to fetch|NetworkError|network/i.test(msg)) {
+        errorTitle = 'Problem s mrežom';
+        errorMessage = 'Nema veze sa serverom. Provjerite internet i pokušajte ponovno.';
+      } else if (msg) {
+        errorMessage = `Greška: ${msg}`;
       }
 
       toast({
