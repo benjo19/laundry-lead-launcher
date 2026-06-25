@@ -184,12 +184,37 @@ const SelectableLeadList = ({
               </TableRow>
             </TableHeader>
             <TableBody>
+      <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+        {/* Desktop / tablet table */}
+        <div className="hidden md:block overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/40 hover:bg-muted/40 border-b border-border">
+                <TableHead className="w-10"></TableHead>
+                <TableHead className="w-[88px] text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Prioritet
+                </TableHead>
+                <SortHeader k="company">Tvrtka</SortHeader>
+                <TableHead className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Kontakt
+                </TableHead>
+                <SortHeader k="location">Lokacija</SortHeader>
+                <SortHeader k="status">Status</SortHeader>
+                <SortHeader k="potential">Potencijal</SortHeader>
+                <SortHeader k="dateAdded" className="hidden lg:table-cell">Dodano</SortHeader>
+                <TableHead className="text-right text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+                  Akcije
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {sortedLeads.map((lead) => {
                 const statusMeta = getStatusMeta(lead.status);
                 const potentialMeta = POTENTIAL_META[lead.potential] ?? POTENTIAL_META['Srednji'];
                 const isSelected = selectedLeads.includes(lead.id);
                 const city = cityOf(lead);
                 const country = countryOf(lead);
+                const priority = getPriority(lead);
 
                 return (
                   <TableRow
@@ -207,6 +232,10 @@ const SelectableLeadList = ({
                         onCheckedChange={() => onToggleSelect(lead.id)}
                         aria-label={`Selektiraj ${lead.company}`}
                       />
+                    </TableCell>
+
+                    <TableCell>
+                      <PriorityBadge priority={priority} />
                     </TableCell>
 
                     <TableCell className="min-w-[200px]">
@@ -343,9 +372,141 @@ const SelectableLeadList = ({
             </TableBody>
           </Table>
         </div>
+
+        {/* Mobile cards */}
+        <div className="md:hidden divide-y divide-border">
+          {sortedLeads.map((lead) => {
+            const statusMeta = getStatusMeta(lead.status);
+            const potentialMeta = POTENTIAL_META[lead.potential] ?? POTENTIAL_META['Srednji'];
+            const isSelected = selectedLeads.includes(lead.id);
+            const city = cityOf(lead);
+            const country = countryOf(lead);
+            const priority = getPriority(lead);
+
+            return (
+              <div
+                key={lead.id}
+                className={`p-4 transition-colors ${isSelected ? 'bg-primary/5' : 'bg-card'} active:bg-muted/50`}
+                onClick={(e) => {
+                  if ((e.target as HTMLElement).closest('button, input, [role="combobox"], a')) return;
+                  handleLeadClick(lead);
+                }}
+              >
+                <div className="flex items-start gap-3">
+                  <Checkbox
+                    checked={isSelected}
+                    onCheckedChange={() => onToggleSelect(lead.id)}
+                    aria-label={`Selektiraj ${lead.company}`}
+                    className="mt-1"
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-semibold text-foreground leading-tight truncate">{lead.company}</h3>
+                          <PriorityBadge priority={priority} />
+                        </div>
+                        {lead.industry && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{lead.industry}</p>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                      <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-xs font-medium ${statusMeta.pillClass}`}>
+                        <span className={`h-1.5 w-1.5 rounded-full ${statusMeta.dotClass}`} />
+                        {lead.status}
+                      </span>
+                      <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${potentialMeta.pillClass}`}>
+                        {potentialMeta.label}
+                      </span>
+                    </div>
+
+                    <div className="mt-3 space-y-1 text-sm">
+                      {lead.email ? (
+                        <a
+                          href={`mailto:${lead.email}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-1.5 text-foreground hover:text-primary truncate"
+                        >
+                          <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                          <span className="truncate">{lead.email}</span>
+                        </a>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground italic">
+                          <Mail className="h-3.5 w-3.5" /> bez emaila
+                        </span>
+                      )}
+                      {lead.phone && (
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <Phone className="h-3 w-3" /> {lead.phone}
+                        </span>
+                      )}
+                      {(city || country) && (
+                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                          <MapPin className="h-3 w-3" /> {[city, country].filter(Boolean).join(', ')}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-3 flex items-center justify-between gap-2">
+                      <Select
+                        value={lead.status}
+                        onValueChange={(value: Lead['status']) => onUpdateStatus(lead.id, value)}
+                      >
+                        <SelectTrigger className="h-8 flex-1 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {LEAD_STATUS_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value}>
+                              <div className="flex items-center gap-2">
+                                <span className={`h-2 w-2 rounded-full ${opt.dotClass}`} />
+                                {opt.label}
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <div className="flex gap-0.5">
+                        {lead.website && (
+                          <Button asChild variant="ghost" size="sm" className="h-8 w-8 p-0" onClick={(e) => e.stopPropagation()}>
+                            <a href={lead.website.startsWith('http') ? lead.website : `https://${lead.website}`} target="_blank" rel="noreferrer">
+                              <ExternalLink className="h-4 w-4" />
+                            </a>
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={!lead.email}
+                          onClick={(e) => { e.stopPropagation(); onEmailClick(lead.email, lead.company); }}
+                          className="h-8 w-8 p-0 text-primary"
+                          title="Pošalji email"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => { e.stopPropagation(); onDeleteLead(lead.id); }}
+                          className="h-8 w-8 p-0 text-destructive"
+                          title="Obriši"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
         <div className="flex items-center justify-between border-t border-border bg-muted/20 px-4 py-2 text-xs text-muted-foreground">
           <span>Prikazano {sortedLeads.length} {sortedLeads.length === 1 ? 'lead' : 'leadova'}</span>
-          <span>Sortirano po: {sortKey} ({sortDir === 'asc' ? 'rastuće' : 'padajuće'})</span>
+          <span className="hidden sm:inline">Sortirano po: {sortKey} ({sortDir === 'asc' ? 'rastuće' : 'padajuće'})</span>
         </div>
       </div>
     </>
