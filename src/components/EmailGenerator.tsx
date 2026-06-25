@@ -673,9 +673,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       ));
       toast({
         title: "Draft ažuriran",
-        description: webhookOk
-          ? "Draft je ažuriran i poslan na webhook."
-          : "Draft je ažuriran lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.",
+        description:
+          (webhookOk
+            ? "Draft je ažuriran i poslan na webhook."
+            : "Draft je ažuriran lokalno. Webhook nije poslan — provjerite URL i Auto trigger u Postavkama → Integracije.") +
+          (draftLeadsUpdated > 0 ? ` Status ažuriran za ${draftLeadsUpdated} lead(ova).` : ''),
         variant: webhookOk ? "default" : "destructive",
       });
     } else {
