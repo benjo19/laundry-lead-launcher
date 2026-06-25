@@ -602,6 +602,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       ...(primaryRecipient?.client_name && {
         client_name: primaryRecipient.client_name
       }),
+      ...(isEquipmentSale && { is_equipment_sale: true }),
     };
 
     let webhookOk = false;
@@ -611,7 +612,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     const draftGuard = window.setTimeout(() => draftAbort.abort(), 90000);
     try {
       webhookOk = await triggerWebhook(
-        isEquipmentSale ? 'equipment_sale' : 'draft',
+        'draft',
         draftData,
         draftAbort.signal
       );
