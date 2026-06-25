@@ -29,7 +29,7 @@ const getPriority = (lead: Lead): Priority => {
 
 const PRIORITY_META: Record<Priority, { label: string; pillClass: string; Icon: typeof Flame }> = {
   hot: { label: 'Hot', pillClass: 'bg-destructive/10 text-destructive border border-destructive/20', Icon: Flame },
-  warm: { label: 'Warm', pillClass: 'bg-warning/10 text-warning-foreground border border-warning/20', Icon: Clock },
+  warm: { label: 'Warm', pillClass: 'bg-warning/10 text-warning border border-warning/30', Icon: Clock },
   cold: { label: 'Cold', pillClass: 'bg-muted text-muted-foreground border border-border', Icon: Minus },
 };
 
