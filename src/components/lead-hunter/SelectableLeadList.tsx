@@ -11,10 +11,38 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Mail, Phone, MapPin, Trash2, ArrowUpDown, ExternalLink, Inbox } from 'lucide-react';
+import { Mail, Phone, MapPin, Trash2, ArrowUpDown, ExternalLink, Inbox, Flame, Clock, Minus } from 'lucide-react';
 import LeadDetailDialog from './LeadDetailDialog';
 import { LEAD_STATUS_OPTIONS, getStatusMeta, POTENTIAL_META } from '@/lib/leadStatus';
 import { parseLocation } from '@/utils/locationParser';
+
+type Priority = 'hot' | 'warm' | 'cold';
+
+const getPriority = (lead: Lead): Priority => {
+  const daysOld = (Date.now() - new Date(lead.dateAdded).getTime()) / 86400000;
+  const advanced = ['Sastanak zakazan', 'Ponuda poslana', 'Pregovori', 'Zainteresiran'];
+  if (lead.potential === 'Visok' && daysOld <= 14) return 'hot';
+  if (advanced.includes(lead.status as string)) return 'hot';
+  if (lead.potential === 'Visok' || daysOld <= 30) return 'warm';
+  return 'cold';
+};
+
+const PRIORITY_META: Record<Priority, { label: string; pillClass: string; Icon: typeof Flame }> = {
+  hot: { label: 'Hot', pillClass: 'bg-destructive/10 text-destructive border border-destructive/20', Icon: Flame },
+  warm: { label: 'Warm', pillClass: 'bg-warning/10 text-warning-foreground border border-warning/20', Icon: Clock },
+  cold: { label: 'Cold', pillClass: 'bg-muted text-muted-foreground border border-border', Icon: Minus },
+};
+
+const PriorityBadge = ({ priority }: { priority: Priority }) => {
+  const meta = PRIORITY_META[priority];
+  const Icon = meta.Icon;
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${meta.pillClass}`}>
+      <Icon className="h-3 w-3" />
+      {meta.label}
+    </span>
+  );
+};
 
 interface SelectableLeadListProps {
   leads: Lead[];
