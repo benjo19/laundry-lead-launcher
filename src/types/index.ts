@@ -13,6 +13,7 @@ export interface Lead {
   industry?: string;
   notes?: string;
   country?: string;
+  city?: string;
   businessProfileId?: string;
   businessProfileName?: string;
   businessCompanyName?: string;
