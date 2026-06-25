@@ -441,9 +441,10 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         ...(primaryRecipient?.client_name && {
           client_name: primaryRecipient.client_name
         }),
+        ...(isEquipmentSale && { is_equipment_sale: true }),
       };
 
-      const webhookTriggered = await triggerWebhook(isEquipmentSale ? 'equipment_sale' : 'sent', bulkPayload);
+      const webhookTriggered = await triggerWebhook('sent', bulkPayload);
 
       if (!webhookTriggered) {
         // Označi sve kao neuspjeh u UI-u
@@ -601,6 +602,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       ...(primaryRecipient?.client_name && {
         client_name: primaryRecipient.client_name
       }),
+      ...(isEquipmentSale && { is_equipment_sale: true }),
     };
 
     let webhookOk = false;
@@ -610,7 +612,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     const draftGuard = window.setTimeout(() => draftAbort.abort(), 90000);
     try {
       webhookOk = await triggerWebhook(
-        isEquipmentSale ? 'equipment_sale' : 'draft',
+        'draft',
         draftData,
         draftAbort.signal
       );
@@ -1347,7 +1349,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 className="rounded"
               />
               <label htmlFor="is_equipment_sale" className="text-sm font-medium text-amber-900 cursor-pointer">
-                🧺 Prodaja opreme za pranje (koristi zaseban Make.com webhook)
+                🧺 Prodaja opreme za pranje (označi u payloadu za routing u Make.com)
               </label>
             </div>
 
