@@ -91,7 +91,20 @@ export const useMakeIntegration = () => {
         console.log(`Make.com: Unknown event type ${eventType}`);
         return false;
       }
-      
+
+      // Fallback: ako event-specifični webhook nije konfiguriran, koristi glavni
+      // webhook_url + auto_trigger (back-compat s ranijim setupom gdje je jedan
+      // webhook pokrivao sve event-ove).
+      if (!webhookUrl && (isEmailEvent || isEquipmentEvent || isContentEvent || isCRMExportEvent)) {
+        if (settings?.webhook_url) {
+          console.log(`Make.com: koristim fallback webhook_url za ${eventType}`);
+          webhookUrl = settings.webhook_url;
+          if (autoTrigger === undefined || autoTrigger === false) {
+            autoTrigger = settings.auto_trigger;
+          }
+        }
+      }
+
       if (!webhookUrl) {
         console.log(`Make.com: Webhook URL not configured for ${eventType}`);
         return false;
