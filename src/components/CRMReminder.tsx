@@ -32,6 +32,8 @@ const CRMReminder = () => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const { triggerWebhook } = useMakeIntegration();
+  const { density } = useDensity();
+  const compact = density === 'compact';
   
   const [newReminder, setNewReminder] = useState<NewReminderForm>({
     title: '',
