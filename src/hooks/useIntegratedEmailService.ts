@@ -162,7 +162,6 @@ export const useIntegratedEmailService = () => {
         'generate-email'
       );
       console.log('[generateEmail] edge function returned');
-      );
 
       console.log('Supabase function response:', { data, error });
 
