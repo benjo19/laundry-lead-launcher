@@ -310,3 +310,32 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Density-aware modals & dialogs (applies to Radix Dialog + AlertDialog content) */
+html[data-density="compact"] [role="dialog"],
+html[data-density="compact"] [role="alertdialog"] {
+  padding: 1rem !important;
+  gap: 0.5rem !important;
+}
+html[data-density="compact"] [role="dialog"] .space-y-4 > * + *,
+html[data-density="compact"] [role="alertdialog"] .space-y-4 > * + * {
+  margin-top: 0.5rem !important;
+}
+html[data-density="compact"] [role="dialog"] .space-y-6 > * + *,
+html[data-density="compact"] [role="alertdialog"] .space-y-6 > * + * {
+  margin-top: 0.75rem !important;
+}
+html[data-density="compact"] [role="dialog"] input,
+html[data-density="compact"] [role="dialog"] select,
+html[data-density="compact"] [role="dialog"] textarea,
+html[data-density="compact"] [role="dialog"] button,
+html[data-density="compact"] [role="alertdialog"] button {
+  font-size: 0.8125rem;
+}
+html[data-density="compact"] [role="dialog"] .h-10,
+html[data-density="compact"] [role="alertdialog"] .h-10 {
+  height: 2.25rem;
+}
+html[data-density="compact"] [role="dialog"] label {
+  font-size: 0.75rem;
+}
