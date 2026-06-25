@@ -302,6 +302,7 @@ const CRMReminder = () => {
             onPostpone={postponeReminder}
             onDelete={deleteReminder}
             onEdit={handleEditReminder}
+            compact={compact}
           />
         </div>
 
