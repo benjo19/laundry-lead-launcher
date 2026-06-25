@@ -1,59 +1,38 @@
+## Cilj
+Filteri grada/države u Lead Hunteru sada krivo izvlače komponente jer se `lead.location` razbija po zarezima i pretpostavlja se fiksni redoslijed. Riješiti tako da se (a) prilikom spremanja leada zapišu `city` i `country` direktno (iz Google `address_components`), i (b) postoji jedan robustan helper koji parsira postojeće slobodno-tekstualne adrese kao fallback.
 
-## Što sam našao
+## Što treba napraviti
 
-Backend je čist. Zadnjih 7 AI Gateway poziva za `generate-email` (zadnji u 15:42:20) — svi uspješni, 200 OK, 2-3 s. Edge funkcija isto 200 OK. Auth radi.
+1. **Edge function `google-maps-lead-search`** — proširiti `detailsFields` s `address_components` i `address_component`, te u responseu vraćati `address_components` po placeu. To je glavni izvor istine.
 
-Znači "zaglavljivanje" se događa **na klijentu**. Identificirao sam 4 stvarna uzroka:
+2. **`SearchOperations.ts`** — proslijediti `address_components` u `DiscoveredLead` (dodati polje), kao i izveden `city`/`country`.
 
-### 1. `useEffect` s `setSavedFormData` u deps okida re-render petlju
-`src/components/EmailGenerator.tsx` linije 66-74 — efekt sprema u localStorage svaki put kad se promijeni bilo koje polje, a `recipients` je array koji se rekreira. Kombinirano sa `setIsGenerating(true)` toggle-om, ovo može uzrokovati duge zamrznute renderove kod velikih lista leadova (346 leadova u logu). Treba debounce + ukloniti `setSavedFormData` iz deps.
+3. **Novi helper `src/utils/locationParser.ts`** — jedna funkcija:
+   ```
+   parseLocation(location?: string, components?: GoogleAddressComponent[]): { city, country, postalCode, street }
+   ```
+   - Ako su dani `address_components`, koristi `types` (`locality`, `postal_town`, `administrative_area_level_2`, `country`, `postal_code`) — pouzdano.
+   - Inače regex fallback nad slobodnim tekstom: prepoznati zadnji segment kao zemlju (ako odgovara poznatim ISO/Croatian nazivima ili je čisti tekst bez brojeva), izvući poštanski broj uzorkom `\b\d{4,6}\b` i ono što ostane uz njega tretirati kao grad. Pokriti uobičajene Google formate:
+     - `Ulica 1, 10000 Zagreb, Hrvatska`
+     - `Ulica 1, Zagreb, Hrvatska`
+     - `10000 Zagreb`
+     - `Zagreb, Croatia`
 
-### 2. Pozadinski `triggerWebhook` curi nakon outer timeouta u `saveDraft`
-`EmailGenerator.tsx` 593-597: `Promise.race` između webhook poziva (do 60s+ s 3 retrya) i 90s timeouta. Ako timeout odjavi, **`triggerWebhook` i dalje radi u pozadini**, drži `isLoading` u `useMakeIntegration`, i ako korisnik ponovno klikne — gleda stale state. Treba dijeliti `AbortController` između outer guarda i fetcha tako da prekid stvarno otkaže webhook.
+4. **`useLeadAddition.ts`** — pri spremanju leada koristiti `parseLocation` i upisati `country` (postoji) te dodati upis grada u `notes`/`location` po potrebi. Postojeća kolona `country` već postoji u tablici `leads`.
 
-### 3. `isGenerating` se ne resetira ako `generateEmail` baci sinkrono prije `try`
-`generateEmailContent` (226-314) — pre-flight provjere (template/industry/AI config) rade `return` **bez** `setIsGenerating(false)`, ali `setIsGenerating(true)` je tek na liniji 254 nakon njih. To je OK. Ali ako `useIntegratedEmailService` baci unhandled rejection iz `withTimeout` (npr. session refresh hang prije `try`), finally se izvršava. Ipak — ako se preflight `supabase.auth.getSession()` zaglavi prije nego što se `withTimeout` upali (rare), klijent stoji. Dodati `AbortSignal` na getSession i hard 6s outer timer.
+5. **Migration** — dodati kolonu `city text` u `public.leads` (nullable) i indeks `(city)`, `(country)` za filtere.
 
-### 4. Backfill efekt blokira na mountu s velikim listama
-Linije 136-197 — pri svakom mountu povlači `select * from emails where status='Sent'` pa iterira `updateLeadStatus` u petlji sekvencijalno za N leadova. S 346 leadova ovo lako traje 5-30s i blokira interakcije izgleda kao "zamrznuto". Treba: 1) limitirati select, 2) batch updates, 3) ne blokirati UI (pustiti u idleCallback).
+6. **`LeadHunter.tsx` (linije 46–101)** — zamijeniti split-po-zarezu logiku s:
+   - `uniqueCities` = unique iz `lead.city ?? parseLocation(lead.location).city`
+   - `uniqueCountries` = unique iz `lead.country ?? parseLocation(lead.location).country`
+   - Isto pravilo u `filteredLeads` umjesto trenutnog `parts[...]`.
 
----
+7. **Backfill** — jednokratna SQL `UPDATE` koji za postojeće retke gdje je `city`/`country` NULL pokuša popuniti iz `location` preko jednostavnog SQL regexa (postavlja `country` na zadnji segment, `city` na pretposljednji bez brojeva). Konzervativno — kompleksne slučajeve preskačemo, frontend fallback `parseLocation` će ih ionako pokriti.
 
-## Plan popravka
+## Tehnički detalji
+- `parseLocation` čisti helper, bez ovisnosti — testabilan.
+- Ne diramo Apify flow (već vraća slično formatiranu adresu — fallback regex je dovoljan); kada postoji vrijeme može se i tamo dodati structured parsing.
+- Filtri ostaju klijent-side; brzina ostaje ista jer rezultat memoiziramo.
 
-### A. `src/components/EmailGenerator.tsx`
-
-1. **Auto-save formi → debounce 500ms**, makni `setSavedFormData` iz deps efekta (linije 66-74).
-2. **saveDraft**: zamijeniti `Promise.race` sa zajedničkim `AbortController` — proslijediti ga u `triggerWebhook` da otkaže fetch kad timeout istekne; ukloniti curenje pozadinskog requesta.
-3. **Backfill efekt**: dodati `requestIdleCallback` wrapper, limitirati query na zadnjih 500 sent emailova, raditi `Promise.all` umjesto `for await`, i preskočiti ako `leads.length > 1000`.
-4. **Generate gumb**: dodati hard safety timer (60s) koji forsira `setIsGenerating(false)` čak i ako promise nikad ne resolve-a (safety net).
-
-### B. `src/hooks/useIntegratedEmailService.ts`
-
-5. Pre-flight `supabase.auth.getSession()` već ima 5s timeout — dodati isti i za `refreshSession()` (trenutno nezaštićen, linija 75).
-6. Logirati `console.log` na svakom koraku ('preflight ok', 'context fetched', 'invoking edge', 'edge returned') tako da u idućem incidentu odmah vidimo gdje visi.
-
-### C. `src/hooks/useMakeIntegration.ts`
-
-7. `triggerWebhook` mora prihvatiti externi `AbortSignal` parametar i proslijediti ga svakom fetch pokušaju (umjesto samo internog per-attempt controllera).
-8. Ako externi signal abortira, prekini retry petlju odmah i baci `AbortError`.
-
-### D. Dijagnostika (jednokratno)
-
-9. Dodati lagani in-app debug panel iza `?debug=1` koji prikazuje: zadnji error iz `generateEmail`/`saveDraft`, trajanje zadnjeg poziva, status `isGenerating`/`isSavingDraft`. Olakšava korisniku da nam pošalje točan trag bez DevToolsa.
-
----
-
-## Što NE mijenjam
-
-- Edge funkciju `generate-email` — radi.
-- AI Gateway poziv — radi.
-- Make.com webhook URL i format — ostaju.
-- Auth flow — ostaje.
-
-## Verifikacija
-
-- Klik "Generiraj" 5x zaredom s velikim leads listom → gumb se nikad ne zaglavi >60s.
-- Klik "Spremi Draft" → ako Make.com ne odgovori za 20s, vidiš toast, gumb se otključa, **nema pozadinskog ghost POSTa** u Network tabu.
-- localStorage piše se rijetko (debounce), ne na svaki keystroke.
-- Backfill ne blokira tipkanje na mountu.
+## Što se NE mijenja
+- UI izgled filtera, ostatak Lead Huntera, drugi search backendi (Apify/Firecrawl) — i dalje koriste fallback parser.
