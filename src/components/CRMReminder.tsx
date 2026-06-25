@@ -218,6 +218,7 @@ const CRMReminder = () => {
               Završeno: {completedReminders.length}
             </span>
           </div>
+          <DensityToggle />
           <ExportButton data={filteredReminders} filename="crm-datoteke" type="reminders" leads={leads} />
         </div>
       </div>
