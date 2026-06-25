@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Lead } from '@/types';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 import { BusinessProfile } from './useBusinessProfile';
+import { parseLocation } from '@/utils/locationParser';
 
 interface UseLeadAdditionProps {
   onAddLead: (lead: Omit<Lead, 'id' | 'dateAdded'>) => Promise<boolean>;
@@ -27,9 +28,10 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry, selec
       return;
     }
 
-    // Extract country from address (last part after comma)
-    const addressParts = discoveredLead.address.split(',').map(part => part.trim());
-    const country = addressParts.length > 1 ? addressParts[addressParts.length - 1] : '';
+    const { city, country } = parseLocation(
+      discoveredLead.address,
+      (discoveredLead as any).address_components
+    );
 
     const newLead: Omit<Lead, 'id' | 'dateAdded'> = {
       company: discoveredLead.name,
@@ -41,7 +43,8 @@ export const useLeadAddition = ({ onAddLead, setDiscoveredLeads, industry, selec
       status: 'Nova',
       potential: discoveredLead.aiAnalysis?.potential || 'Srednji',
       industry: industry || '',
-      country: country,
+      city: city || undefined,
+      country: country || undefined,
       businessProfileId: selectedBusinessProfile?.id,
       businessProfileName: selectedBusinessProfile?.name,
       businessCompanyName: selectedBusinessProfile?.company_name,
