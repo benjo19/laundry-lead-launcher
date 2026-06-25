@@ -13,6 +13,9 @@ import LoadingSpinner from '@/components/ui/loading-spinner';
 import ErrorMessage from '@/components/ui/error-message';
 import { Card, CardContent } from '@/components/ui/card';
 import { Calendar, AlertCircle, Clock, CheckCircle } from 'lucide-react';
+import DensityToggle from '@/components/ui/density-toggle';
+import { useDensity } from '@/hooks/useDensity';
+import { cn } from '@/lib/utils';
 
 interface NewReminderForm {
   title: string;
