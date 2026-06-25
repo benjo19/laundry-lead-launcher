@@ -1,55 +1,59 @@
 
-Cilj: popraviti zapinjanje na “Generiranje AI sadržaja...” tako da generiranje emaila ili uspješno završi, ili jasno prijavi grešku i vrati gumb u normalno stanje.
+## Što sam našao
 
-Što sam našao
-- U `EmailGenerator.tsx` se `isGenerating` pali prije poziva i gasi tek kad se async lanac završi. Ako bilo koji korak “visi”, UI ostaje zauvijek u loading stanju.
-- U `useIntegratedEmailService.ts` nema timeouta ni za `getContextForAI(...)` ni za `supabase.functions.invoke('generate-email')`.
-- `useIntegratedEmailService` koristi vlastiti `useAuth()` umjesto centralnog `AuthContext` stanja, pa može doći do nesklada sesije.
-- `getContextForAI()` u `useBusinessProfile.ts` može čekati na storage/signed URL/dokumente bez zaštite od sporog ili blokiranog zahtjeva.
-- Replay pokazuje i problem sa zaglavljivanjem na `/auth`, što može blokirati pozive edge funkcija koje traže prijavu.
+Backend je čist. Zadnjih 7 AI Gateway poziva za `generate-email` (zadnji u 15:42:20) — svi uspješni, 200 OK, 2-3 s. Edge funkcija isto 200 OK. Auth radi.
 
-Plan popravka
-1. Učvrstiti auth izvor
-- U `useIntegratedEmailService.ts` prebaciti provjeru korisnika na `useAuthContext()` umjesto zasebnog `useAuth()`.
-- Time će Email Generator koristiti isto auth stanje kao i `ProtectedRoute`.
+Znači "zaglavljivanje" se događa **na klijentu**. Identificirao sam 4 stvarna uzroka:
 
-2. Dodati timeout i fail-fast zaštitu za generiranje
-- U `useIntegratedEmailService.ts` dodati timeout wrapper za:
-  - dohvat business konteksta
-  - poziv `generate-email` edge funkciji
-- Ako timeout istekne:
-  - prikazati jasan toast tipa “Generiranje traje predugo, pokušajte ponovno”
-  - vratiti `null`
-  - omogućiti da se gumb odmah otključa
+### 1. `useEffect` s `setSavedFormData` u deps okida re-render petlju
+`src/components/EmailGenerator.tsx` linije 66-74 — efekt sprema u localStorage svaki put kad se promijeni bilo koje polje, a `recipients` je array koji se rekreira. Kombinirano sa `setIsGenerating(true)` toggle-om, ovo može uzrokovati duge zamrznute renderove kod velikih lista leadova (346 leadova u logu). Treba debounce + ukloniti `setSavedFormData` iz deps.
 
-3. Ograničiti rizik u business kontekstu
-- U `useBusinessProfile.ts` zaštititi dohvat dokumenata tako da spori ili neuspješni storage fetch ne blokira cijelo generiranje.
-- Ako dokumenti ne uspiju, generiranje treba nastaviti bez njih, samo s osnovnim profilom.
+### 2. Pozadinski `triggerWebhook` curi nakon outer timeouta u `saveDraft`
+`EmailGenerator.tsx` 593-597: `Promise.race` između webhook poziva (do 60s+ s 3 retrya) i 90s timeouta. Ako timeout odjavi, **`triggerWebhook` i dalje radi u pozadini**, drži `isLoading` u `useMakeIntegration`, i ako korisnik ponovno klikne — gleda stale state. Treba dijeliti `AbortController` između outer guarda i fetcha tako da prekid stvarno otkaže webhook.
 
-4. Poboljšati UI ponašanje u Email Generatoru
-- U `src/components/EmailGenerator.tsx` dodati:
-  - jasniji loading tekst (“Pripremam kontekst...”, “Generiram email...” ako želimo jednostavnu faznu poruku)
-  - fallback poruku kad generiranje ne vrati rezultat
-  - opcionalno gumb “Pokušaj ponovno” bez ručnog refresh-a stranice
-- Bitno: nikad ne ostaviti `isGenerating` u true nakon greške ili timeouta.
+### 3. `isGenerating` se ne resetira ako `generateEmail` baci sinkrono prije `try`
+`generateEmailContent` (226-314) — pre-flight provjere (template/industry/AI config) rade `return` **bez** `setIsGenerating(false)`, ali `setIsGenerating(true)` je tek na liniji 254 nakon njih. To je OK. Ali ako `useIntegratedEmailService` baci unhandled rejection iz `withTimeout` (npr. session refresh hang prije `try`), finally se izvršava. Ipak — ako se preflight `supabase.auth.getSession()` zaglavi prije nego što se `withTimeout` upali (rare), klijent stoji. Dodati `AbortSignal` na getSession i hard 6s outer timer.
 
-5. Stabilizirati auth screen
-- U `src/pages/Auth.tsx` i po potrebi `src/hooks/useAuth.tsx` smanjiti šansu da korisnik ostane zaglavljen na “Provjera prijave...”.
-- Kad auth provjera pukne ili istekne, korisnik mora dobiti login formu i mogućnost nastavka, umjesto beskonačnog limba.
-- Po potrebi dodatno očistiti stale session handling da se ne blokira edge poziv.
+### 4. Backfill efekt blokira na mountu s velikim listama
+Linije 136-197 — pri svakom mountu povlači `select * from emails where status='Sent'` pa iterira `updateLeadStatus` u petlji sekvencijalno za N leadova. S 346 leadova ovo lako traje 5-30s i blokira interakcije izgleda kao "zamrznuto". Treba: 1) limitirati select, 2) batch updates, 3) ne blokirati UI (pustiti u idleCallback).
 
-Tehnički detalji
-- Datoteke za izmjenu:
-  - `src/hooks/useIntegratedEmailService.ts`
-  - `src/hooks/useBusinessProfile.ts`
-  - `src/components/EmailGenerator.tsx`
-  - vjerojatno `src/pages/Auth.tsx`
-  - po potrebi `src/hooks/useAuth.tsx`
-- Ne očekujem promjene baze ni migracije.
-- Edge funkciju `supabase/functions/generate-email/index.ts` ne bih prvo mijenjao, jer glavni problem izgleda u klijentskom čekanju i auth/session sloju; po potrebi možemo naknadno dodati i server-side timeout/logging poruke.
+---
 
-Kako ću verificirati nakon implementacije
-- Generiranje s odabranim predloškom mora završiti uspjehom ili jasnom greškom unutar razumnog vremena.
-- Gumb više ne smije ostati trajno na “Generiranje AI sadržaja...”.
-- Ako business dokumenti kasne ili padnu, email se i dalje mora generirati bez njih.
-- Ako sesija nije valjana, korisnik treba odmah dobiti razumljivu auth poruku umjesto beskonačnog čekanja.
+## Plan popravka
+
+### A. `src/components/EmailGenerator.tsx`
+
+1. **Auto-save formi → debounce 500ms**, makni `setSavedFormData` iz deps efekta (linije 66-74).
+2. **saveDraft**: zamijeniti `Promise.race` sa zajedničkim `AbortController` — proslijediti ga u `triggerWebhook` da otkaže fetch kad timeout istekne; ukloniti curenje pozadinskog requesta.
+3. **Backfill efekt**: dodati `requestIdleCallback` wrapper, limitirati query na zadnjih 500 sent emailova, raditi `Promise.all` umjesto `for await`, i preskočiti ako `leads.length > 1000`.
+4. **Generate gumb**: dodati hard safety timer (60s) koji forsira `setIsGenerating(false)` čak i ako promise nikad ne resolve-a (safety net).
+
+### B. `src/hooks/useIntegratedEmailService.ts`
+
+5. Pre-flight `supabase.auth.getSession()` već ima 5s timeout — dodati isti i za `refreshSession()` (trenutno nezaštićen, linija 75).
+6. Logirati `console.log` na svakom koraku ('preflight ok', 'context fetched', 'invoking edge', 'edge returned') tako da u idućem incidentu odmah vidimo gdje visi.
+
+### C. `src/hooks/useMakeIntegration.ts`
+
+7. `triggerWebhook` mora prihvatiti externi `AbortSignal` parametar i proslijediti ga svakom fetch pokušaju (umjesto samo internog per-attempt controllera).
+8. Ako externi signal abortira, prekini retry petlju odmah i baci `AbortError`.
+
+### D. Dijagnostika (jednokratno)
+
+9. Dodati lagani in-app debug panel iza `?debug=1` koji prikazuje: zadnji error iz `generateEmail`/`saveDraft`, trajanje zadnjeg poziva, status `isGenerating`/`isSavingDraft`. Olakšava korisniku da nam pošalje točan trag bez DevToolsa.
+
+---
+
+## Što NE mijenjam
+
+- Edge funkciju `generate-email` — radi.
+- AI Gateway poziv — radi.
+- Make.com webhook URL i format — ostaju.
+- Auth flow — ostaje.
+
+## Verifikacija
+
+- Klik "Generiraj" 5x zaredom s velikim leads listom → gumb se nikad ne zaglavi >60s.
+- Klik "Spremi Draft" → ako Make.com ne odgovori za 20s, vidiš toast, gumb se otključa, **nema pozadinskog ghost POSTa** u Network tabu.
+- localStorage piše se rijetko (debounce), ne na svaki keystroke.
+- Backfill ne blokira tipkanje na mountu.
