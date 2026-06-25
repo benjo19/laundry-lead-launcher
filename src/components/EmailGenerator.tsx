@@ -583,14 +583,29 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
     let webhookOk = false;
     try {
-      webhookOk = await triggerWebhook(isEquipmentSale ? 'equipment_sale' : 'draft', draftData);
+      // 20s hard timeout — Make.com zna biti spor (vidjeli smo 12s+ kašnjenja)
+      const webhookPromise = triggerWebhook(isEquipmentSale ? 'equipment_sale' : 'draft', draftData);
+      const timeoutPromise = new Promise<boolean>((_, reject) =>
+        setTimeout(() => reject(new Error('TIMEOUT')), 20000)
+      );
+      webhookOk = await Promise.race([webhookPromise, timeoutPromise]);
     } catch (err: any) {
       console.error('Draft webhook error:', err);
-      toast({
-        title: "Greška pri slanju drafta na webhook",
-        description: err?.message || 'Nepoznata greška.',
-        variant: "destructive",
-      });
+      if (err?.message === 'TIMEOUT') {
+        toast({
+          title: "Webhook predugo odgovara",
+          description: "Make.com nije odgovorio u 20s. Draft je spremljen lokalno — provjerite Make.com scenarij.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Greška pri slanju drafta",
+          description: err?.message || 'Nepoznata greška.',
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSavingDraft(false);
     }
 
     if (editingDraftId) {
@@ -626,6 +641,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       });
     }
   };
+
 
 
   const editDraft = (email: Email) => {
