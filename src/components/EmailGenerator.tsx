@@ -1349,7 +1349,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 className="rounded"
               />
               <label htmlFor="is_equipment_sale" className="text-sm font-medium text-amber-900 cursor-pointer">
-                🧺 Prodaja opreme za pranje (koristi zaseban Make.com webhook)
+                🧺 Prodaja opreme za pranje (označi u payloadu za routing u Make.com)
               </label>
             </div>
 
