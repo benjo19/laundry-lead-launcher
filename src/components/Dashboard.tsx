@@ -351,35 +351,40 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               value={todayReminders.length.toString()}
               icon={Phone}
               tone="warning"
-              onClick={() => onNavigateToModule?.('crm-reminder')}
+              onClick={() => onNavigateToModule?.("crm-reminder")}
+              compact={compact}
             />
             <Kpi
               label="Zakašnjele aktivnosti"
               value={overdueReminders.length.toString()}
               icon={AlertTriangle}
               tone="danger"
-              onClick={() => onNavigateToModule?.('crm-reminder')}
+              onClick={() => onNavigateToModule?.("crm-reminder")}
+              compact={compact}
             />
             <Kpi
               label="Hot leadovi"
               value={hotLeads.length.toString()}
               icon={Flame}
               tone="warning"
-              onClick={() => onNavigateToModule?.('lead-hunter')}
+              onClick={() => onNavigateToModule?.("lead-hunter")}
+              compact={compact}
             />
             <Kpi
               label="Otvorene ponude"
               value={openOffers.length.toString()}
               icon={FileText}
               tone="neutral"
-              onClick={() => onNavigateToModule?.('offers')}
+              onClick={() => onNavigateToModule?.("offers")}
+              compact={compact}
             />
             <Kpi
               label="Vrijednost pipelinea"
               value={EUR.format(pipelineValue)}
               icon={Wallet}
               tone="neutral"
-              onClick={() => onNavigateToModule?.('offers')}
+              onClick={() => onNavigateToModule?.("offers")}
+              compact={compact}
             />
             <Kpi
               label="Procijenjena marža"
@@ -387,7 +392,8 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               hint="~22%"
               icon={Percent}
               tone="success"
-              onClick={() => onNavigateToModule?.('offers')}
+              onClick={() => onNavigateToModule?.("offers")}
+              compact={compact}
             />
           </div>
 
@@ -408,7 +414,8 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 <p className="text-xs text-muted-foreground">Sljedeći najbolji korak po klijentu</p>
               </div>
               <button
-                onClick={() => onNavigateToModule?.('crm-reminder')}
+                onClick={() => onNavigateToModule?.("crm-reminder")}
+              compact={compact}
                 className="text-xs font-medium text-primary hover:text-primary-hover inline-flex items-center gap-1"
               >
                 Sve aktivnosti <ArrowUpRight className="h-3.5 w-3.5" />
@@ -477,7 +484,8 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                   <li
                     key={o.id}
                     className="px-5 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => onNavigateToModule?.('offers')}
+                    onClick={() => onNavigateToModule?.("offers")}
+              compact={compact}
                   >
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -514,7 +522,8 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                   <li
                     key={l.id}
                     className="px-5 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => onNavigateToModule?.('lead-hunter')}
+                    onClick={() => onNavigateToModule?.("lead-hunter")}
+              compact={compact}
                   >
                     <span className="h-8 w-8 rounded-full bg-priority-hot/10 text-priority-hot text-[11px] font-semibold flex items-center justify-center shrink-0">
                       {(l.company || '?').slice(0, 2).toUpperCase()}
@@ -549,17 +558,20 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               <QuickAction
                 icon={UserPlus}
                 label="Dodaj lead"
-                onClick={() => onNavigateToModule?.('lead-hunter')}
+                onClick={() => onNavigateToModule?.("lead-hunter")}
+              compact={compact}
               />
               <QuickAction
                 icon={FilePlus}
                 label="Dodaj ponudu"
-                onClick={() => onNavigateToModule?.('offers')}
+                onClick={() => onNavigateToModule?.("offers")}
+              compact={compact}
               />
               <QuickAction
                 icon={CalendarPlus}
                 label="Dodaj follow-up"
-                onClick={() => onNavigateToModule?.('crm-reminder')}
+                onClick={() => onNavigateToModule?.("crm-reminder")}
+              compact={compact}
               />
               <QuickAction
                 icon={Sparkles}
