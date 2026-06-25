@@ -51,7 +51,7 @@ export const useMakeIntegration = () => {
     }
   }, [user]);
 
-  const triggerWebhook = useCallback(async (eventType: string, data: any): Promise<boolean> => {
+  const triggerWebhook = useCallback(async (eventType: string, data: any, externalSignal?: AbortSignal): Promise<boolean> => {
     if (!user) {
       console.log('Make.com: User not logged in');
       return false;
@@ -306,7 +306,15 @@ export const useMakeIntegration = () => {
 
       let lastError: any = null;
       for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+        // Bail early if caller already aborted (npr. outer guard timeout u saveDraft)
+        if (externalSignal?.aborted) {
+          const err: any = new Error('Aborted by caller');
+          err.name = 'AbortError';
+          throw err;
+        }
         const controller = new AbortController();
+        const onExternalAbort = () => controller.abort();
+        externalSignal?.addEventListener('abort', onExternalAbort);
         const timeoutId = setTimeout(() => controller.abort(), PER_ATTEMPT_TIMEOUT_MS);
         try {
           const response = await fetch(webhookUrl, {
@@ -319,6 +327,7 @@ export const useMakeIntegration = () => {
             signal: controller.signal,
           });
           clearTimeout(timeoutId);
+          externalSignal?.removeEventListener('abort', onExternalAbort);
 
           if (response.ok || response.status === 0) {
             console.log(`Make.com webhook triggered for event: ${eventType} (attempt ${attempt})`);
@@ -337,8 +346,13 @@ export const useMakeIntegration = () => {
           return false;
         } catch (err: any) {
           clearTimeout(timeoutId);
+          externalSignal?.removeEventListener('abort', onExternalAbort);
           lastError = err;
           const isAbort = err?.name === 'AbortError';
+          // Ako je externi signal abortirao — prekini odmah, ne retryaj.
+          if (isAbort && externalSignal?.aborted) {
+            throw err;
+          }
           const isNetwork = err instanceof TypeError; // fetch network failure
           const retriable = isAbort || isNetwork;
           if (retriable && attempt < MAX_ATTEMPTS) {

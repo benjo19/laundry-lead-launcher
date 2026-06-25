@@ -80,7 +80,11 @@ export const useIntegratedEmailService = () => {
       // If token expires in <60s, refresh proactively so the long AI call doesn't fail mid-flight.
       const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
       if (expiresAt && expiresAt - Date.now() < 60_000) {
-        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+        const { data: refreshed, error: refreshErr } = await withTimeout(
+          supabase.auth.refreshSession(),
+          5000,
+          'refresh-session'
+        );
         if (refreshErr || !refreshed?.session) {
           toast({
             title: "Sesija ističe",
@@ -90,6 +94,7 @@ export const useIntegratedEmailService = () => {
           return null;
         }
       }
+      console.log('[generateEmail] preflight ok');
     } catch (e: any) {
       toast({
         title: "Problem s autentikacijom",
@@ -125,6 +130,7 @@ export const useIntegratedEmailService = () => {
         console.warn('Business context unavailable, continuing without it:', error?.message);
         businessContext = '';
       }
+      console.log('[generateEmail] context ready, invoking edge function');
 
       // Map emailType to match edge function schema
       const emailTypeMap: Record<string, 'cold' | 'follow-up' | 'proposal' | 'introduction'> = {
@@ -155,6 +161,7 @@ export const useIntegratedEmailService = () => {
         45000,
         'generate-email'
       );
+      console.log('[generateEmail] edge function returned');
 
       console.log('Supabase function response:', { data, error });
 
