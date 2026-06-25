@@ -527,7 +527,11 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 {hotLeads.slice(0, 5).map((l) => (
                   <li
                     key={l.id}
-                    className="px-5 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer"
+                    className={cn(
+                      'flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer',
+                      rowPx,
+                      rowPy
+                    )}
                     onClick={() => onNavigateToModule?.("lead-hunter")}
                   >
                     <span className="h-8 w-8 rounded-full bg-priority-hot/10 text-priority-hot text-[11px] font-semibold flex items-center justify-center shrink-0">
