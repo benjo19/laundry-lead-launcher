@@ -21,6 +21,8 @@ import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { useReminders } from '@/hooks/useReminders';
 import { Lead, Reminder } from '@/types';
 import SalesFunnel from '@/components/SalesFunnel';
+import DensityToggle from '@/components/ui/density-toggle';
+import { useDensity } from '@/hooks/useDensity';
 
 interface DashboardProps {
   onNavigateToModule?: (module: string) => void;
@@ -88,6 +90,7 @@ const Kpi = ({
   icon: Icon,
   tone = 'neutral',
   onClick,
+  compact = false,
 }: {
   label: string;
   value: string;
@@ -95,6 +98,7 @@ const Kpi = ({
   icon: React.ComponentType<{ className?: string }>;
   tone?: 'neutral' | 'warning' | 'danger' | 'success';
   onClick?: () => void;
+  compact?: boolean;
 }) => {
   const toneRing: Record<string, string> = {
     neutral: 'bg-muted text-muted-foreground',
@@ -106,16 +110,30 @@ const Kpi = ({
     <button
       type="button"
       onClick={onClick}
-      className="surface-card text-left p-4 hover:border-foreground/20 hover:shadow-lg transition-all group"
+      className={cn(
+        'surface-card text-left hover:border-foreground/20 hover:shadow-lg transition-all group',
+        compact ? 'p-2.5' : 'p-4'
+      )}
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className={cn('flex items-start justify-between', compact ? 'gap-2' : 'gap-3')}>
         <p className="section-title">{label}</p>
-        <span className={cn('h-8 w-8 rounded-md flex items-center justify-center', toneRing[tone])}>
-          <Icon className="h-4 w-4" />
+        <span
+          className={cn(
+            'rounded-md flex items-center justify-center',
+            compact ? 'h-6 w-6' : 'h-8 w-8',
+            toneRing[tone]
+          )}
+        >
+          <Icon className={compact ? 'h-3.5 w-3.5' : 'h-4 w-4'} />
         </span>
       </div>
-      <div className="mt-3 flex items-baseline gap-2">
-        <span className="text-3xl font-semibold tabular-nums tracking-tight text-foreground">
+      <div className={cn('flex items-baseline gap-2', compact ? 'mt-1.5' : 'mt-3')}>
+        <span
+          className={cn(
+            'font-semibold tabular-nums tracking-tight text-foreground',
+            compact ? 'text-xl' : 'text-3xl'
+          )}
+        >
           {value}
         </span>
         {hint && <span className="text-xs text-muted-foreground">{hint}</span>}
@@ -169,6 +187,10 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
   const { user } = useAuthContext();
   const { leads } = useLeadManagement();
   const { reminders } = useReminders();
+  const { density } = useDensity();
+  const compact = density === 'compact';
+  const rowPy = compact ? 'py-1.5' : 'py-3';
+  const rowPx = compact ? 'px-3' : 'px-5';
 
   const [offers, setOffers] = useState<OfferRow[]>([]);
   const [offerItems, setOfferItems] = useState<OfferItemRow[]>([]);
@@ -306,13 +328,16 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
             Koga danas zovem, što stoji i gdje je novac.
           </p>
         </div>
-        <div className="text-xs text-muted-foreground tabular-nums">
-          {today.toLocaleDateString('hr-HR', {
-            weekday: 'long',
-            day: 'numeric',
-            month: 'long',
-            year: 'numeric',
-          })}
+        <div className="flex items-center gap-3">
+          <DensityToggle />
+          <div className="text-xs text-muted-foreground tabular-nums">
+            {today.toLocaleDateString('hr-HR', {
+              weekday: 'long',
+              day: 'numeric',
+              month: 'long',
+              year: 'numeric',
+            })}
+          </div>
         </div>
       </header>
 
@@ -326,35 +351,40 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               value={todayReminders.length.toString()}
               icon={Phone}
               tone="warning"
-              onClick={() => onNavigateToModule?.('crm-reminder')}
+              onClick={() => onNavigateToModule?.("crm-reminder")}
+              compact={compact}
             />
             <Kpi
               label="Zakašnjele aktivnosti"
               value={overdueReminders.length.toString()}
               icon={AlertTriangle}
               tone="danger"
-              onClick={() => onNavigateToModule?.('crm-reminder')}
+              onClick={() => onNavigateToModule?.("crm-reminder")}
+              compact={compact}
             />
             <Kpi
               label="Hot leadovi"
               value={hotLeads.length.toString()}
               icon={Flame}
               tone="warning"
-              onClick={() => onNavigateToModule?.('lead-hunter')}
+              onClick={() => onNavigateToModule?.("lead-hunter")}
+              compact={compact}
             />
             <Kpi
               label="Otvorene ponude"
               value={openOffers.length.toString()}
               icon={FileText}
               tone="neutral"
-              onClick={() => onNavigateToModule?.('offers')}
+              onClick={() => onNavigateToModule?.("offers")}
+              compact={compact}
             />
             <Kpi
               label="Vrijednost pipelinea"
               value={EUR.format(pipelineValue)}
               icon={Wallet}
               tone="neutral"
-              onClick={() => onNavigateToModule?.('offers')}
+              onClick={() => onNavigateToModule?.("offers")}
+              compact={compact}
             />
             <Kpi
               label="Procijenjena marža"
@@ -362,7 +392,8 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               hint="~22%"
               icon={Percent}
               tone="success"
-              onClick={() => onNavigateToModule?.('offers')}
+              onClick={() => onNavigateToModule?.("offers")}
+              compact={compact}
             />
           </div>
 
@@ -383,7 +414,7 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 <p className="text-xs text-muted-foreground">Sljedeći najbolji korak po klijentu</p>
               </div>
               <button
-                onClick={() => onNavigateToModule?.('crm-reminder')}
+                onClick={() => onNavigateToModule?.("crm-reminder")}
                 className="text-xs font-medium text-primary hover:text-primary-hover inline-flex items-center gap-1"
               >
                 Sve aktivnosti <ArrowUpRight className="h-3.5 w-3.5" />
@@ -401,7 +432,11 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                   <li key={it.key}>
                     <button
                       onClick={it.onClick}
-                      className="w-full flex items-center gap-3 px-5 py-3 hover:bg-muted/50 transition-colors text-left"
+                      className={cn(
+                        'w-full flex items-center gap-3 hover:bg-muted/50 transition-colors text-left',
+                        rowPx,
+                        rowPy
+                      )}
                     >
                       <span
                         className={cn(
@@ -451,8 +486,12 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 {overdueOffers.slice(0, 5).map((o) => (
                   <li
                     key={o.id}
-                    className="px-5 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => onNavigateToModule?.('offers')}
+                    className={cn(
+                      'flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer',
+                      rowPx,
+                      rowPy
+                    )}
+                    onClick={() => onNavigateToModule?.("offers")}
                   >
                     <FileText className="h-4 w-4 text-muted-foreground shrink-0" />
                     <div className="flex-1 min-w-0">
@@ -488,8 +527,12 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 {hotLeads.slice(0, 5).map((l) => (
                   <li
                     key={l.id}
-                    className="px-5 py-3 flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer"
-                    onClick={() => onNavigateToModule?.('lead-hunter')}
+                    className={cn(
+                      'flex items-center gap-3 hover:bg-muted/50 transition-colors cursor-pointer',
+                      rowPx,
+                      rowPy
+                    )}
+                    onClick={() => onNavigateToModule?.("lead-hunter")}
                   >
                     <span className="h-8 w-8 rounded-full bg-priority-hot/10 text-priority-hot text-[11px] font-semibold flex items-center justify-center shrink-0">
                       {(l.company || '?').slice(0, 2).toUpperCase()}
@@ -524,17 +567,17 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               <QuickAction
                 icon={UserPlus}
                 label="Dodaj lead"
-                onClick={() => onNavigateToModule?.('lead-hunter')}
+                onClick={() => onNavigateToModule?.("lead-hunter")}
               />
               <QuickAction
                 icon={FilePlus}
                 label="Dodaj ponudu"
-                onClick={() => onNavigateToModule?.('offers')}
+                onClick={() => onNavigateToModule?.("offers")}
               />
               <QuickAction
                 icon={CalendarPlus}
                 label="Dodaj follow-up"
-                onClick={() => onNavigateToModule?.('crm-reminder')}
+                onClick={() => onNavigateToModule?.("crm-reminder")}
               />
               <QuickAction
                 icon={Sparkles}
@@ -560,7 +603,7 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 .map((r: Reminder) => {
                   const overdue = isBeforeToday(new Date(r.date));
                   return (
-                    <li key={r.id} className="px-4 py-3 flex items-start gap-3">
+                    <li key={r.id} className={cn('flex items-start gap-3', compact ? 'px-3 py-1.5' : 'px-4 py-3')}>
                       <span
                         className={cn(
                           'mt-1 h-2 w-2 rounded-full shrink-0',

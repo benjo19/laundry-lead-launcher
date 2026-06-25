@@ -12,9 +12,10 @@ interface ReminderItemProps {
   onPostpone: (id: number) => void;
   onDelete: (id: number) => void;
   onEdit: (reminder: Reminder) => void;
+  compact?: boolean;
 }
 
-const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit }: ReminderItemProps) => {
+const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit, compact = false }: ReminderItemProps) => {
   const calendarUrl = generateGoogleCalendarLink({
     title: reminder.title,
     description: reminder.description || '',
@@ -39,7 +40,7 @@ const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit }
   };
 
   return (
-    <div className="border rounded-lg p-4 hover:shadow-sm transition-all">
+    <div className={`border rounded-lg hover:shadow-sm transition-all ${compact ? 'p-2' : 'p-4'}`}>
       <div className="flex items-start justify-between mb-2">
         <div className="flex-1">
           <div className="flex items-center space-x-2 mb-1">
