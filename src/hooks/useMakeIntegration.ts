@@ -152,7 +152,6 @@ export const useMakeIntegration = () => {
             to_emails_list: toEmailsList,
             ...(normalizedRecipients.length > 0 && { recipients: normalizedRecipients }),
             ...(data.company_name && { company_name: data.company_name }),
-            ...(data.profile_name && { profile_name: data.profile_name }),
             ...(clientCompanyName && { client_company_name: clientCompanyName }),
             ...(clientName && { client_name: clientName })
           },
@@ -162,7 +161,6 @@ export const useMakeIntegration = () => {
             to_emails_list: 'array',
             recipients: 'array',
             company_name: 'string',
-            profile_name: 'string',
             client_company_name: 'string',
             client_name: 'string'
           }
