@@ -603,7 +603,7 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
                 .map((r: Reminder) => {
                   const overdue = isBeforeToday(new Date(r.date));
                   return (
-                    <li key={r.id} className="px-4 py-3 flex items-start gap-3">
+                    <li key={r.id} className={cn('flex items-start gap-3', compact ? 'px-3 py-1.5' : 'px-4 py-3')}>
                       <span
                         className={cn(
                           'mt-1 h-2 w-2 rounded-full shrink-0',
