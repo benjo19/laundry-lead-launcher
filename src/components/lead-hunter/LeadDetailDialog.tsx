@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Mail, Phone, MapPin, Globe, Users, Building2, Calendar, Save } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { LEAD_STATUS_OPTIONS } from '@/lib/leadStatus';
 
 interface LeadDetailDialogProps {
   lead: Lead | null;
