@@ -18,6 +18,8 @@ interface MakeSettings {
   content_booster_auto_trigger?: boolean;
   email_webhook_url?: string;
   email_auto_trigger?: boolean;
+  equipment_sales_webhook_url?: string;
+  equipment_sales_auto_trigger?: boolean;
   crm_export_webhook_url?: string;
   crm_export_auto_trigger?: boolean;
 }
@@ -62,7 +64,8 @@ export const useMakeIntegration = () => {
       
       // Determine which webhook to use based on event type
       const isContentEvent = eventType === 'content_published';
-      const isEmailEvent = eventType === 'sent' || eventType === 'draft';
+      const isEquipmentEvent = eventType === 'equipment_sale';
+      const isEmailEvent = !isEquipmentEvent && (eventType === 'sent' || eventType === 'draft');
       const isCRMExportEvent = eventType === 'crm_export';
       const isLeadEvent = eventType === 'lead_added';
       
@@ -72,6 +75,9 @@ export const useMakeIntegration = () => {
       if (isContentEvent) {
         webhookUrl = settings?.content_booster_webhook_url;
         autoTrigger = settings?.content_booster_auto_trigger;
+      } else if (isEquipmentEvent) {
+        webhookUrl = settings?.equipment_sales_webhook_url;
+        autoTrigger = settings?.equipment_sales_auto_trigger;
       } else if (isEmailEvent) {
         webhookUrl = settings?.email_webhook_url;
         autoTrigger = settings?.email_auto_trigger;
@@ -100,7 +106,7 @@ export const useMakeIntegration = () => {
       let unifiedData: MakeWebhookData;
       const hasImageBlob = data.image instanceof Blob;
 
-      if (isEmailEvent) {
+      if (isEmailEvent || isEquipmentEvent) {
         const recipientsList = data.recipients || [{ to_email: data.to_email || '' }];
         const toEmailsList = recipientsList
           .flatMap((r: any) => {

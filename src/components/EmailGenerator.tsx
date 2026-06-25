@@ -59,6 +59,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [sendStatuses, setSendStatuses] = useState<Record<string, SendStatus>>({});
   const [lastSendError, setLastSendError] = useState<string | null>(null);
   const [lastSendCompletedAt, setLastSendCompletedAt] = useState<Date | null>(null);
+  const [isEquipmentSale, setIsEquipmentSale] = useState<boolean>(false);
 
   // Save form data to localStorage whenever fields change
   useEffect(() => {
@@ -424,7 +425,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         }),
       };
 
-      const webhookTriggered = await triggerWebhook('sent', bulkPayload);
+      const webhookTriggered = await triggerWebhook(isEquipmentSale ? 'equipment_sale' : 'sent', bulkPayload);
 
       if (!webhookTriggered) {
         // Označi sve kao neuspjeh u UI-u
@@ -1265,7 +1266,20 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
                 <Progress value={(bulkSendProgress / bulkSendTotal) * 100} className="h-2" />
               </div>
             )}
-            
+
+            <div className="flex items-center space-x-2 p-3 rounded-lg border border-amber-200 bg-amber-50">
+              <input
+                type="checkbox"
+                id="is_equipment_sale"
+                checked={isEquipmentSale}
+                onChange={(e) => setIsEquipmentSale(e.target.checked)}
+                className="rounded"
+              />
+              <label htmlFor="is_equipment_sale" className="text-sm font-medium text-amber-900 cursor-pointer">
+                🧺 Prodaja opreme za pranje (koristi zaseban Make.com webhook)
+              </label>
+            </div>
+
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               <Button 
                 onClick={sendEmail} 
