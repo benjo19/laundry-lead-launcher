@@ -329,6 +329,7 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
               Dodaj Lead
             </Button>
           </div>
+          <DensityToggle className="self-start sm:self-auto" />
         </div>
       </div>
 
