@@ -1,136 +1,168 @@
-
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Brentareno CRM — premium B2B sales cockpit design tokens.
+  All colors are HSL. Never hardcode colors in components — use these tokens.
+*/
+
 @layer base {
   :root {
-    /* iOS/Android inspired light mode */
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
+    /* Surfaces */
+    --background: 220 20% 97%;
+    --foreground: 222 35% 14%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
+    --card-foreground: 222 35% 14%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    
-    /* System blue for primary */
-    --primary: 213 93% 68%;
-    --primary-foreground: 0 0% 100%;
-    --primary-hover: 213 93% 73%;
-    --primary-active: 213 93% 63%;
-    
-    /* Light gray secondary */
-    --secondary: 210 40% 98%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --secondary-hover: 210 40% 96%;
-    
-    /* Muted grays */
-    --muted: 210 40% 98%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    
-    /* Accent colors */
-    --accent: 210 40% 98%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --accent-hover: 210 40% 96%;
-    
-    /* System red for destructive */
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    
-    /* Light borders */
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 213 93% 68%;
-    
-    /* Success and warning */
-    --success: 142 76% 36%;
-    --success-foreground: 355.7 100% 97.3%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 48 96% 89%;
+    --popover-foreground: 222 35% 14%;
 
-    /* Elegant gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(213 93% 68%), hsl(213 93% 78%));
-    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(210 40% 98%));
-    --gradient-hover: linear-gradient(135deg, hsl(213 93% 73%), hsl(213 93% 68%));
-    
-    /* Subtle shadows */
-    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-    --shadow-elegant: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-    
-    /* Smooth transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    --transition-bounce: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    
-    --radius: 0.5rem;
+    /* Primary — deep navy for trust */
+    --primary: 217 60% 28%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 217 60% 24%;
+    --primary-active: 217 60% 20%;
+
+    /* Secondary — neutral slate */
+    --secondary: 220 16% 94%;
+    --secondary-foreground: 222 35% 14%;
+    --secondary-hover: 220 16% 90%;
+
+    /* Muted */
+    --muted: 220 16% 94%;
+    --muted-foreground: 220 10% 46%;
+
+    /* Accent — subtle slate hover */
+    --accent: 220 16% 94%;
+    --accent-foreground: 222 35% 14%;
+    --accent-hover: 220 16% 90%;
+
+    /* Semantic states — used sparingly */
+    --success: 150 55% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 90% 50%;
+    --warning-foreground: 0 0% 100%;
+    --destructive: 0 70% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    /* Borders, inputs, focus ring */
+    --border: 220 16% 90%;
+    --input: 220 16% 90%;
+    --ring: 217 60% 28%;
+
+    /* Lead/Offer status tokens (badges, dots) */
+    --status-new: 217 60% 45%;
+    --status-contacted: 200 60% 42%;
+    --status-analysis: 250 45% 50%;
+    --status-offer-draft: 220 14% 45%;
+    --status-offer-sent: 200 60% 42%;
+    --status-negotiation: 32 90% 50%;
+    --status-financing: 280 40% 50%;
+    --status-won: 150 55% 38%;
+    --status-lost: 0 70% 48%;
+    --status-cold: 220 10% 60%;
+
+    /* Priority */
+    --priority-hot: 0 70% 48%;
+    --priority-warm: 32 90% 50%;
+    --priority-cold: 220 10% 60%;
+
+    /* Shadows — subtle, premium */
+    --shadow-sm: 0 1px 2px 0 hsl(222 35% 14% / 0.05);
+    --shadow-md: 0 1px 3px 0 hsl(222 35% 14% / 0.06), 0 1px 2px -1px hsl(222 35% 14% / 0.04);
+    --shadow-lg: 0 4px 12px -2px hsl(222 35% 14% / 0.08), 0 2px 6px -2px hsl(222 35% 14% / 0.05);
+    --shadow-elegant: 0 8px 24px -8px hsl(222 35% 14% / 0.12);
+
+    /* Transitions */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+    --radius: 0.625rem;
+
+    /* Sidebar — dark navy */
+    --sidebar-background: 222 35% 14%;
+    --sidebar-foreground: 215 20% 75%;
+    --sidebar-primary: 213 70% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 222 30% 19%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 30% 22%;
+    --sidebar-ring: 213 70% 55%;
+
+    /* Legacy gradient tokens — kept neutral so older components don't break */
+    --gradient-primary: linear-gradient(135deg, hsl(217 60% 28%), hsl(217 60% 36%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 20% 98%));
+    --gradient-hover: linear-gradient(135deg, hsl(217 60% 24%), hsl(217 60% 28%));
   }
 
   .dark {
-    /* Refined neutral dark mode (Linear/GitHub inspired) */
-    --background: 222 18% 8%;
+    --background: 222 28% 9%;
     --foreground: 210 20% 96%;
-    --card: 222 16% 11%;
+    --card: 222 26% 12%;
     --card-foreground: 210 20% 96%;
-    --popover: 222 16% 11%;
+    --popover: 222 26% 12%;
     --popover-foreground: 210 20% 96%;
 
-    /* Brighter, more vivid system blue for dark mode */
-    --primary: 213 94% 62%;
+    --primary: 213 70% 58%;
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 213 94% 68%;
-    --primary-active: 213 94% 56%;
+    --primary-hover: 213 70% 64%;
+    --primary-active: 213 70% 52%;
 
-    /* Dark secondary */
-    --secondary: 222 14% 16%;
+    --secondary: 222 20% 17%;
     --secondary-foreground: 210 20% 96%;
-    --secondary-hover: 222 14% 20%;
+    --secondary-hover: 222 20% 21%;
 
-    /* Dark muted */
-    --muted: 222 14% 16%;
+    --muted: 222 20% 17%;
     --muted-foreground: 215 16% 70%;
 
-    /* Dark accent */
-    --accent: 222 14% 18%;
+    --accent: 222 20% 19%;
     --accent-foreground: 210 20% 96%;
-    --accent-hover: 222 14% 22%;
+    --accent-hover: 222 20% 23%;
 
-    /* Dark destructive (more readable) */
+    --success: 150 55% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 32 90% 55%;
+    --warning-foreground: 222 28% 9%;
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Dark borders & inputs (slightly visible) */
-    --border: 222 14% 20%;
-    --input: 222 14% 18%;
-    --ring: 213 94% 62%;
+    --border: 222 20% 22%;
+    --input: 222 20% 19%;
+    --ring: 213 70% 58%;
 
-    /* Dark success and warning */
-    --success: 142 70% 45%;
-    --success-foreground: 0 0% 100%;
-    --warning: 38 92% 55%;
-    --warning-foreground: 222 18% 8%;
+    --status-new: 213 70% 60%;
+    --status-contacted: 200 60% 55%;
+    --status-analysis: 250 55% 65%;
+    --status-offer-draft: 220 14% 60%;
+    --status-offer-sent: 200 60% 55%;
+    --status-negotiation: 32 90% 55%;
+    --status-financing: 280 50% 65%;
+    --status-won: 150 55% 50%;
+    --status-lost: 0 72% 58%;
+    --status-cold: 220 10% 55%;
 
-    /* Dark gradients (subtle) */
-    --gradient-primary: linear-gradient(135deg, hsl(213 94% 58%), hsl(213 94% 70%));
-    --gradient-card: linear-gradient(145deg, hsl(222 16% 11%), hsl(222 14% 14%));
-    --gradient-hover: linear-gradient(135deg, hsl(213 94% 64%), hsl(213 94% 58%));
+    --priority-hot: 0 72% 58%;
+    --priority-warm: 32 90% 55%;
+    --priority-cold: 220 10% 55%;
 
-    /* Stronger shadows for dark mode depth */
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.4);
-    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.5), 0 2px 4px -2px rgb(0 0 0 / 0.5);
-    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.6), 0 4px 6px -4px rgb(0 0 0 / 0.6);
-    --shadow-elegant: 0 25px 50px -12px rgb(0 0 0 / 0.8);
+    --shadow-md: 0 2px 6px -1px rgb(0 0 0 / 0.45);
+    --shadow-lg: 0 8px 20px -4px rgb(0 0 0 / 0.55);
+    --shadow-elegant: 0 12px 32px -8px rgb(0 0 0 / 0.7);
 
-    /* Sidebar tokens for dark */
-    --sidebar-background: 222 18% 9%;
-    --sidebar-foreground: 210 20% 92%;
-    --sidebar-primary: 213 94% 62%;
+    --sidebar-background: 222 35% 10%;
+    --sidebar-foreground: 215 20% 75%;
+    --sidebar-primary: 213 70% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 14% 16%;
-    --sidebar-accent-foreground: 210 20% 96%;
-    --sidebar-border: 222 14% 18%;
-    --sidebar-ring: 213 94% 62%;
+    --sidebar-accent: 222 30% 15%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 222 30% 18%;
+    --sidebar-ring: 213 70% 58%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(213 70% 52%), hsl(213 70% 60%));
+    --gradient-card: linear-gradient(180deg, hsl(222 26% 12%), hsl(222 24% 14%));
+    --gradient-hover: linear-gradient(135deg, hsl(213 70% 48%), hsl(213 70% 56%));
   }
 }
 
@@ -140,90 +172,83 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", sans-serif;
+    font-family: "Inter", system-ui, -apple-system, sans-serif;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Tabular numerals for KPIs, prices, dates */
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  h1, h2, h3, h4 {
+    @apply text-foreground;
+    letter-spacing: -0.01em;
   }
 }
 
-/* Fix dropdown z-index issues */
 @layer components {
-  /* Ensure all dropdown components have proper z-index and background */
+  /* Z-index / popover hardening (kept from previous setup) */
   [data-radix-popper-content-wrapper],
   [data-radix-portal] {
     z-index: 50 !important;
   }
-  
-  /* Select dropdowns */
   [role="listbox"],
   [role="menu"],
   [role="dialog"] {
     z-index: 50 !important;
     background-color: hsl(var(--popover)) !important;
     border: 1px solid hsl(var(--border)) !important;
-    box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1) !important;
+    box-shadow: var(--shadow-lg) !important;
   }
-  
-  /* Command palette and search dropdowns */
   [cmdk-root] {
     z-index: 50 !important;
     background-color: hsl(var(--popover)) !important;
   }
-  
-  /* Date picker and other floating elements */
-  .rdp-dropdown,
-  .rdp-caption_dropdowns {
-    z-index: 50 !important;
-    background-color: hsl(var(--popover)) !important;
-  }
-  
-  /* Ensure sheet overlays work properly */
   [data-radix-dialog-overlay],
   [data-radix-sheet-overlay] {
     z-index: 40 !important;
-    background-color: rgb(0 0 0 / 0.5) !important;
+    background-color: hsl(222 35% 14% / 0.5) !important;
   }
-  
   [data-radix-dialog-content],
   [data-radix-sheet-content] {
     z-index: 50 !important;
     background-color: hsl(var(--background)) !important;
   }
-  
-  /* Fix tooltip z-index */
   [data-radix-tooltip-content] {
     z-index: 60 !important;
     background-color: hsl(var(--popover)) !important;
     border: 1px solid hsl(var(--border)) !important;
   }
-  
-  /* Custom loading state styles */
-  .loading-shimmer {
-    background: linear-gradient(
-      90deg,
-      transparent,
-      rgba(255, 255, 255, 0.4),
-      transparent
-    );
-    background-size: 200% 100%;
-    animation: shimmer 1.5s infinite;
+
+  /* App background — clean slate, no playful gradients */
+  .bg-app-gradient {
+    background-color: hsl(var(--background));
   }
-  
-  @keyframes shimmer {
-    0% {
-      background-position: -200% 0;
-    }
-    100% {
-      background-position: 200% 0;
-    }
+
+  /* Card surface preset */
+  .surface-card {
+    background-color: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-md);
   }
-  
-  /* Improved focus states */
-  .focus-visible:focus-visible {
-    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+
+  /* Section heading style */
+  .section-title {
+    @apply text-xs font-semibold uppercase tracking-wider text-muted-foreground;
   }
-  
-  /* Better mobile touch targets */
+
+  /* Status dot for priority/status */
+  .status-dot {
+    @apply inline-block w-2 h-2 rounded-full;
+  }
+
+  /* Mobile touch targets */
   @media (max-width: 768px) {
-    button, 
+    button,
     [role="button"],
     input,
     select,
@@ -231,50 +256,16 @@
       min-height: 44px;
     }
   }
-  
-  /* Smooth transitions for better UX */
-  .transition-smooth {
-    transition: var(--transition-smooth);
+
+  /* Animations */
+  .animate-fade-in {
+    animation: fadeIn 0.25s ease-out;
   }
-  
-  .transition-bounce {
-    transition: var(--transition-bounce);
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
-  
-  /* Professional hover effects */
-  .hover-lift {
-    transition: all 0.3s ease;
-  }
-  
-  .hover-lift:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-elegant);
-  }
-  
-  .hover-scale {
-    transition: transform 0.2s ease;
-  }
-  
-  .hover-scale:hover {
-    transform: scale(1.02);
-  }
-  
-  .hover-scale-105:hover {
-    transform: scale(1.05);
-  }
-  
-  .hover-scale-102:hover {
-    transform: scale(1.02);
-  }
-  
-  /* Professional glassmorphism effect */
-  .glass {
-    background: hsl(var(--card) / 0.6);
-    backdrop-filter: blur(10px);
-    border: 1px solid hsl(var(--border) / 0.5);
-  }
-  
-  /* Loading states */
+
   .loading-shimmer {
     background: linear-gradient(
       90deg,
@@ -285,77 +276,35 @@
     background-size: 200% 100%;
     animation: shimmer 1.5s infinite;
   }
-  
-  /* Fade in animation */
-  .animate-fade-in {
-    animation: fadeIn 0.3s ease-in-out;
-  }
-  
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-      transform: translateY(10px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
-  }
-  
-  /* App background gradient — soft, modern, theme-aware */
-  .bg-app-gradient {
-    background-color: hsl(var(--background));
-    background-image:
-      radial-gradient(ellipse 80% 60% at 0% 0%, hsl(var(--primary) / 0.10), transparent 60%),
-      radial-gradient(ellipse 70% 60% at 100% 0%, hsl(262 83% 70% / 0.10), transparent 60%),
-      radial-gradient(ellipse 90% 70% at 50% 100%, hsl(var(--primary) / 0.06), transparent 60%),
-      linear-gradient(180deg, hsl(var(--muted) / 0.40), hsl(var(--background)));
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
 
-  .dark .bg-app-gradient {
-    background-image:
-      radial-gradient(ellipse 80% 60% at 0% 0%, hsl(var(--primary) / 0.18), transparent 60%),
-      radial-gradient(ellipse 70% 60% at 100% 0%, hsl(262 83% 65% / 0.14), transparent 60%),
-      radial-gradient(ellipse 90% 70% at 50% 100%, hsl(var(--primary) / 0.10), transparent 60%),
-      linear-gradient(180deg, hsl(var(--background)), hsl(222 18% 6%));
+  /* Legacy helpers — kept neutral so old components don't visually break */
+  .hover-lift { transition: var(--transition-smooth); }
+  .hover-lift:hover { box-shadow: var(--shadow-lg); }
+  .hover-scale, .hover-scale-105, .hover-scale-102 { transition: var(--transition-smooth); }
+  .transition-smooth { transition: var(--transition-smooth); }
+  .transition-bounce { transition: var(--transition-bounce); }
+  .glass {
+    background: hsl(var(--card) / 0.85);
+    backdrop-filter: blur(8px);
+    border: 1px solid hsl(var(--border));
   }
 
   /* Email content styling */
-  .prose p {
-    margin-bottom: 1em;
-    line-height: 1.6;
-  }
-  
-  .prose p:last-child {
-    margin-bottom: 0;
-  }
-  
-  .prose br {
-    display: block;
-    content: "";
-    margin-top: 0.5em;
-  }
+  .prose p { margin-bottom: 1em; line-height: 1.6; }
+  .prose p:last-child { margin-bottom: 0; }
+  .prose br { display: block; content: ""; margin-top: 0.5em; }
 }
 
-/* Print styles */
 @media print {
-  .no-print {
-    display: none !important;
-  }
+  .no-print { display: none !important; }
 }
 
-/* High contrast mode support */
-@media (prefers-contrast: high) {
-  :root {
-    --border: 0 0% 20%;
-  }
-}
-
-/* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
+  *, *::before, *::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;

@@ -64,6 +64,23 @@ export default {
 					DEFAULT: 'hsl(var(--warning))',
 					foreground: 'hsl(var(--warning-foreground))'
 				},
+				status: {
+					new: 'hsl(var(--status-new))',
+					contacted: 'hsl(var(--status-contacted))',
+					analysis: 'hsl(var(--status-analysis))',
+					'offer-draft': 'hsl(var(--status-offer-draft))',
+					'offer-sent': 'hsl(var(--status-offer-sent))',
+					negotiation: 'hsl(var(--status-negotiation))',
+					financing: 'hsl(var(--status-financing))',
+					won: 'hsl(var(--status-won))',
+					lost: 'hsl(var(--status-lost))',
+					cold: 'hsl(var(--status-cold))'
+				},
+				priority: {
+					hot: 'hsl(var(--priority-hot))',
+					warm: 'hsl(var(--priority-warm))',
+					cold: 'hsl(var(--priority-cold))'
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
