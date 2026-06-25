@@ -16,6 +16,7 @@ import LoadingSpinner from '@/components/ui/loading-spinner';
 import ErrorMessage from '@/components/ui/error-message';
 import { Input } from '@/components/ui/input';
 import { Lead } from '@/types';
+import { parseLocation } from '@/utils/locationParser';
 
 interface LeadHunterProps {
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
@@ -43,28 +44,20 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
   const uniquePotentials = useMemo(() => [...new Set(leads.map(lead => lead.potential))], [leads]);
   const uniqueIndustries = useMemo(() => [...new Set(leads.map(lead => lead.industry).filter(Boolean))], [leads]);
   
-  const uniqueCities = useMemo(() => {
-    const cities = leads.map(lead => {
-      if (!lead.location) return null;
-      const parts = lead.location.split(',');
-      // Take the second part if available (city), otherwise take the first part
-      // Format usually: "Street, City, Country" or "City, Country" or just "City"
-      return parts.length > 2 ? parts[1]?.trim() : 
-             parts.length > 1 ? parts[0]?.trim() : 
-             parts[0]?.trim();
-    }).filter(Boolean);
-    return [...new Set(cities)];
-  }, [leads]);
-  
-  const uniqueCountries = useMemo(() => {
-    const countries = leads.map(lead => {
-      if (!lead.location) return null;
-      const parts = lead.location.split(',');
-      // Take the last part as country (usually format: "Street, City, Country")
-      return parts.length > 1 ? parts[parts.length - 1]?.trim() : parts[0]?.trim();
-    }).filter(Boolean);
-    return [...new Set(countries)];
-  }, [leads]);
+  const leadCityOf = (lead: Lead) =>
+    lead.city || parseLocation(lead.location).city || null;
+  const leadCountryOf = (lead: Lead) =>
+    lead.country || parseLocation(lead.location).country || null;
+
+  const uniqueCities = useMemo(
+    () => [...new Set(leads.map(leadCityOf).filter(Boolean) as string[])],
+    [leads]
+  );
+
+  const uniqueCountries = useMemo(
+    () => [...new Set(leads.map(leadCountryOf).filter(Boolean) as string[])],
+    [leads]
+  );
 
   // Filter leads based on selected filters and search query
   const filteredLeads = useMemo(() => {
@@ -85,22 +78,10 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
       if (selectedStatus !== 'all' && lead.status !== selectedStatus) return false;
       if (selectedPotential !== 'all' && lead.potential !== selectedPotential) return false;
       if (selectedIndustry !== 'all' && lead.industry !== selectedIndustry) return false;
-      
-      if (selectedCountry !== 'all') {
-        const parts = lead.location?.split(',');
-        const leadCountry = parts && parts.length > 1 ? parts[parts.length - 1]?.trim() : parts?.[0]?.trim();
-        if (leadCountry !== selectedCountry) return false;
-      }
-      
-      if (selectedCity !== 'all') {
-        const parts = lead.location?.split(',');
-        // Use the same logic as uniqueCities generation
-        const leadCity = parts && parts.length > 2 ? parts[1]?.trim() : 
-                         parts && parts.length > 1 ? parts[0]?.trim() : 
-                         parts?.[0]?.trim();
-        if (leadCity !== selectedCity) return false;
-      }
-      
+
+      if (selectedCountry !== 'all' && leadCountryOf(lead) !== selectedCountry) return false;
+      if (selectedCity !== 'all' && leadCityOf(lead) !== selectedCity) return false;
+
       return true;
     });
   }, [leads, selectedStatus, selectedPotential, selectedIndustry, selectedCity, selectedCountry, debouncedSearchQuery]);
