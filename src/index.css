@@ -10,69 +10,69 @@
 
 @layer base {
   :root {
-    /* Surfaces */
-    --background: 220 20% 97%;
-    --foreground: 222 35% 14%;
+    /* Surfaces — premium B2B SaaS */
+    --background: 220 30% 97%;        /* #F4F6FA app bg */
+    --foreground: 222 47% 11%;        /* #0F172A text */
     --card: 0 0% 100%;
-    --card-foreground: 222 35% 14%;
+    --card-foreground: 222 47% 11%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222 35% 14%;
+    --popover-foreground: 222 47% 11%;
 
-    /* Primary — deep navy for trust */
-    --primary: 217 60% 28%;
+    /* Primary — deep blue (trust, sales action) */
+    --primary: 224 76% 48%;           /* #1D4ED8 */
     --primary-foreground: 0 0% 100%;
-    --primary-hover: 217 60% 24%;
-    --primary-active: 217 60% 20%;
+    --primary-hover: 224 76% 42%;
+    --primary-active: 224 76% 36%;
 
     /* Secondary — neutral slate */
-    --secondary: 220 16% 94%;
-    --secondary-foreground: 222 35% 14%;
-    --secondary-hover: 220 16% 90%;
+    --secondary: 220 20% 96%;
+    --secondary-foreground: 222 47% 11%;
+    --secondary-hover: 220 20% 92%;
 
     /* Muted */
-    --muted: 220 16% 94%;
-    --muted-foreground: 220 10% 46%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 215 16% 47%; /* #64748B */
 
     /* Accent — subtle slate hover */
-    --accent: 220 16% 94%;
-    --accent-foreground: 222 35% 14%;
-    --accent-hover: 220 16% 90%;
+    --accent: 220 20% 96%;
+    --accent-foreground: 222 47% 11%;
+    --accent-hover: 220 20% 92%;
 
-    /* Semantic states — used sparingly */
-    --success: 150 55% 38%;
+    /* Semantic states — used sparingly per brief */
+    --success: 142 71% 38%;           /* #16A34A — won/success only */
     --success-foreground: 0 0% 100%;
-    --warning: 32 90% 50%;
+    --warning: 38 92% 50%;            /* #F59E0B — hot/urgent only */
     --warning-foreground: 0 0% 100%;
-    --destructive: 0 70% 48%;
+    --destructive: 0 72% 47%;         /* #DC2626 — overdue/lost only */
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders, inputs, focus ring */
-    --border: 220 16% 90%;
-    --input: 220 16% 90%;
-    --ring: 217 60% 28%;
+    /* Borders, inputs, focus ring — hairline */
+    --border: 218 22% 92%;            /* #E4E8EF */
+    --input: 218 22% 92%;
+    --ring: 224 76% 48%;
 
     /* Lead/Offer status tokens (badges, dots) */
-    --status-new: 217 60% 45%;
-    --status-contacted: 200 60% 42%;
-    --status-analysis: 250 45% 50%;
-    --status-offer-draft: 220 14% 45%;
-    --status-offer-sent: 200 60% 42%;
-    --status-negotiation: 32 90% 50%;
-    --status-financing: 280 40% 50%;
-    --status-won: 150 55% 38%;
-    --status-lost: 0 70% 48%;
-    --status-cold: 220 10% 60%;
+    --status-new: 224 76% 48%;
+    --status-contacted: 199 89% 42%;
+    --status-analysis: 250 60% 55%;
+    --status-offer-draft: 215 16% 47%;
+    --status-offer-sent: 199 89% 42%;
+    --status-negotiation: 38 92% 50%;
+    --status-financing: 271 65% 55%;
+    --status-won: 142 71% 38%;
+    --status-lost: 0 72% 47%;
+    --status-cold: 215 14% 60%;
 
     /* Priority */
-    --priority-hot: 0 70% 48%;
-    --priority-warm: 32 90% 50%;
-    --priority-cold: 220 10% 60%;
+    --priority-hot: 38 92% 50%;       /* amber */
+    --priority-warm: 199 89% 42%;     /* blue */
+    --priority-cold: 215 14% 60%;     /* slate */
 
-    /* Shadows — subtle, premium */
-    --shadow-sm: 0 1px 2px 0 hsl(222 35% 14% / 0.05);
-    --shadow-md: 0 1px 3px 0 hsl(222 35% 14% / 0.06), 0 1px 2px -1px hsl(222 35% 14% / 0.04);
-    --shadow-lg: 0 4px 12px -2px hsl(222 35% 14% / 0.08), 0 2px 6px -2px hsl(222 35% 14% / 0.05);
-    --shadow-elegant: 0 8px 24px -8px hsl(222 35% 14% / 0.12);
+    /* Shadows — soft, premium */
+    --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.04);
+    --shadow-md: 0 1px 2px 0 hsl(222 47% 11% / 0.04), 0 1px 3px 0 hsl(222 47% 11% / 0.06);
+    --shadow-lg: 0 4px 12px -2px hsl(222 47% 11% / 0.08), 0 2px 6px -2px hsl(222 47% 11% / 0.05);
+    --shadow-elegant: 0 8px 24px -8px hsl(222 47% 11% / 0.12);
 
     /* Transitions */
     --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -80,20 +80,20 @@
 
     --radius: 0.625rem;
 
-    /* Sidebar — dark navy */
-    --sidebar-background: 222 35% 14%;
-    --sidebar-foreground: 215 20% 75%;
-    --sidebar-primary: 213 70% 55%;
+    /* Sidebar — deep navy (#0F1B3D → #1E3A5F) */
+    --sidebar-background: 222 60% 15%;        /* #0F1B3D */
+    --sidebar-foreground: 215 25% 78%;
+    --sidebar-primary: 217 91% 60%;           /* electric blue accent */
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 30% 19%;
+    --sidebar-accent: 220 47% 22%;            /* hover surface */
     --sidebar-accent-foreground: 0 0% 100%;
-    --sidebar-border: 222 30% 22%;
-    --sidebar-ring: 213 70% 55%;
+    --sidebar-border: 220 47% 22%;
+    --sidebar-ring: 217 91% 60%;
 
-    /* Legacy gradient tokens — kept neutral so older components don't break */
-    --gradient-primary: linear-gradient(135deg, hsl(217 60% 28%), hsl(217 60% 36%));
-    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 20% 98%));
-    --gradient-hover: linear-gradient(135deg, hsl(217 60% 24%), hsl(217 60% 28%));
+    /* Legacy gradient tokens — kept flat to avoid playful look */
+    --gradient-primary: linear-gradient(135deg, hsl(224 76% 48%), hsl(224 76% 42%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 30% 99%));
+    --gradient-hover: linear-gradient(135deg, hsl(224 76% 42%), hsl(224 76% 48%));
   }
 
   .dark {
