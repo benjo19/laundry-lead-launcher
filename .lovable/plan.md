@@ -1,176 +1,61 @@
+# Premium Sales Cockpit Redesign
 
-# Redizajn CRM-a u premium B2B prodajni cockpit (Brentareno / industrijska oprema za pranje)
+Visual + UX polish only. Database, Supabase, auth, webhooks, AI generation and CRM logic stay untouched. Every change is in `src/components/**`, `src/pages/**`, `src/index.css`, `tailwind.config.ts`.
 
-Cilj: zadržati svu postojeću funkcionalnost, Supabase integraciju, auth, rute i hookove. Mijenjamo isključivo vizualni sloj, navigaciju, strukturu dashboarda i raspored postojećih modula u nove "stranice". Tamo gdje stranica ne postoji, gradi se nova UI ljuska nad postojećim podacima (leads, emails, reminders, business_documents).
+## Design language (locked)
 
-## 1. Design system (temelj — radi se prvo)
+- **Palette**: navy sidebar `#0F1B3D` → `#1E3A5F`, app bg `#F4F6FA`, cards `#FFFFFF`, borders `#E4E8EF`, primary blue `#1D4ED8`, text `#0F172A` / muted `#64748B`.
+- **Semantic accents** (used sparingly, only where stated): amber `#F59E0B` for hot/urgent, red `#DC2626` for overdue/lost, green `#16A34A` for won/success.
+- **Surfaces**: 1px hairline borders, shadow `0 1px 2px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.06)`, radius `10px` cards / `8px` controls. No gradients except the navy sidebar.
+- **Type**: Inter (UI) + Inter Tight (headings/numerics, tabular-nums for KPIs).
+- **Density**: compact B2B (row height 44px, card padding 16–20px). No hero illustrations, no emoji, no decorative blocks.
 
-Mijenja se `src/index.css` i `tailwind.config.ts`:
+All colors land as HSL tokens in `index.css`; existing semantic tokens (`status-*`, `primary`, `sidebar-*`) get re-tuned — no hardcoded hex in components.
 
-- Pozadina app: svijetli slate `hsl(220 20% 97%)`
-- Sidebar: tamno navy `hsl(222 35% 14%)` s muted tekstom `hsl(215 20% 70%)` i aktivnom stavkom u `hsl(213 70% 55%)`
-- Kartice: bijele `hsl(0 0% 100%)` s borderom `hsl(220 16% 90%)` i mekom sjenom `0 1px 2px rgba(15,23,42,.06), 0 1px 3px rgba(15,23,42,.04)`
-- Primary: duboko navy `hsl(217 60% 28%)`, hover `hsl(217 60% 24%)`
-- Success (samo dobiveni dealovi): `hsl(150 55% 38%)`
-- Warning (hot leadovi / hitno): `hsl(32 90% 50%)`
-- Danger (zakašnjelo / izgubljeno): `hsl(0 70% 48%)`
-- Neutralni status tokeni za badgeve: `--status-new`, `--status-contacted`, `--status-negotiation`, `--status-won`, `--status-lost`, `--status-cold`
-- Tipografija: Inter (već učitan). Skala: `text-2xl font-semibold` za naslove stranica, `text-sm text-muted-foreground` za helper, `tabular-nums font-semibold` za KPI brojeve
-- Radius: `--radius: 0.625rem`
-- Brišu se "playful" gradijenti iz `bg-app-gradient` i zamjenjuju ravnom slate pozadinom
-- Dark mode ostaje, ali kalibriran na isti navy/slate ključ
-
-Sva boja u komponentama ide preko semantičkih tokena — bez `text-white`, `bg-blue-500`, itd.
-
-## 2. Navigacija i ljuska aplikacije
-
-Mijenja se `src/components/Sidebar.tsx` i `src/pages/Index.tsx`.
-
-Nova lijeva navigacija (točno ovaj redoslijed, hrvatski):
-
-1. Dashboard → postojeći `Dashboard.tsx` (redizajn)
-2. Leadovi → postojeći `LeadHunter.tsx` (redizajn tablice/karata)
-3. Klijenti → **nova view-ljuska** nad istim `leads` zapisima filtriranim po `status in ('Dobiveno','Pregovori')` + profil stranica
-4. Ponude → **novi Kanban** nad postojećim `offers` tablicom (već postoji u DB)
-5. Follow-up → preraspored `CRMReminder.tsx` u tab-formu (Danas / Zakašnjelo / Ovaj tjedan / Sve)
-6. Dokumenti → postojeći `BusinessDocuments.tsx` (čišći grid)
-7. AI Mail → postojeći `EmailGenerator.tsx` (pojednostavljen UI)
-8. Integracije → postojeći `MakeIntegration` + `ZapierIntegration` + `GoogleCalendarIntegration` + `EmailSettings` u jednoj stranici s status badgevima
-9. Postavke → postojeći `Settings.tsx`
-
-Stari moduli koji ostaju dostupni ali sakriveni iz glavnog menija (do odluke): Lead Discovery, Knowledge Base, AI Asistent, Content Booster, Analytics, Subscription, Admin Dashboard — pristupačni iz Postavki / submenu-a. Ako želite da neki od njih ostane u glavnom meniju, recite koji.
-
-Sidebar dobiva: logo + naziv ("Brentareno CRM"), aktivnu stavku s navy bg + lijevim akcent borderom, podnožje s user chipom i Odjavi se. Collapsible na desktopu (icon-only), off-canvas na mobitelu (već postoji `Sheet`).
-
-## 3. Dashboard
-
-`src/components/Dashboard.tsx` — kompletan reskin, isti podaci (Supabase `leads`, `reminders`, `offers`, `emails`).
-
-Layout:
+## Phased delivery
 
 ```text
-+----------------------------------------------------+----------------+
-| KPI red (6 kompaktnih kartica)                     |                |
-| Današnji follow-upovi | Zakašnjele aktivnosti     | Brze akcije    |
-| Hot leadovi | Otvorene ponude                      | (4 gumba)      |
-| Vrijednost pipelinea | Procijenjena marža          |                |
-+----------------------------------------------------+ Sažetak        |
-| Prioritet danas (lista, max 8)                     | podsjetnika    |
-+----------------------------------------------------+                |
-| Zakašnjele ponude | Hot leadovi (2 kolone)         |                |
-+----------------------------------------------------+----------------+
+Phase A  Tokens + shell      → index.css, tailwind.config.ts, Sidebar, AppHeader
+Phase B  Dashboard           → KPI row, Prioritet danas, Ponude, Hot leads, Brze akcije
+Phase C  Leadovi             → sales table, badges, filters, mobile cards
+Phase D  Ponude (Kanban)     → 6-column pipeline, offer cards
+Phase E  Follow-up           → tabs (Danas/Zakašnjelo/Tjedan/Sve), action rows
+Phase F  AI Mail             → 2-col layout, agent status, action buttons
+Phase G  Klijent profil      → 3-col premium account layout
+Phase H  Dokumenti + Integracije + Postavke polish
+Phase I  Mobile pass (table→card, sidebar collapse, KPI scroll-snap)
 ```
 
-- KPI kartice: ikona (lucide, monoline, muted), label (`text-xs text-muted-foreground uppercase tracking-wide`), broj (`text-3xl font-semibold tabular-nums`), delta (mali badge)
-- "Prioritet danas": redak = avatar inicijal, firma, sljedeći korak, badge prioriteta, gumb "Otvori"
-- Brze akcije (desni widget): Dodaj lead, Dodaj ponudu, Dodaj follow-up, Generiraj prodajni mail — svaki gumb navigira na odgovarajući modul / otvara postojeći dialog
-- Sažetak podsjetnika: 3 nadolazeća iz `reminders`
+## Section-by-section spec
 
-Vrijednost pipelinea i marža računaju se iz `offers` (postojeća polja `value`, `margin` — provjerit ću pravi naziv u migraciji prije implementacije).
+**Sidebar (navy)** — items in this order: Dashboard, Leadovi, Klijenti, Ponude, Follow-up, AI Mail, Dokumenti, Integracije, Postavke. Active item: left 3px blue bar + lighter navy fill. Lucide icons only, 18px. Profile chip pinned bottom.
 
-## 4. Leadovi
+**Top app header** — breadcrumb + global search + "Brzi unos leada" primary button + active business-profile switcher.
 
-`src/components/LeadHunter.tsx` (+ child komponente) — redizajn:
+**Dashboard** — 6 KPI cards in one row (wraps to 3×2 on md, scroll-snap on mobile): Današnji follow-upovi, Zakašnjele aktivnosti, Vrući leadovi, Otvorene ponude, Vrijednost pipelinea, Procijenjena marža. Below: 2-col grid — left (Prioritet danas list, Ponude koje stoje table-mini, Zadnje aktivnosti feed); right (Brze akcije card with Dodaj lead / Dodaj ponudu / Dodaj follow-up / Generiraj email, Vrući leadovi list). Funnel becomes a thin strip above the grid.
 
-- Header: naslov, broj rezultata, filteri (grad, država, segment, status, prioritet), gumbi "Dodaj lead", "Izvezi CSV" (već postoji)
-- Tablica na desktopu (sticky header, zebra-free, hover bg `muted/40`):
-  | Firma / Kontakt | Grad, Država | Segment | Status | Prioritet | Sljedeći korak | Follow-up | Procij. vrijednost | Akcije |
-- Status badge boje vezane uz `--status-*` tokene
-- Prioritet: 🔴 Vruće / 🟠 Toplo / ⚪ Hladno (točka + tekst, bez emojija u kodu)
-- Akcije po retku: Otvori, Generiraj mail, Dodaj follow-up
-- Na mobitelu: tablica → card layout (svaka kartica isti podaci, akcije u dnu)
-- Status enum proširuje se na: Novi, Kontaktiran, Analiza potreba, Ponuda u pripremi, Ponuda poslana, Pregovori, Čeka leasing/financiranje, Dobiveno, Izgubljeno, Hladno. Tip `Lead.status` proširuje se u `src/types/index.ts`; postojeće vrijednosti se mapiraju ("Nova" → "Novi", "Kontaktirano" → "Kontaktiran")
+**Leadovi** — keep current table component, restyle: 44px rows, sticky header, status pill (navy text on tinted bg), priority dot (amber/blue/slate), columns Firma · Kontakt · Grad · Segment · Status · Prioritet · Sljedeći korak · Follow-up · Vrijednost · ▾. Filter bar above table (status multi-select, prioritet, segment, grad, "samo moji"). On <md collapses to card list.
 
-## 5. Klijenti
+**Ponude** — convert grid → Kanban: Nacrt / Poslano / Pregovori / Leasing / Dobiveno / Izgubljeno. Card shows klijent, vrijednost (bold tabular), marža %, proizvodi (chips, max 3 +N), zadnji kontakt, sljedeća akcija + datum. Drag to move status (uses existing updateOfferStatus).
 
-Nova lagana stranica `src/components/Clients.tsx` koja koristi postojeći `useSupabaseLeads` filtriran na statuse "Dobiveno" + "Pregovori" + "Čeka leasing". Layout: lista + detalj.
+**Follow-up** — tabs Danas | Zakašnjelo | Ovaj tjedan | Sve. Row: klijent · tip akcije · due (red if overdue) · prioritet · [Označi riješeno] [Generiraj mail]. Empty state per tab.
 
-Profil klijenta (kad se klikne):
-- Lijevo: kontakt detalji, firma, grad/država, segment
-- Sredina: bilješke (auto-save, postojeća logika iz lead details modala), polja "Interes za stroj", "Budžet", "Timeline" (nova kolona `client_notes` ili reuse `notes` JSON polja — vidi sekciju 10)
-- Desno: sljedeće akcije, povezane ponude (`offers`), dokumenti, prečac "Generiraj AI mail"
+**AI Mail** — two columns. Left form: lead/klijent select, cilj emaila, segment, dodatne upute, primary "Generiraj email preko Make.com". Right: rendered HTML preview in white card with toolbar Kopiraj · Spremi u bilješke · Regeneriraj · Kreiraj follow-up. Above left column: Make.com agent status card (dot + Povezano/Nije povezano/Greška + zadnje generiranje timestamp). Send Status panel kept, restyled.
 
-## 6. Ponude (Kanban)
+**Klijent profil** — 3 columns: left (kontakt + firma + segment + tagovi), center tabs (Bilješke, Potrebe, Proizvodi, Budget, Timeline), right (Sljedeće akcije, Ponude, Dokumenti, "Generiraj AI mail" shortcut).
 
-Nova komponenta `src/components/OffersKanban.tsx` nad postojećom `offers` tablicom. Kolone (po `status`):
+**Dokumenti** — uniform card grid: ikona po tipu, naziv, brand chip, kategorija, datum; gornji bar: upload + search. No previews larger than 80px thumb.
 
-Nacrt → Poslano → Pregovori → Leasing/Financiranje → Dobiveno → Izgubljeno
+**Integracije / Postavke** — section cards with hairline divider, status pills, primary action right-aligned. Remove decorative gradients.
 
-Karta ponude:
-- Naziv klijenta (iz `leads.company` preko `client_id` — provjerit ću schema)
-- Vrijednost (`value`, formatiran EUR)
-- Procij. marža (badge)
-- Proizvodi (chips, max 3 + "+N")
-- Zadnji kontakt (relative time)
-- Sljedeća akcija + follow-up datum
-- Drag & drop među kolonama (dnd-kit — već u repo? ako ne, plan dodaje ovisnost)
+## Technical notes
 
-Status promjena = update reda u `offers`. Ako `offers.status` enum ne pokriva sve kolone, planira se migracija (vidi sekciju 10).
+- New tokens: `--surface`, `--surface-elevated`, `--border-subtle`, `--sidebar-bg`, `--sidebar-bg-hover`, `--accent-hot`, `--accent-overdue`, `--accent-won`. Tailwind `theme.extend.colors` mirrors them. Drop `.bg-app-gradient` in favor of flat `bg-background`.
+- Reusable primitives added under `src/components/ui/`: `KpiCard`, `SectionCard`, `StatusPill`, `PriorityDot`, `EmptyState`, `ToolbarFilters`. Replace ad-hoc inline styles in existing screens with these.
+- Kanban uses `@dnd-kit/core` (already installed) — no new deps expected. Verify before Phase D; if missing, add it.
+- Mobile: `useIsMobile` hook drives table→card swap on Leadovi and Ponude.
+- No changes to: hooks, edge functions, Supabase schema, webhook payloads, lead-status taxonomy, email generation flow.
 
-## 7. Follow-up
+## Out of scope
 
-Refaktor postojećeg `CRMReminder.tsx` u tab-bazirano sučelje:
-
-- Tabovi: Danas | Zakašnjelo | Ovaj tjedan | Sve aktivnosti
-- Svaki red: klijent/lead, tip akcije, due date (s relativnim "za 2h" / "kasni 3d"), prioritet badge
-- Akcije: "Označi riješeno" (update `reminders.completed = true`), "Generiraj mail" (navigira na AI Mail s prefilled lead/klijent)
-- Sticky FAB na mobitelu: "Dodaj follow-up"
-
-## 8. AI Mail
-
-Pojednostavljenje `EmailGenerator.tsx` u 3-koraka layout:
-
-1. Odaberi lead / klijent (dropdown s search-em)
-2. Odaberi cilj: Prvi kontakt | Follow-up | Slanje ponude | Podsjetnik nakon ponude | Leasing/financiranje | Reactivation izgubljenog leada
-3. Generiraj → output card s mailom, gumbi "Kopiraj", "Spremi u bilješke klijenta", "Pošalji webhookom"
-
-Sva postojeća webhook/retry/debounce/idempotency logika ostaje netaknuta. Mijenja se samo prezentacija — gornji checkbox za equipment sale već je automatski (memo u repo).
-
-## 9. Dokumenti i Integracije
-
-- **Dokumenti**: `BusinessDocuments.tsx` dobiva čišći grid (3 kolone desktop / 1 mobitel). Kartica = ikona po extensionu, ime, brand, kategorija, datum, search bar na vrhu, upload gumb gore desno
-- **Integracije**: nova stranica koja slaže `MakeIntegration`, `ZapierIntegration`, `GoogleCalendarIntegration`, `EmailSettings` u kartice s badgevima statusa (Povezano / Nije povezano / Potrebna provjera) na temelju postojećih provjera URL/token
-
-## 10. Database promjene (manje, samo gdje treba)
-
-Tri male migracije — pokreću se prije implementacije UI-ja koji ih treba:
-
-1. **Prošireni status leada**: dodati provjeru/CHECK trigger na `leads.status` i backfill starih vrijednosti ("Nova"→"Novi", "Kontaktirano"→"Kontaktiran"). Bez breaking changeova jer `status` je TEXT
-2. **Prošireni status ponuda**: `offers.status` proširen na enum vrijednosti Nacrt/Poslano/Pregovori/Leasing/Dobiveno/Izgubljeno + backfill
-3. **Klijent polja**: dodati `machine_interest TEXT`, `budget TEXT`, `timeline TEXT` na `leads` (nullable), s GRANT-ovima sukladno postojećoj RLS
-
-Bez novih tablica, bez novih RLS politika.
-
-## 11. Mobile
-
-- Sidebar → off-canvas (već postoji `MobileHeader` + `Sheet`)
-- Sve tablice → card layout ispod `md` breakpointa
-- Sticky bottom FAB na Leadovi/Follow-up/Ponude za primarnu akciju
-- KPI kartice: 2 kolone na mobitelu, 3 na tabletu, 6 na desktopu
-
-## 12. Tehnička pravila izvedbe
-
-- Sve nove i refaktorirane komponente koriste isključivo semantičke tokene
-- Komponente <300 linija — gdje treba, izvlači se u `src/components/<page>/...`
-- Zadržava se postojeći routing (`/`, `/admin`, `/auth`), samo se mijenja interni `activeModule` enum + Sidebar mapping
-- Postojeći hookovi (`useSupabaseLeads`, `useLeadManagement`, `useMakeIntegration`, `useIntegratedEmailService`, itd.) ostaju netaknuti
-
-## 13. Redoslijed implementacije (faze, jedna po jedna)
-
-1. Design tokeni + Sidebar + AppShell (vizualni temelj svih stranica)
-2. Dashboard reskin s pravim Supabase podacima
-3. Leadovi reskin + status proširenje + migracija #1
-4. Ponude Kanban + migracija #2
-5. Follow-up tab UI
-6. Klijenti stranica + migracija #3
-7. AI Mail pojednostavljenje
-8. Dokumenti + Integracije reskin
-9. Mobile polish i sticky FAB-ovi
-
-Svaka faza je samostalno deploy-abilna — preview ostaje funkcionalan između faza.
-
-## Otvorena pitanja prije starta
-
-- Sakrivam li Knowledge Base / AI Asistent / Content Booster / Analytics iz glavnog menija (premještam u Postavke), ili ih ostavljam vidljive?
-- Smije li se dodati `@dnd-kit/core` za Kanban drag & drop, ili da Kanban radi s dropdown-promjenom statusa bez drag-a?
-- Krenuti odmah s fazom 1 (tokeni + sidebar + shell) nakon odobrenja, ili želite najprije rendering preview tri smjera za Dashboard prije nego što fiksiram dizajn tokene?
+New features, copy beyond requested microcopy, dark-mode rework, marketing pages, onboarding, charts beyond the existing funnel/KPI sparklines.
