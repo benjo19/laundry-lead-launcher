@@ -49,5 +49,3 @@ const ReminderList = ({ reminders, onUpdateStatus, onPostpone, onDelete, onEdit,
 };
 
 export default ReminderList;
-
-export default ReminderList;
