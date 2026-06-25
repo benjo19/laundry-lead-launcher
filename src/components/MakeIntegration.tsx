@@ -48,8 +48,6 @@ const MakeIntegration = () => {
     content_booster_auto_trigger: false,
     email_webhook_url: '',
     email_auto_trigger: false,
-    equipment_sales_webhook_url: '',
-    equipment_sales_auto_trigger: false,
     crm_export_webhook_url: '',
     crm_export_auto_trigger: false
   });
