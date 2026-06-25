@@ -14,6 +14,8 @@ interface LeadListProps {
 }
 
 const LeadList = ({ discoveredLeads, onAddLead, onNavigateToEmailGenerator }: LeadListProps) => {
+  const { toast } = useToast();
+
   if (discoveredLeads.length === 0) {
     return null;
   }
@@ -24,6 +26,52 @@ const LeadList = ({ discoveredLeads, onAddLead, onNavigateToEmailGenerator }: Le
         .filter(lead => lead.aiAnalysis)
         .reduce((sum, lead) => sum + (lead.aiAnalysis?.score || 0), 0) / analyzedCount
     : 0;
+
+  const handleExportCSV = () => {
+    const escapeCsv = (value: string | null | undefined) => {
+      const str = value == null ? "" : String(value);
+      if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headers = ["Naziv", "Adresa", "Telefon", "Email", "Website", "Tipovi", "Ocjena", "Ukupno recenzija", "AI score", "AI potencijal", "AI razlog", "AI pristup", "LinkedIn", "Facebook", "YellowPages", "Izvor emaila"];
+    const rows = discoveredLeads.map(lead => [
+      lead.name,
+      lead.address,
+      lead.phone,
+      lead.email,
+      lead.website,
+      lead.types.join("; "),
+      lead.rating,
+      lead.user_ratings_total,
+      lead.aiAnalysis?.score,
+      lead.aiAnalysis?.potential,
+      lead.aiAnalysis?.reasoning,
+      lead.aiAnalysis?.approach,
+      lead.socialProfiles?.linkedin,
+      lead.socialProfiles?.facebook,
+      lead.socialProfiles?.yellowPages,
+      lead.emailSource
+    ].map(escapeCsv));
+
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `pronadeni-leadovi-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV izvezen",
+      description: `Izvezeno ${discoveredLeads.length} leadova.`,
+    });
+  };
 
   return (
     <Card className="w-full">
