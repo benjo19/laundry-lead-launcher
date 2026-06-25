@@ -21,6 +21,8 @@ import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { useReminders } from '@/hooks/useReminders';
 import { Lead, Reminder } from '@/types';
 import SalesFunnel from '@/components/SalesFunnel';
+import DensityToggle from '@/components/ui/density-toggle';
+import { useDensity } from '@/hooks/useDensity';
 
 interface DashboardProps {
   onNavigateToModule?: (module: string) => void;
