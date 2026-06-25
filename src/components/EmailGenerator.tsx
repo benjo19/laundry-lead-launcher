@@ -76,12 +76,17 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [recipients, selectedCompany, subject, emailContent, template]);
 
-  // Override with pre-selected values when they change
+  // Override with pre-selected values when they change (clicking "Kontakt" on a lead)
   useEffect(() => {
     if (preSelectedEmail && !recipients.includes(preSelectedEmail)) {
       setRecipients(prev => [...prev, preSelectedEmail]);
     }
     if (preSelectedCompany) setSelectedCompany(preSelectedCompany);
+    // Auto-pripremi: ako još nije izabran template, postavi 'intro' da korisnik može odmah generirati
+    if (preSelectedEmail && !template) {
+      setTemplate('intro');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [preSelectedEmail, preSelectedCompany]);
 
   // Backfill: when leads load, mark any 'Nova' lead whose email already received a sent email as 'Kontaktiran'
