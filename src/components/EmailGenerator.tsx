@@ -414,8 +414,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         content: convertToHTML(emailContent),
         total_recipients: recipients.length,
         recipients: bulkRecipients,
+        ...(selectedProfile?.company_name && {
+          company_name: selectedProfile.company_name
+        }),
         ...(selectedProfile?.name && {
-          company_name: selectedProfile.name
+          profile_name: selectedProfile.name
         }),
         ...(primaryRecipient?.client_company_name && {
           client_company_name: primaryRecipient.client_company_name
@@ -563,8 +566,11 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       ...(draftRecipients.length > 0 && {
         recipients: draftRecipients
       }),
+      ...(selectedProfile?.company_name && {
+        company_name: selectedProfile.company_name
+      }),
       ...(selectedProfile?.name && {
-        company_name: selectedProfile.name
+        profile_name: selectedProfile.name
       }),
       ...(primaryRecipient?.client_company_name && {
         client_company_name: primaryRecipient.client_company_name
