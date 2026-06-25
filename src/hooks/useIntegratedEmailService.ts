@@ -53,8 +53,47 @@ export const useIntegratedEmailService = () => {
   const generateEmail = async (params: EmailGenerationParams): Promise<GeneratedEmailContent | null> => {
     if (!user) {
       toast({
-        title: "Greška",
-        description: "Morate biti prijavljeni da biste generirali email.",
+        title: "Niste prijavljeni",
+        description: "Morate biti prijavljeni da biste generirali email. Molimo prijavite se ponovno.",
+        variant: "destructive",
+      });
+      return null;
+    }
+
+    // Pre-flight: verify session is still valid before invoking the edge function.
+    // Without this, an expired token causes supabase.functions.invoke to hang silently.
+    try {
+      const { data: sessionData, error: sessionError } = await withTimeout(
+        supabase.auth.getSession(),
+        5000,
+        'get-session'
+      );
+      const session = sessionData?.session;
+      if (sessionError || !session?.access_token) {
+        toast({
+          title: "Sesija je istekla",
+          description: "Vaša sesija više nije valjana. Osvježite stranicu (F5) i prijavite se ponovno.",
+          variant: "destructive",
+        });
+        return null;
+      }
+      // If token expires in <60s, refresh proactively so the long AI call doesn't fail mid-flight.
+      const expiresAt = session.expires_at ? session.expires_at * 1000 : 0;
+      if (expiresAt && expiresAt - Date.now() < 60_000) {
+        const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+        if (refreshErr || !refreshed?.session) {
+          toast({
+            title: "Sesija ističe",
+            description: "Nije moguće obnoviti sesiju. Osvježite stranicu i prijavite se ponovno.",
+            variant: "destructive",
+          });
+          return null;
+        }
+      }
+    } catch (e: any) {
+      toast({
+        title: "Problem s autentikacijom",
+        description: "Ne mogu provjeriti vašu sesiju. Osvježite stranicu i pokušajte ponovno.",
         variant: "destructive",
       });
       return null;
