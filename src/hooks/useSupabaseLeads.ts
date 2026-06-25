@@ -44,7 +44,9 @@ export const useSupabaseLeads = () => {
     potential: (supabaseLead.potential as Lead['potential']) || 'Srednji',
     dateAdded: supabaseLead.created_at?.split('T')[0] || new Date().toISOString().split('T')[0],
     industry: supabaseLead.industry || '',
-    notes: supabaseLead.notes || ''
+    notes: supabaseLead.notes || '',
+    country: (supabaseLead as any).country || undefined,
+    city: (supabaseLead as any).city || undefined,
   });
 
   const fetchLeads = async () => {
@@ -158,7 +160,9 @@ export const useSupabaseLeads = () => {
         potential: newLeadData.potential || 'Srednji',
         notes: newLeadData.notes || null,
         source: 'Manual',
-        industry: newLeadData.industry || null
+        industry: newLeadData.industry || null,
+        country: newLeadData.country || null,
+        city: newLeadData.city || null,
       };
       
       console.log('Insert data:', JSON.stringify(insertData, null, 2));
