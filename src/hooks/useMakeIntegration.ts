@@ -18,8 +18,6 @@ interface MakeSettings {
   content_booster_auto_trigger?: boolean;
   email_webhook_url?: string;
   email_auto_trigger?: boolean;
-  equipment_sales_webhook_url?: string;
-  equipment_sales_auto_trigger?: boolean;
   crm_export_webhook_url?: string;
   crm_export_auto_trigger?: boolean;
 }
