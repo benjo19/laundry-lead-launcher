@@ -236,6 +236,56 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
   };
 
 
+  const handleExportCSV = () => {
+    if (filteredLeads.length === 0) {
+      toast({
+        title: "Nema leadova za izvoz",
+        description: "Trenutno nema leadova koji odgovaraju filterima.",
+      });
+      return;
+    }
+
+    const escapeCsv = (value: string | null | undefined) => {
+      const str = value == null ? "" : String(value);
+      if (str.includes(",") || str.includes('"') || str.includes("\n") || str.includes("\r")) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const headers = ["Tvrtka", "Email", "Telefon", "Lokacija", "Broj zaposlenika", "Tip poslovanja", "Status", "Potencijal", "Datum dodavanja", "Bilješke", "Website"];
+    const rows = filteredLeads.map(lead => [
+      lead.company,
+      lead.email,
+      lead.phone,
+      lead.location,
+      lead.employees,
+      lead.industry,
+      lead.status,
+      lead.potential,
+      lead.dateAdded,
+      lead.notes,
+      lead.website
+    ].map(escapeCsv));
+
+    const csvContent = [headers.join(","), ...rows.map(row => row.join(","))].join("\n");
+    const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `leadovi-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "CSV izvezen",
+      description: `Izvezeno ${filteredLeads.length} leadova.`,
+    });
+  };
+
+
   if (loading) {
     return (
       <div className="p-6">
