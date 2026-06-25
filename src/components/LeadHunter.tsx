@@ -17,6 +17,7 @@ import ErrorMessage from '@/components/ui/error-message';
 import { Input } from '@/components/ui/input';
 import { Lead } from '@/types';
 import { parseLocation } from '@/utils/locationParser';
+import SalesFunnel from '@/components/SalesFunnel';
 
 interface LeadHunterProps {
   onNavigateToEmailGenerator?: (email: string, company: string) => void;
@@ -380,6 +381,14 @@ const LeadHunter = ({ onNavigateToEmailGenerator }: LeadHunterProps) => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Sales Funnel */}
+      <SalesFunnel
+        leads={leads}
+        onStageClick={(status) => setSelectedStatus(status)}
+      />
+
+
 
       {/* Filters */}
       <LeadFilters

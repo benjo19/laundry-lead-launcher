@@ -20,6 +20,7 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { useReminders } from '@/hooks/useReminders';
 import { Lead, Reminder } from '@/types';
+import SalesFunnel from '@/components/SalesFunnel';
 
 interface DashboardProps {
   onNavigateToModule?: (module: string) => void;
@@ -364,6 +365,15 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               onClick={() => onNavigateToModule?.('offers')}
             />
           </div>
+
+          {/* Sales funnel snapshot */}
+          <SalesFunnel
+            leads={leads}
+            variant="compact"
+            onStageClick={() => onNavigateToModule?.('lead-hunter')}
+          />
+
+
 
           {/* Prioritet danas */}
           <section className="surface-card">
