@@ -643,6 +643,28 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       setIsSavingDraft(false);
     }
 
+    // Auto-update lead status: 'Nova' / 'Kvalificiran' -> 'Kontaktiran' za sve primatelje koje smo upravo draftali
+    let draftLeadsUpdated = 0;
+    if (recipients.length > 0) {
+      const recipientEmailsLc = new Set(recipients.map(r => r.trim().toLowerCase()));
+      const draftLeadsToUpdate = leads.filter(
+        l =>
+          l.email &&
+          recipientEmailsLc.has(l.email.trim().toLowerCase()) &&
+          (l.status === 'Nova' || l.status === 'Kvalificiran')
+      );
+      for (const lead of draftLeadsToUpdate) {
+        try {
+          await updateLeadStatus(lead.id, 'Kontaktiran');
+          draftLeadsUpdated++;
+        } catch (e) {
+          console.error('Failed to auto-update lead status on draft:', lead.company, e);
+        }
+      }
+    }
+
+
+
     if (editingDraftId) {
       setEmails(emails.map(email => 
         email.id === editingDraftId 
