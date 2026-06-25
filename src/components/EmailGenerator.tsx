@@ -60,6 +60,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const [lastSendError, setLastSendError] = useState<string | null>(null);
   const [lastSendCompletedAt, setLastSendCompletedAt] = useState<Date | null>(null);
   const [isEquipmentSale, setIsEquipmentSale] = useState<boolean>(false);
+  const [isSavingDraft, setIsSavingDraft] = useState<boolean>(false);
 
   // Save form data to localStorage whenever fields change
   useEffect(() => {
