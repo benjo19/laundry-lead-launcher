@@ -604,17 +604,20 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     };
 
     let webhookOk = false;
+    // Zajednički AbortController — outer guard od 90s stvarno otkaže fetch,
+    // bez pozadinskog ghost POSTa.
+    const draftAbort = new AbortController();
+    const draftGuard = window.setTimeout(() => draftAbort.abort(), 90000);
     try {
-      // triggerWebhook već radi retry (3x) s exponential backoffom za 5xx i timeout/network
-      // greške, uz per-attempt timeout od 20s. Outer guard od 90s spriječava beskonačno čekanje.
-      const webhookPromise = triggerWebhook(isEquipmentSale ? 'equipment_sale' : 'draft', draftData);
-      const timeoutPromise = new Promise<boolean>((_, reject) =>
-        setTimeout(() => reject(new Error('TIMEOUT')), 90000)
+      webhookOk = await triggerWebhook(
+        isEquipmentSale ? 'equipment_sale' : 'draft',
+        draftData,
+        draftAbort.signal
       );
-      webhookOk = await Promise.race([webhookPromise, timeoutPromise]);
     } catch (err: any) {
       console.error('Draft webhook error:', err);
-      if (err?.message === 'TIMEOUT' || err?.name === 'AbortError') {
+      const isAbort = err?.name === 'AbortError';
+      if (isAbort) {
         toast({
           title: "Webhook predugo odgovara",
           description: "Make.com nije odgovorio ni nakon 3 pokušaja. Draft je spremljen lokalno — provjerite Make.com scenarij.",
@@ -628,6 +631,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         });
       }
     } finally {
+      window.clearTimeout(draftGuard);
       setIsSavingDraft(false);
     }
 
