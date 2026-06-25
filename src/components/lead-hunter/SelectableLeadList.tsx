@@ -375,7 +375,7 @@ const SelectableLeadList = ({
             return (
               <div
                 key={lead.id}
-                className={`p-4 transition-colors ${isSelected ? 'bg-primary/5' : 'bg-card'} active:bg-muted/50`}
+                className={`${compact ? 'p-2.5' : 'p-4'} transition-colors ${isSelected ? 'bg-primary/5' : 'bg-card'} active:bg-muted/50`}
                 onClick={(e) => {
                   if ((e.target as HTMLElement).closest('button, input, [role="combobox"], a')) return;
                   handleLeadClick(lead);
