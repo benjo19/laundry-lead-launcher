@@ -101,41 +101,21 @@ export const useMakeIntegration = () => {
       const hasImageBlob = data.image instanceof Blob;
 
       if (isEmailEvent) {
-        const recipientsList = data.recipients || [{ to_email: data.to_email || '' }];
-        const toEmailsList = recipientsList
-          .flatMap((r: any) => {
-            const email = r.to_email || '';
-            return email.includes(',') 
-              ? email.split(',').map((e: string) => e.trim()) 
-              : [email.trim()];
-          })
-          .filter(Boolean);
-        const normalizedRecipients = recipientsList
-          .map((recipient: any) => ({
-            to_email: recipient.to_email || '',
-            ...(recipient.company && { company: recipient.company }),
-            ...(recipient.client_company_name && { client_company_name: recipient.client_company_name }),
-            ...(recipient.client_name && { client_name: recipient.client_name })
-          }))
-          .filter((recipient: any) => recipient.to_email);
-        const primaryRecipient = normalizedRecipients[0];
-
         const cleanSubject = (data.subject || '').trim();
         const cleanContent = (data.content || '')
           .replace(/^```(?:html|text|markdown)?\s*\n?/i, '')
           .replace(/\n?```\s*$/i, '')
           .trim();
 
-        const isAlreadyHTML = cleanContent.trim().startsWith('<!DOCTYPE') || cleanContent.trim().startsWith('<html') || cleanContent.trim().startsWith('<p');
+        const isAlreadyHTML = cleanContent.startsWith('<!DOCTYPE') || cleanContent.startsWith('<html') || cleanContent.startsWith('<p');
         const htmlContent = isAlreadyHTML ? cleanContent : '<p>' + cleanContent
           .split('\n\n')
           .map(para => para.trim().replace(/\n/g, '<br>'))
           .filter(para => para.length > 0)
           .join('</p><p>') + '</p>';
 
-        const clientCompanyName = data.client_company_name || primaryRecipient?.client_company_name;
-        const clientName = data.client_name || primaryRecipient?.client_name;
-
+        // BCC mode: caller opskrbljuje to_emails_list / bcc_emails. Šalje se JEDAN
+        // email s više primatelja u BCC (bez recipients iterator strukture).
         unifiedData = {
           event_type: eventType,
           timestamp: new Date().toISOString(),
@@ -143,22 +123,22 @@ export const useMakeIntegration = () => {
           data: {
             subject: cleanSubject,
             content: htmlContent,
-            to_emails_list: toEmailsList,
-            ...(normalizedRecipients.length > 0 && { recipients: normalizedRecipients }),
-            ...(data.company_name && { company_name: data.company_name }),
-            ...(clientCompanyName && { client_company_name: clientCompanyName }),
-            ...(clientName && { client_name: clientName })
+            company_name: data.company_name || '',
+            to_email: data.to_email || '',
+            to_emails_list: Array.isArray(data.to_emails_list) ? data.to_emails_list : [],
+            bcc_emails: data.bcc_emails || '',
+            ...(data.is_equipment_sale && { is_equipment_sale: true }),
           },
           schema: {
             subject: 'string',
             content: 'string',
-            to_emails_list: 'array',
-            recipients: 'array',
             company_name: 'string',
-            client_company_name: 'string',
-            client_name: 'string'
+            to_email: 'string',
+            to_emails_list: 'array',
+            bcc_emails: 'string',
           }
         };
+
       } else if (isCRMExportEvent) {
         unifiedData = {
           event_type: 'crm_export',
