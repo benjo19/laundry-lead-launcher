@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 import { performLeadSearch, performApifyLeadSearch, performFirecrawlLeadSearch } from '@/components/lead-discovery/SearchOperations';
+import { dedupeLeads } from '@/utils/leadDedup';
 import { useToast } from '@/hooks/use-toast';
 
 export type SearchMethod = 'google' | 'apify' | 'firecrawl' | 'all';
