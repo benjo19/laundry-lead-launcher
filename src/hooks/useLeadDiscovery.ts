@@ -30,7 +30,7 @@ export const useLeadDiscovery = () => {
   const [location, setLocation] = useState(savedFormData.location || '');
   const [country, setCountry] = useState(savedFormData.country || '');
   const [industry, setIndustry] = useState(savedFormData.industry || 'laundry');
-  const [searchMethod, setSearchMethod] = useState<'google' | 'apify' | 'firecrawl'>(savedFormData.searchMethod || 'apify');
+  const [searchMethod, setSearchMethod] = useState<'google' | 'apify' | 'firecrawl' | 'all'>(savedFormData.searchMethod || 'apify');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [tempApiKey, setTempApiKey] = useState(savedFormData.tempApiKey || '');
   const [savedGoogleMapsApiKey, setSavedGoogleMapsApiKey] = useState('');
