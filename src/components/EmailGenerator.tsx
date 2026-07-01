@@ -621,42 +621,40 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
     setIsSavingDraft(true);
 
-    const recipientStr = recipients.join(', ') || '';
-    const personalizedContent = recipientStr ? personalizeContent(
-      emailContent, 
-      selectedCompany || (recipients[0]?.split('@')[0] || ''),
-      recipients[0] || ''
+    const { valid: cleanRecipients } = parseEmails(recipients.join(','));
+    const recipientStr = cleanRecipients.join(', ');
+    const personalizedContent = cleanRecipients.length > 0 ? personalizeContent(
+      emailContent,
+      selectedCompany || (cleanRecipients[0]?.split('@')[0] || ''),
+      cleanRecipients[0] || ''
     ) : emailContent;
 
     const htmlContent = convertToHTML(personalizedContent);
-    const draftRecipients = recipients.map(getRecipientWebhookData);
-    const primaryRecipient = draftRecipients[0];
 
     // Stabilan idempotency key — koristi se za sve interne retry pokušaje istog drafta,
     // pa Make.com (preko Data Store / filter) može dedupirati duplikate.
     const idempotencyKey = `draft-${editingDraftId ?? 'new'}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
     const draftData = {
-      to_email: recipientStr,
       subject: subject,
       content: htmlContent,
+      company_name: selectedProfile?.name || '',
+      to_email: PRIMARY_TO_EMAIL,
+      to_emails_list: cleanRecipients,
+      bcc_emails: recipientStr,
       timestamp: new Date().toISOString(),
       status: 'draft',
       idempotency_key: idempotencyKey,
-      ...(draftRecipients.length > 0 && {
-        recipients: draftRecipients
-      }),
-      ...(selectedProfile?.name && {
-        company_name: selectedProfile.name
-      }),
-      ...(primaryRecipient?.client_company_name && {
-        client_company_name: primaryRecipient.client_company_name
-      }),
-      ...(primaryRecipient?.client_name && {
-        client_name: primaryRecipient.client_name
-      }),
       ...(isEquipmentSale && { is_equipment_sale: true }),
     };
+
+    console.log('📤 Final webhook payload (draft):', {
+      event_type: 'draft',
+      data: draftData,
+      idempotency_key: idempotencyKey,
+    });
+
+
 
     let webhookOk = false;
     // Zajednički AbortController — outer guard od 90s stvarno otkaže fetch,
