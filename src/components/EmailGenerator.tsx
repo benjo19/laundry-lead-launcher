@@ -21,10 +21,40 @@ import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { supabase } from '@/integrations/supabase/client';
 
+// Fiksna "primary" adresa na koju ide TO polje. Svi stvarni primatelji idu u BCC
+// tako da se ne vide međusobno, a AI se generira samo jednom.
+const PRIMARY_TO_EMAIL = 'auto.mind.ai2025@gmail.com';
+
+// Splita input po zarezu, točka-zarezu, novom redu ili razmaku, validira i dedupira.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const parseEmails = (input: string): { valid: string[]; invalid: string[] } => {
+  const tokens = (input || '').split(/[\s,;]+/).map(t => t.trim()).filter(Boolean);
+  const seen = new Set<string>();
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  for (const t of tokens) {
+    const lc = t.toLowerCase();
+    if (seen.has(lc)) continue;
+    seen.add(lc);
+    if (EMAIL_REGEX.test(lc)) valid.push(lc);
+    else invalid.push(t);
+  }
+  return { valid, invalid };
+};
+
+const generateIdempotencyKey = (prefix: string) => {
+  const rand =
+    (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+      ? (crypto as any).randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${rand}`;
+};
+
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
   preSelectedCompany?: string;
 }
+
 
 const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGeneratorProps) => {
   const { t } = useLanguage();
