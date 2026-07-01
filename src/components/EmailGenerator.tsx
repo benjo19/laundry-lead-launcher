@@ -21,10 +21,40 @@ import TemplateBuilder from '@/components/email-generator/TemplateBuilder';
 import { useBusinessProfile } from '@/hooks/useBusinessProfile';
 import { supabase } from '@/integrations/supabase/client';
 
+// Fiksna "primary" adresa na koju ide TO polje. Svi stvarni primatelji idu u BCC
+// tako da se ne vide međusobno, a AI se generira samo jednom.
+const PRIMARY_TO_EMAIL = 'auto.mind.ai2025@gmail.com';
+
+// Splita input po zarezu, točka-zarezu, novom redu ili razmaku, validira i dedupira.
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const parseEmails = (input: string): { valid: string[]; invalid: string[] } => {
+  const tokens = (input || '').split(/[\s,;]+/).map(t => t.trim()).filter(Boolean);
+  const seen = new Set<string>();
+  const valid: string[] = [];
+  const invalid: string[] = [];
+  for (const t of tokens) {
+    const lc = t.toLowerCase();
+    if (seen.has(lc)) continue;
+    seen.add(lc);
+    if (EMAIL_REGEX.test(lc)) valid.push(lc);
+    else invalid.push(t);
+  }
+  return { valid, invalid };
+};
+
+const generateIdempotencyKey = (prefix: string) => {
+  const rand =
+    (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
+      ? (crypto as any).randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}-${rand}`;
+};
+
 interface EmailGeneratorProps {
   preSelectedEmail?: string;
   preSelectedCompany?: string;
 }
+
 
 const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGeneratorProps) => {
   const { t } = useLanguage();
@@ -435,27 +465,37 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       let successCount = 0;
       let failCount = 0;
 
-      const bulkRecipients = recipients.map(getRecipientWebhookData);
-      const primaryRecipient = bulkRecipients[0];
+      const { valid: cleanRecipients } = parseEmails(recipients.join(','));
+      if (cleanRecipients.length === 0) {
+        toast({
+          title: "Nema valjanih primatelja",
+          description: "Molimo dodajte barem jednu valjanu email adresu.",
+          variant: "destructive",
+        });
+        setIsSending(false);
+        setIsBulkSending(false);
+        return;
+      }
 
       const bulkPayload = {
         subject: subject,
         content: convertToHTML(emailContent),
-        total_recipients: recipients.length,
-        recipients: bulkRecipients,
-        ...(selectedProfile?.name && {
-          company_name: selectedProfile.name
-        }),
-        ...(primaryRecipient?.client_company_name && {
-          client_company_name: primaryRecipient.client_company_name
-        }),
-        ...(primaryRecipient?.client_name && {
-          client_name: primaryRecipient.client_name
-        }),
+        company_name: selectedProfile?.name || '',
+        to_email: PRIMARY_TO_EMAIL,
+        to_emails_list: cleanRecipients,
+        bcc_emails: cleanRecipients.join(', '),
         ...(isEquipmentSale && { is_equipment_sale: true }),
+        idempotency_key: generateIdempotencyKey('sent'),
       };
 
+      console.log('📤 Final webhook payload (sent):', {
+        event_type: 'sent',
+        data: bulkPayload,
+        idempotency_key: bulkPayload.idempotency_key,
+      });
+
       const webhookTriggered = await triggerWebhook('sent', bulkPayload);
+
 
       if (!webhookTriggered) {
         // Označi sve kao neuspjeh u UI-u
@@ -581,42 +621,40 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
 
     setIsSavingDraft(true);
 
-    const recipientStr = recipients.join(', ') || '';
-    const personalizedContent = recipientStr ? personalizeContent(
-      emailContent, 
-      selectedCompany || (recipients[0]?.split('@')[0] || ''),
-      recipients[0] || ''
+    const { valid: cleanRecipients } = parseEmails(recipients.join(','));
+    const recipientStr = cleanRecipients.join(', ');
+    const personalizedContent = cleanRecipients.length > 0 ? personalizeContent(
+      emailContent,
+      selectedCompany || (cleanRecipients[0]?.split('@')[0] || ''),
+      cleanRecipients[0] || ''
     ) : emailContent;
 
     const htmlContent = convertToHTML(personalizedContent);
-    const draftRecipients = recipients.map(getRecipientWebhookData);
-    const primaryRecipient = draftRecipients[0];
 
     // Stabilan idempotency key — koristi se za sve interne retry pokušaje istog drafta,
     // pa Make.com (preko Data Store / filter) može dedupirati duplikate.
     const idempotencyKey = `draft-${editingDraftId ?? 'new'}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
     const draftData = {
-      to_email: recipientStr,
       subject: subject,
       content: htmlContent,
+      company_name: selectedProfile?.name || '',
+      to_email: PRIMARY_TO_EMAIL,
+      to_emails_list: cleanRecipients,
+      bcc_emails: recipientStr,
       timestamp: new Date().toISOString(),
       status: 'draft',
       idempotency_key: idempotencyKey,
-      ...(draftRecipients.length > 0 && {
-        recipients: draftRecipients
-      }),
-      ...(selectedProfile?.name && {
-        company_name: selectedProfile.name
-      }),
-      ...(primaryRecipient?.client_company_name && {
-        client_company_name: primaryRecipient.client_company_name
-      }),
-      ...(primaryRecipient?.client_name && {
-        client_name: primaryRecipient.client_name
-      }),
       ...(isEquipmentSale && { is_equipment_sale: true }),
     };
+
+    console.log('📤 Final webhook payload (draft):', {
+      event_type: 'draft',
+      data: draftData,
+      idempotency_key: idempotencyKey,
+    });
+
+
 
     let webhookOk = false;
     // Zajednički AbortController — outer guard od 90s stvarno otkaže fetch,
@@ -780,11 +818,29 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   };
 
   const addRecipient = (email: string) => {
-    const trimmed = email.trim();
-    if (trimmed && !recipients.includes(trimmed)) {
-      setRecipients(prev => [...prev, trimmed]);
+    const { valid, invalid } = parseEmails(email);
+    if (valid.length === 0 && invalid.length > 0) {
+      toast({
+        title: "Neispravna email adresa",
+        description: `Nije prepoznat valjani email: ${invalid.join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setRecipients(prev => {
+      const existing = new Set(prev.map(r => r.toLowerCase()));
+      const toAdd = valid.filter(v => !existing.has(v));
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+    });
+    if (invalid.length > 0) {
+      toast({
+        title: "Neke adrese preskočene",
+        description: `Neispravan format: ${invalid.join(', ')}`,
+        variant: "destructive",
+      });
     }
   };
+
 
   const removeRecipient = (email: string) => {
     setRecipients(prev => prev.filter(r => r !== email));
