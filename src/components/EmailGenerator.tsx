@@ -465,27 +465,37 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       let successCount = 0;
       let failCount = 0;
 
-      const bulkRecipients = recipients.map(getRecipientWebhookData);
-      const primaryRecipient = bulkRecipients[0];
+      const { valid: cleanRecipients } = parseEmails(recipients.join(','));
+      if (cleanRecipients.length === 0) {
+        toast({
+          title: "Nema valjanih primatelja",
+          description: "Molimo dodajte barem jednu valjanu email adresu.",
+          variant: "destructive",
+        });
+        setIsSending(false);
+        setIsBulkSending(false);
+        return;
+      }
 
       const bulkPayload = {
         subject: subject,
         content: convertToHTML(emailContent),
-        total_recipients: recipients.length,
-        recipients: bulkRecipients,
-        ...(selectedProfile?.name && {
-          company_name: selectedProfile.name
-        }),
-        ...(primaryRecipient?.client_company_name && {
-          client_company_name: primaryRecipient.client_company_name
-        }),
-        ...(primaryRecipient?.client_name && {
-          client_name: primaryRecipient.client_name
-        }),
+        company_name: selectedProfile?.name || '',
+        to_email: PRIMARY_TO_EMAIL,
+        to_emails_list: cleanRecipients,
+        bcc_emails: cleanRecipients.join(', '),
         ...(isEquipmentSale && { is_equipment_sale: true }),
+        idempotency_key: generateIdempotencyKey('sent'),
       };
 
+      console.log('📤 Final webhook payload (sent):', {
+        event_type: 'sent',
+        data: bulkPayload,
+        idempotency_key: bulkPayload.idempotency_key,
+      });
+
       const webhookTriggered = await triggerWebhook('sent', bulkPayload);
+
 
       if (!webhookTriggered) {
         // Označi sve kao neuspjeh u UI-u
