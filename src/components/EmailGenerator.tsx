@@ -810,11 +810,29 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   };
 
   const addRecipient = (email: string) => {
-    const trimmed = email.trim();
-    if (trimmed && !recipients.includes(trimmed)) {
-      setRecipients(prev => [...prev, trimmed]);
+    const { valid, invalid } = parseEmails(email);
+    if (valid.length === 0 && invalid.length > 0) {
+      toast({
+        title: "Neispravna email adresa",
+        description: `Nije prepoznat valjani email: ${invalid.join(', ')}`,
+        variant: "destructive",
+      });
+      return;
+    }
+    setRecipients(prev => {
+      const existing = new Set(prev.map(r => r.toLowerCase()));
+      const toAdd = valid.filter(v => !existing.has(v));
+      return toAdd.length > 0 ? [...prev, ...toAdd] : prev;
+    });
+    if (invalid.length > 0) {
+      toast({
+        title: "Neke adrese preskočene",
+        description: `Neispravan format: ${invalid.join(', ')}`,
+        variant: "destructive",
+      });
     }
   };
+
 
   const removeRecipient = (email: string) => {
     setRecipients(prev => prev.filter(r => r !== email));
