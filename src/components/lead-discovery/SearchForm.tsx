@@ -140,10 +140,17 @@ const SearchForm = ({
             </label>
             <RadioGroup value={searchMethod} onValueChange={setSearchMethod} className="flex gap-4 flex-wrap">
               <div className="flex items-center space-x-2">
+                <RadioGroupItem value="all" id="all" />
+                <Label htmlFor="all" className="cursor-pointer flex items-center">
+                  <Zap className="h-4 w-4 mr-1 text-success" />
+                  <span>Svi izvori (paralelno + dedupe)</span>
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
                 <RadioGroupItem value="apify" id="apify" />
                 <Label htmlFor="apify" className="cursor-pointer flex items-center">
                   <Zap className="h-4 w-4 mr-1 text-primary" />
-                  <span>Apify (Preporučeno)</span>
+                  <span>Apify</span>
                 </Label>
               </div>
               <div className="flex items-center space-x-2">
@@ -162,7 +169,9 @@ const SearchForm = ({
               </div>
             </RadioGroup>
             <p className="text-xs text-muted-foreground mt-1">
-              {searchMethod === 'apify' 
+              {searchMethod === 'all'
+                ? 'Pokreće Apify + Firecrawl (+ Google Maps ako je ključ unesen) paralelno i miče duplikate po domeni/telefonu/nazivu.'
+                : searchMethod === 'apify'
                 ? 'Koristi Apify za najbrže i najpouzdanije rezultate sa Google Mapsa'
                 : searchMethod === 'firecrawl'
                 ? 'Pretražuje web stranice i ekstraktira kontakt podatke direktno sa web stranica'
