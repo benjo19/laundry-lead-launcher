@@ -23,7 +23,7 @@ export const useLeadDiscovery = () => {
     country: '',
     industry: 'laundry',
     tempApiKey: '',
-    searchMethod: 'apify' as 'google' | 'apify' | 'firecrawl'
+    searchMethod: 'apify' as 'google' | 'apify' | 'firecrawl' | 'all'
   });
 
   const [searchQuery, setSearchQuery] = useState(savedFormData.searchQuery || '');
