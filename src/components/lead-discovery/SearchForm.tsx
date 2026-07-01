@@ -49,8 +49,8 @@ interface SearchFormProps {
   setIndustry: (industry: string) => void;
   apiKey: string;
   setApiKey: (key: string) => void;
-  searchMethod: 'google' | 'apify' | 'firecrawl';
-  setSearchMethod: (method: 'google' | 'apify' | 'firecrawl') => void;
+  searchMethod: 'google' | 'apify' | 'firecrawl' | 'all';
+  setSearchMethod: (method: 'google' | 'apify' | 'firecrawl' | 'all') => void;
   isSearching: boolean;
   isAnalyzing: boolean;
   discoveredLeads: AnalyzedLead[];
