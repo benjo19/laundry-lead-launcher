@@ -1,9 +1,10 @@
 import React, { createContext, useContext, useState, useCallback, useRef } from 'react';
 import { AnalyzedLead } from '@/services/aiLeadAnalysisService';
 import { performLeadSearch, performApifyLeadSearch, performFirecrawlLeadSearch } from '@/components/lead-discovery/SearchOperations';
+import { dedupeLeads } from '@/utils/leadDedup';
 import { useToast } from '@/hooks/use-toast';
 
-export type SearchMethod = 'google' | 'apify' | 'firecrawl';
+export type SearchMethod = 'google' | 'apify' | 'firecrawl' | 'all';
 
 interface SearchParams {
   searchQuery: string;
@@ -100,12 +101,34 @@ export const LeadSearchProvider: React.FC<{ children: React.ReactNode }> = ({ ch
           leads = await performApifyLeadSearch(params.searchQuery, searchLocation, params.industry, 20) as AnalyzedLead[];
         } else if (params.searchMethod === 'firecrawl') {
           leads = await performFirecrawlLeadSearch(params.searchQuery, searchLocation, params.country, params.industry) as AnalyzedLead[];
+        } else if (params.searchMethod === 'all') {
+          // Run every available source in parallel, then dedupe by domain/phone/name.
+          const tasks: Promise<AnalyzedLead[]>[] = [
+            performApifyLeadSearch(params.searchQuery, searchLocation, params.industry, 20).catch((e) => {
+              console.warn('Apify source failed:', e); return [] as AnalyzedLead[];
+            }) as Promise<AnalyzedLead[]>,
+            performFirecrawlLeadSearch(params.searchQuery, searchLocation, params.country, params.industry).catch((e) => {
+              console.warn('Firecrawl source failed:', e); return [] as AnalyzedLead[];
+            }) as Promise<AnalyzedLead[]>,
+          ];
+          if (params.apiKey && params.getPlaceDetails) {
+            tasks.push(
+              performLeadSearch(params.searchQuery, searchLocation, params.industry, params.apiKey, params.getPlaceDetails).catch((e) => {
+                console.warn('Google Maps source failed:', e); return [] as AnalyzedLead[];
+              }) as Promise<AnalyzedLead[]>,
+            );
+          }
+          const results = await Promise.all(tasks);
+          leads = dedupeLeads<AnalyzedLead>(...results);
         } else {
           if (!params.apiKey || !params.getPlaceDetails) {
             throw new Error('Google Maps API ključ je potreban.');
           }
           leads = await performLeadSearch(params.searchQuery, searchLocation, params.industry, params.apiKey, params.getPlaceDetails) as AnalyzedLead[];
         }
+
+        // Always dedupe (even single source can return dupes across pages).
+        leads = dedupeLeads<AnalyzedLead>(leads);
 
         updateLeads(leads);
 

@@ -5,7 +5,7 @@ interface LeadDiscoverySearchProps {
   location: string;
   country: string;
   industry: string;
-  searchMethod: 'google' | 'apify' | 'firecrawl';
+  searchMethod: 'google' | 'apify' | 'firecrawl' | 'all';
   tempApiKey: string;
   savedGoogleMapsApiKey: string;
   saveGoogleMapsApiKey: (key: string) => Promise<void>;
