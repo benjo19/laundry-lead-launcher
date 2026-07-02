@@ -622,7 +622,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setIsSavingDraft(true);
 
     const { valid: cleanRecipients } = parseEmails(recipients.join(','));
-    const recipientStr = cleanRecipients.join(', ');
+    const recipientStr = cleanRecipients.map(e => e.trim()).filter(Boolean).join(',');
     const personalizedContent = cleanRecipients.length > 0 ? personalizeContent(
       emailContent,
       selectedCompany || (cleanRecipients[0]?.split('@')[0] || ''),
