@@ -483,7 +483,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         company_name: selectedProfile?.name || '',
         to_email: PRIMARY_TO_EMAIL,
         to_emails_list: cleanRecipients,
-        bcc_emails: cleanRecipients.join(', '),
+        bcc_emails: cleanRecipients.map(e => e.trim()).filter(Boolean).join(','),
         ...(isEquipmentSale && { is_equipment_sale: true }),
         idempotency_key: generateIdempotencyKey('sent'),
       };
@@ -622,7 +622,7 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
     setIsSavingDraft(true);
 
     const { valid: cleanRecipients } = parseEmails(recipients.join(','));
-    const recipientStr = cleanRecipients.join(', ');
+    const recipientStr = cleanRecipients.map(e => e.trim()).filter(Boolean).join(',');
     const personalizedContent = cleanRecipients.length > 0 ? personalizeContent(
       emailContent,
       selectedCompany || (cleanRecipients[0]?.split('@')[0] || ''),
