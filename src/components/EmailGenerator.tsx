@@ -480,7 +480,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
         to_email: PRIMARY_TO_EMAIL,
         to_emails_list: cleanRecipients,
         bcc_emails: cleanRecipients.map(e => e.trim()).filter(Boolean).join(','),
-        ...(isEquipmentSale && { is_equipment_sale: true }),
         idempotency_key: generateIdempotencyKey('sent'),
       };
 
@@ -641,7 +640,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
       timestamp: new Date().toISOString(),
       status: 'draft',
       idempotency_key: idempotencyKey,
-      ...(isEquipmentSale && { is_equipment_sale: true }),
     };
 
     console.log('📤 Final webhook payload (draft):', {
