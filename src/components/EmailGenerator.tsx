@@ -169,8 +169,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
   const { profiles, selectedProfile, selectedProfileId, setSelectedProfileId } = useBusinessProfile();
   const { triggerWebhook } = useMakeIntegration();
 
-  // Auto-tagging equipment sale uklonjen na zahtjev korisnika.
-  const isEquipmentSale = false;
 
   // Backfill efekt: ne blokira UI — koristi requestIdleCallback i ograničava obim.
   useEffect(() => {
