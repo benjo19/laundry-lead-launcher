@@ -1427,13 +1427,6 @@ const EmailGenerator = ({ preSelectedEmail, preSelectedCompany }: EmailGenerator
               </div>
             )}
 
-            {isEquipmentSale && (
-              <div className="flex items-center space-x-2 p-3 rounded-lg border border-amber-200 bg-amber-50">
-                <span className="text-sm font-medium text-amber-900">
-                  🧺 Automatski označeno: Prodaja opreme za pranje (routing u Make.com prema profilu "{selectedProfile?.name}")
-                </span>
-              </div>
-            )}
 
             <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
               <Button 
