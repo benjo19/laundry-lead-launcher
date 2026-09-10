@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Settings, Database, TrendingUp, UserPlus, ContactRound } from 'lucide-react';
+import { Users, Settings, Database, TrendingUp, UserPlus, ContactRound, BriefcaseBusiness } from 'lucide-react';
 import LoadingSpinner from './ui/loading-spinner';
 import SalesPartnerManagement from '@/components/admin/SalesPartnerManagement';
 import AdminPartnerOverview from '@/components/admin/AdminPartnerOverview';
+import OrderlyOwnerCRM from '@/components/admin/OrderlyOwnerCRM';
 import { toast } from 'sonner';
 
 interface UserStats {
@@ -97,13 +98,14 @@ const AdminDashboard: React.FC = () => {
   return (
     <div className="container mx-auto space-y-6 p-4 sm:p-6">
       <div>
-        <p className="text-sm font-medium text-muted-foreground">Orderly Partner CRM</p>
-        <h1 className="text-3xl font-bold">Admin</h1>
-        <p className="text-muted-foreground">Upravljanje terencima, korisnicima i CRM sustavom.</p>
+        <p className="text-sm font-medium text-muted-foreground">Orderly by AutomindAI</p>
+        <h1 className="text-3xl font-bold">Owner CRM</h1>
+        <p className="text-muted-foreground">Tvoj centralni CRM za vlastite leadove, terence, aktivne lokacije i prodajni pipeline.</p>
       </div>
 
-      <Tabs defaultValue="partner-crm" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-5">
+      <Tabs defaultValue="owner-crm" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-6">
+          <TabsTrigger value="owner-crm"><BriefcaseBusiness className="mr-2 h-4 w-4" />Moj CRM</TabsTrigger>
           <TabsTrigger value="partner-crm"><ContactRound className="mr-2 h-4 w-4" />CRM terenaca</TabsTrigger>
           <TabsTrigger value="partners"><UserPlus className="mr-2 h-4 w-4" />Terenci</TabsTrigger>
           <TabsTrigger value="overview"><TrendingUp className="mr-2 h-4 w-4" />Pregled</TabsTrigger>
@@ -111,6 +113,7 @@ const AdminDashboard: React.FC = () => {
           <TabsTrigger value="settings"><Settings className="mr-2 h-4 w-4" />Postavke</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="owner-crm" className="mt-5"><OrderlyOwnerCRM /></TabsContent>
         <TabsContent value="partner-crm" className="mt-5"><AdminPartnerOverview /></TabsContent>
         <TabsContent value="partners" className="mt-5"><SalesPartnerManagement /></TabsContent>
 
@@ -155,7 +158,7 @@ const AdminDashboard: React.FC = () => {
             <CardContent className="space-y-6">
               <SettingField id="make-webhook" label="Make.com Webhook URL" value={settings.make_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('make_webhook_url', value)} />
               <SettingField id="zapier-webhook" label="Zapier Webhook URL" value={settings.zapier_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('zapier_webhook_url', value)} />
-              <SettingField id="content-webhook" label="Content Booster Webhook URL" value={settings.content_booster_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('content_booster_webhook_url', value)} />
+              <SettingField id="content-webhook" label="Content Booster Webhook URL" value={settings.content_booster_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('content_webhook_url', value)} />
             </CardContent>
           </Card>
         </TabsContent>
