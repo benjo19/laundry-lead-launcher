@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { useLanguage } from '@/contexts/LanguageContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
@@ -7,8 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Settings, Database, TrendingUp } from 'lucide-react';
+import { Users, Settings, Database, TrendingUp, UserPlus } from 'lucide-react';
 import LoadingSpinner from './ui/loading-spinner';
+import SalesPartnerManagement from '@/components/admin/SalesPartnerManagement';
 import { toast } from 'sonner';
 
 interface UserStats {
@@ -18,18 +18,13 @@ interface UserStats {
   lead_count: number;
   email_count: number;
   reminder_count: number;
+  role?: string;
 }
 
 const AdminDashboard: React.FC = () => {
-  const { t } = useLanguage();
   const { settings, updateGlobalSetting, isLoading } = useGlobalSettings();
   const [users, setUsers] = useState<UserStats[]>([]);
-  const [systemStats, setSystemStats] = useState({
-    totalUsers: 0,
-    totalLeads: 0,
-    totalEmails: 0,
-    totalReminders: 0
-  });
+  const [systemStats, setSystemStats] = useState({ totalUsers: 0, totalLeads: 0, totalEmails: 0, totalReminders: 0 });
   const [loadingUsers, setLoadingUsers] = useState(true);
 
   useEffect(() => {
@@ -40,36 +35,33 @@ const AdminDashboard: React.FC = () => {
   const loadUsers = async () => {
     try {
       setLoadingUsers(true);
-      
-      // Get all users from auth
-      const { data: profiles, error: profilesError } = await supabase
-        .from('profiles')
-        .select('id, email, created_at');
-
+      const db = supabase as any;
+      const { data: profiles, error: profilesError } = await supabase.from('profiles').select('id, email, created_at');
       if (profilesError) throw profilesError;
 
-      // Get counts for each user
-      const usersWithStats = await Promise.all(
-        (profiles || []).map(async (profile) => {
-          const [leadsResult, emailsResult, remindersResult] = await Promise.all([
-            supabase.from('leads').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
-            supabase.from('emails').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
-            supabase.from('reminders').select('id', { count: 'exact', head: true }).eq('user_id', profile.id)
-          ]);
+      const { data: roleRows, error: roleError } = await db.from('user_roles').select('user_id, role');
+      if (roleError) throw roleError;
+      const roleMap = new Map((roleRows ?? []).map((row: any) => [row.user_id, row.role]));
 
-          return {
-            ...profile,
-            lead_count: leadsResult.count || 0,
-            email_count: emailsResult.count || 0,
-            reminder_count: remindersResult.count || 0
-          };
-        })
-      );
+      const usersWithStats = await Promise.all((profiles || []).map(async (profile) => {
+        const [leadsResult, emailsResult, remindersResult] = await Promise.all([
+          supabase.from('leads').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
+          supabase.from('emails').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
+          supabase.from('reminders').select('id', { count: 'exact', head: true }).eq('user_id', profile.id),
+        ]);
+        return {
+          ...profile,
+          lead_count: leadsResult.count || 0,
+          email_count: emailsResult.count || 0,
+          reminder_count: remindersResult.count || 0,
+          role: (roleMap.get(profile.id) as string | undefined) || 'user',
+        };
+      }));
 
-      setUsers(usersWithStats);
+      setUsers(usersWithStats as UserStats[]);
     } catch (error) {
       console.error('Error loading users:', error);
-      toast.error('Failed to load users');
+      toast.error('Nije moguće učitati korisnike.');
     } finally {
       setLoadingUsers(false);
     }
@@ -81,14 +73,13 @@ const AdminDashboard: React.FC = () => {
         supabase.from('profiles').select('id', { count: 'exact', head: true }),
         supabase.from('leads').select('id', { count: 'exact', head: true }),
         supabase.from('emails').select('id', { count: 'exact', head: true }),
-        supabase.from('reminders').select('id', { count: 'exact', head: true })
+        supabase.from('reminders').select('id', { count: 'exact', head: true }),
       ]);
-
       setSystemStats({
         totalUsers: usersResult.count || 0,
         totalLeads: leadsResult.count || 0,
         totalEmails: emailsResult.count || 0,
-        totalReminders: remindersResult.count || 0
+        totalReminders: remindersResult.count || 0,
       });
     } catch (error) {
       console.error('Error loading system stats:', error);
@@ -100,165 +91,69 @@ const AdminDashboard: React.FC = () => {
   };
 
   if (isLoading || loadingUsers) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" text="Loading admin dashboard..." />
-      </div>
-    );
+    return <div className="flex min-h-screen items-center justify-center"><LoadingSpinner size="lg" text="Učitavam admin..." /></div>;
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="container mx-auto space-y-6 p-4 sm:p-6">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Admin Dashboard</h1>
-        <p className="text-muted-foreground">Manage global settings and monitor system usage</p>
+        <p className="text-sm font-medium text-muted-foreground">Orderly Partner CRM</p>
+        <h1 className="text-3xl font-bold">Admin</h1>
+        <p className="text-muted-foreground">Upravljanje terencima, korisnicima i CRM sustavom.</p>
       </div>
 
-      <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="overview">
-            <TrendingUp className="h-4 w-4 mr-2" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="users">
-            <Users className="h-4 w-4 mr-2" />
-            Users
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Settings className="h-4 w-4 mr-2" />
-            Global Settings
-          </TabsTrigger>
+      <Tabs defaultValue="partners" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
+          <TabsTrigger value="partners"><UserPlus className="mr-2 h-4 w-4" />Terenci</TabsTrigger>
+          <TabsTrigger value="overview"><TrendingUp className="mr-2 h-4 w-4" />Pregled</TabsTrigger>
+          <TabsTrigger value="users"><Users className="mr-2 h-4 w-4" />Korisnici</TabsTrigger>
+          <TabsTrigger value="settings"><Settings className="mr-2 h-4 w-4" />Postavke</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{systemStats.totalUsers}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Leads</CardTitle>
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{systemStats.totalLeads}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Emails</CardTitle>
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{systemStats.totalEmails}</div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Reminders</CardTitle>
-                <Database className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{systemStats.totalReminders}</div>
-              </CardContent>
-            </Card>
+        <TabsContent value="partners" className="mt-5"><SalesPartnerManagement /></TabsContent>
+
+        <TabsContent value="overview" className="mt-5 space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <StatCard label="Korisnici" value={systemStats.totalUsers} icon={Users} />
+            <StatCard label="Leadovi" value={systemStats.totalLeads} icon={Database} />
+            <StatCard label="Emailovi" value={systemStats.totalEmails} icon={Database} />
+            <StatCard label="Follow-up" value={systemStats.totalReminders} icon={Database} />
           </div>
         </TabsContent>
 
-        <TabsContent value="users" className="space-y-4">
+        <TabsContent value="users" className="mt-5">
           <Card>
             <CardHeader>
-              <CardTitle>User Management</CardTitle>
-              <CardDescription>View all users and their activity</CardDescription>
+              <CardTitle>Svi korisnici</CardTitle>
+              <CardDescription>Pregled računa i trenutne uloge.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {users.map((user) => (
-                  <div key={user.id} className="flex items-center justify-between p-4 border rounded-lg">
-                    <div className="space-y-1">
-                      <p className="font-medium">{user.email}</p>
-                      <p className="text-sm text-muted-foreground">
-                        Joined: {new Date(user.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <div className="flex gap-4 text-sm">
-                      <div className="text-center">
-                        <p className="font-bold">{user.lead_count}</p>
-                        <p className="text-muted-foreground">Leads</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold">{user.email_count}</p>
-                        <p className="text-muted-foreground">Emails</p>
-                      </div>
-                      <div className="text-center">
-                        <p className="font-bold">{user.reminder_count}</p>
-                        <p className="text-muted-foreground">Reminders</p>
-                      </div>
-                    </div>
+            <CardContent className="space-y-3">
+              {users.map((user) => (
+                <div key={user.id} className="flex flex-col gap-3 rounded-lg border p-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="font-medium">{user.email}</p>
+                    <p className="text-xs text-muted-foreground">Kreiran {new Date(user.created_at).toLocaleDateString('hr-HR')}</p>
                   </div>
-                ))}
-              </div>
+                  <div className="flex items-center gap-3">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{user.role}</span>
+                    <div className="text-right text-xs text-muted-foreground">{user.lead_count} leadova</div>
+                  </div>
+                </div>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="settings" className="space-y-4">
+        <TabsContent value="settings" className="mt-5">
           <Card>
             <CardHeader>
-              <CardTitle>Webhook Integration Settings</CardTitle>
-              <CardDescription>Configure global webhook URLs for all users</CardDescription>
+              <CardTitle>Globalne postavke</CardTitle>
+              <CardDescription>Postojeće integracije ostaju dostupne adminu.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="make-webhook">Make.com Webhook URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="make-webhook"
-                    placeholder="https://hook.eu1.make.com/..."
-                    defaultValue={settings.make_webhook_url?.url || ''}
-                    onBlur={(e) => handleUpdateWebhook('make_webhook_url', e.target.value)}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  This webhook will be used for all users' Make.com integrations
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="zapier-webhook">Zapier Webhook URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="zapier-webhook"
-                    placeholder="https://hooks.zapier.com/..."
-                    defaultValue={settings.zapier_webhook_url?.url || ''}
-                    onBlur={(e) => handleUpdateWebhook('zapier_webhook_url', e.target.value)}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  This webhook will be used for all users' Zapier integrations
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="content-webhook">Content Booster Webhook URL</Label>
-                <div className="flex gap-2">
-                  <Input
-                    id="content-webhook"
-                    placeholder="https://..."
-                    defaultValue={settings.content_booster_webhook_url?.url || ''}
-                    onBlur={(e) => handleUpdateWebhook('content_booster_webhook_url', e.target.value)}
-                  />
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  This webhook will be used for all content creation events
-                </p>
-              </div>
+              <SettingField id="make-webhook" label="Make.com Webhook URL" value={settings.make_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('make_webhook_url', value)} />
+              <SettingField id="zapier-webhook" label="Zapier Webhook URL" value={settings.zapier_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('zapier_webhook_url', value)} />
+              <SettingField id="content-webhook" label="Content Booster Webhook URL" value={settings.content_booster_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('content_booster_webhook_url', value)} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -266,5 +161,13 @@ const AdminDashboard: React.FC = () => {
     </div>
   );
 };
+
+const StatCard = ({ label, value, icon: Icon }: { label: string; value: number; icon: React.ComponentType<{ className?: string }> }) => (
+  <Card><CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2"><CardTitle className="text-sm font-medium">{label}</CardTitle><Icon className="h-4 w-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{value}</div></CardContent></Card>
+);
+
+const SettingField = ({ id, label, value, onBlur }: { id: string; label: string; value: string; onBlur: (value: string) => void }) => (
+  <div className="space-y-2"><Label htmlFor={id}>{label}</Label><Input id={id} defaultValue={value} onBlur={(e) => onBlur(e.target.value)} /></div>
+);
 
 export default AdminDashboard;
