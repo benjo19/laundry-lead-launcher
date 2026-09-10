@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from 'react';
-import { BarChart3, CalendarClock, CircleDollarSign, Home, Plus, Users } from 'lucide-react';
+import { BarChart3, CalendarClock, CircleDollarSign, Home, MapPin, Plus, Users, WalletCards } from 'lucide-react';
 import PartnerLeads from '@/components/partner/PartnerLeads';
 import CRMReminder from '@/components/CRMReminder';
 import AddLeadDialog from '@/components/AddLeadDialog';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { usePartnerEarnings } from '@/hooks/usePartnerEarnings';
 import { Button } from '@/components/ui/button';
 
 type PartnerModule = 'today' | 'leads' | 'follow-up' | 'earnings';
@@ -15,10 +16,17 @@ const NAV_ITEMS: Array<{ id: PartnerModule; label: string; icon: React.Component
   { id: 'earnings', label: 'Zarada', icon: CircleDollarSign },
 ];
 
+const eur = (value: number) => new Intl.NumberFormat('hr-HR', {
+  style: 'currency',
+  currency: 'EUR',
+  minimumFractionDigits: 2,
+}).format(value);
+
 const PartnerWorkspace = () => {
   const [activeModule, setActiveModule] = useState<PartnerModule>('today');
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const { leads, addLead, loading } = useLeadManagement();
+  const { locations, commissions, summary, loading: earningsLoading, error: earningsError } = usePartnerEarnings();
 
   const stats = useMemo(() => {
     const allLeads = leads ?? [];
@@ -47,8 +55,8 @@ const PartnerWorkspace = () => {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard label="Moji leadovi" value={loading ? '…' : stats.total} icon={Users} />
         <StatCard label="Aktivni pipeline" value={loading ? '…' : stats.activePipeline} icon={BarChart3} />
-        <StatCard label="Demo" value={loading ? '…' : stats.demo} icon={CalendarClock} />
-        <StatCard label="Plaćajući" value={loading ? '…' : stats.paying} icon={CircleDollarSign} />
+        <StatCard label="Aktivne lokacije" value={earningsLoading ? '…' : summary.activeLocations} icon={MapPin} />
+        <StatCard label="Mjesečna provizija" value={earningsLoading ? '…' : eur(summary.monthlyRecurring)} icon={CircleDollarSign} />
       </div>
 
       <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
@@ -76,22 +84,68 @@ const PartnerWorkspace = () => {
       <div>
         <p className="text-sm font-medium text-muted-foreground">Orderly partner</p>
         <h1 className="text-2xl font-bold tracking-tight">Moja zarada</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Provizija se računa po aktivnoj plaćenoj lokaciji.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Provizija se računa po aktivnoj plaćenoj lokaciji, ne po leadu.</p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <p className="text-sm text-muted-foreground">Plaćajući leadovi</p>
-          <p className="mt-2 text-3xl font-bold">{stats.paying}</p>
+      {earningsError && (
+        <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
+          {earningsError}
         </div>
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <p className="text-sm text-muted-foreground">Provizija po lokaciji</p>
-          <p className="mt-2 text-3xl font-bold">5 €</p>
+      )}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard label="Aktivne lokacije" value={earningsLoading ? '…' : summary.activeLocations} icon={MapPin} />
+        <StatCard label="Recurring / mj." value={earningsLoading ? '…' : eur(summary.monthlyRecurring)} icon={CircleDollarSign} />
+        <StatCard label="Za isplatu" value={earningsLoading ? '…' : eur(summary.pending)} icon={WalletCards} />
+        <StatCard label="Ukupno isplaćeno" value={earningsLoading ? '…' : eur(summary.paid)} icon={CircleDollarSign} />
+      </div>
+
+      <div className="rounded-2xl border bg-card shadow-sm">
+        <div className="border-b px-4 py-4 sm:px-5">
+          <h2 className="font-semibold">Moje aktivne lokacije</h2>
+          <p className="text-sm text-muted-foreground">Svaka aktivna lokacija nosi vlastitu mjesečnu proviziju.</p>
         </div>
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <p className="text-sm text-muted-foreground">Za isplatu</p>
-          <p className="mt-2 text-3xl font-bold">—</p>
-          <p className="mt-1 text-xs text-muted-foreground">Aktivira se nakon povezivanja stvarnih lokacija i uplata.</p>
+        <div className="divide-y">
+          {!earningsLoading && locations.filter((location) => location.status === 'active').length === 0 && (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+              Još nema aktivnih lokacija vezanih uz tvoj račun.
+            </div>
+          )}
+          {locations.filter((location) => location.status === 'active').map((location) => (
+            <div key={location.id} className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
+              <div className="min-w-0">
+                <p className="truncate font-medium">{location.customer_name}</p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {location.location_name}{location.city ? ` · ${location.city}` : ''}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                <p className="font-semibold">{eur(location.monthly_commission)}</p>
+                <p className="text-xs text-muted-foreground">mjesečno</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-2xl border bg-card shadow-sm">
+        <div className="border-b px-4 py-4 sm:px-5">
+          <h2 className="font-semibold">Povijest provizija</h2>
+          <p className="text-sm text-muted-foreground">Obračuni po mjesecu i status isplate.</p>
+        </div>
+        <div className="divide-y">
+          {!earningsLoading && commissions.length === 0 && (
+            <div className="px-4 py-8 text-center text-sm text-muted-foreground">Još nema obračunatih provizija.</div>
+          )}
+          {commissions.slice(0, 12).map((commission) => (
+            <div key={commission.id} className="flex items-center justify-between gap-4 px-4 py-3 sm:px-5">
+              <div>
+                <p className="font-medium">{new Date(`${commission.period_start}T00:00:00`).toLocaleDateString('hr-HR', { month: 'long', year: 'numeric' })}</p>
+                <p className="text-xs text-muted-foreground">{commission.status === 'paid' ? 'Isplaćeno' : commission.status === 'approved' ? 'Odobreno' : commission.status === 'cancelled' ? 'Stornirano' : 'Za isplatu'}</p>
+              </div>
+              <p className="font-semibold">{eur(commission.amount)}</p>
+            </div>
+          ))}
         </div>
       </div>
     </div>
