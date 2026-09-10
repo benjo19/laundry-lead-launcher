@@ -29,6 +29,7 @@ export interface Lead {
   notes?: string;
   country?: string;
   city?: string;
+  interested_in?: 'Orderly' | 'AutomindAI' | 'Oprema praone' | string;
   businessProfileId?: string;
   businessProfileName?: string;
   businessCompanyName?: string;
