@@ -13,12 +13,14 @@ import AIKnowledgeChat from '@/components/AIKnowledgeChat';
 import AdminDashboard from '@/components/AdminDashboard';
 import BusinessDocuments from '@/components/BusinessDocuments';
 import MakeIntegration from '@/components/MakeIntegration';
+import PartnerWorkspace from '@/components/partner/PartnerWorkspace';
 
 import MobileHeader from '@/components/MobileHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { HelpChatbox } from '@/components/HelpChatbox';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { useUserRole } from '@/hooks/useUserRole';
 import { SubscriptionPlans } from '@/components/SubscriptionPlans';
 import { useLocation } from 'react-router-dom';
 
@@ -45,6 +47,7 @@ const Index = () => {
   const location = useLocation();
   const [activeModule, setActiveModule] = useState('dashboard');
   const { addLead } = useLeadManagement();
+  const { isSalesPartner, loading: roleLoading } = useUserRole();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -85,10 +88,8 @@ const Index = () => {
         case 'lead-hunter':
           return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
         case 'clients':
-          // Placeholder — bit će zamijenjeno dedicated Klijenti stranicom u idućoj fazi
           return <LeadHunter onNavigateToEmailGenerator={handleNavigateToEmailGenerator} />;
         case 'offers':
-          // Placeholder — bit će zamijenjeno Ponude Kanbanom
           return (
             <div className="p-6">
               <div className="surface-card p-8 text-center">
@@ -160,6 +161,18 @@ const Index = () => {
       );
     }
   };
+
+  if (roleLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="text-sm text-muted-foreground">Učitavam radni prostor…</div>
+      </div>
+    );
+  }
+
+  if (isSalesPartner && location.pathname !== '/admin') {
+    return <PartnerWorkspace />;
+  }
 
   if (isMobile) {
     return (
