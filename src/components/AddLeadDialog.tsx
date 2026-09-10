@@ -23,6 +23,7 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
     status: 'Nova' as Lead['status'],
     potential: 'Srednji' as Lead['potential'],
     industry: '',
+    interested_in: 'Orderly',
     notes: ''
   });
 
@@ -44,6 +45,7 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
           status: 'Nova',
           potential: 'Srednji',
           industry: '',
+          interested_in: 'Orderly',
           notes: ''
         });
         onOpenChange(false);
@@ -104,6 +106,22 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
               onChange={(e) => setFormData({...formData, industry: e.target.value})}
               placeholder="npr. Praonice, Hoteli, Restorani..."
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">Za što je zainteresiran?</label>
+            <Select
+              value={formData.interested_in}
+              onValueChange={(value) => setFormData({...formData, interested_in: value})}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Odaberi interes" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Orderly">Orderly</SelectItem>
+                <SelectItem value="AutomindAI">AutomindAI</SelectItem>
+                <SelectItem value="Oprema praone">Oprema praone</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label className="block text-sm font-medium mb-1">Potencijal</label>
