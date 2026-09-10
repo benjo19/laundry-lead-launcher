@@ -69,7 +69,7 @@ const OrderlyOwnerWorkspace: React.FC = () => {
 
     return (
       <div className="mx-auto w-full max-w-6xl space-y-5 px-3 pb-24 pt-4 sm:px-6 sm:pt-5 md:pb-8">
-        <div className="flex items-start justify-between gap-4 pr-12 md:pr-0">
+        <div className="flex items-start justify-between gap-4 pr-14 md:pr-0">
           <div>
             <p className="text-sm font-medium text-muted-foreground">Automind CRM</p>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Danas</h1>
@@ -148,7 +148,7 @@ const OrderlyOwnerWorkspace: React.FC = () => {
         </div>
       </header>
 
-      <button type="button" onClick={handleSignOut} disabled={signingOut} className="fixed right-3 top-3 z-50 flex min-h-11 items-center gap-2 rounded-xl border bg-background/95 px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur md:hidden" aria-label="Odjava"><LogOut className="h-4 w-4" /><span className="hidden sm:inline">{signingOut ? 'Odjava…' : 'Odjava'}</span></button>
+      <button type="button" onClick={handleSignOut} disabled={signingOut} className="fixed right-3 top-3 z-50 flex h-10 w-10 items-center justify-center rounded-full border bg-background/90 text-muted-foreground shadow-sm backdrop-blur transition hover:bg-muted md:hidden" aria-label="Odjava" title="Odjava"><LogOut className="h-4 w-4" /></button>
       <main>{renderModule()}</main>
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur md:hidden">
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
