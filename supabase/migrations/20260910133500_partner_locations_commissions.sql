@@ -15,12 +15,9 @@ CREATE TABLE IF NOT EXISTS public.partner_locations (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS partner_locations_partner_idx
-  ON public.partner_locations(partner_user_id);
-CREATE INDEX IF NOT EXISTS partner_locations_status_idx
-  ON public.partner_locations(status);
-CREATE INDEX IF NOT EXISTS partner_locations_lead_idx
-  ON public.partner_locations(lead_id);
+CREATE INDEX IF NOT EXISTS partner_locations_partner_idx ON public.partner_locations(partner_user_id);
+CREATE INDEX IF NOT EXISTS partner_locations_status_idx ON public.partner_locations(status);
+CREATE INDEX IF NOT EXISTS partner_locations_lead_idx ON public.partner_locations(lead_id);
 
 ALTER TABLE public.partner_locations ENABLE ROW LEVEL SECURITY;
 
@@ -32,8 +29,8 @@ USING (partner_user_id = auth.uid());
 DROP POLICY IF EXISTS "Super admins can manage all partner locations" ON public.partner_locations;
 CREATE POLICY "Super admins can manage all partner locations"
 ON public.partner_locations FOR ALL TO authenticated
-USING (private.is_super_admin(auth.uid()))
-WITH CHECK (private.is_super_admin(auth.uid()));
+USING (public.is_current_super_admin())
+WITH CHECK (public.is_current_super_admin());
 
 CREATE TABLE IF NOT EXISTS public.partner_commissions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -49,12 +46,9 @@ CREATE TABLE IF NOT EXISTS public.partner_commissions (
   UNIQUE(location_id, period_start)
 );
 
-CREATE INDEX IF NOT EXISTS partner_commissions_partner_idx
-  ON public.partner_commissions(partner_user_id);
-CREATE INDEX IF NOT EXISTS partner_commissions_period_idx
-  ON public.partner_commissions(period_start);
-CREATE INDEX IF NOT EXISTS partner_commissions_status_idx
-  ON public.partner_commissions(status);
+CREATE INDEX IF NOT EXISTS partner_commissions_partner_idx ON public.partner_commissions(partner_user_id);
+CREATE INDEX IF NOT EXISTS partner_commissions_period_idx ON public.partner_commissions(period_start);
+CREATE INDEX IF NOT EXISTS partner_commissions_status_idx ON public.partner_commissions(status);
 
 ALTER TABLE public.partner_commissions ENABLE ROW LEVEL SECURITY;
 
@@ -66,13 +60,13 @@ USING (partner_user_id = auth.uid());
 DROP POLICY IF EXISTS "Super admins can manage all partner commissions" ON public.partner_commissions;
 CREATE POLICY "Super admins can manage all partner commissions"
 ON public.partner_commissions FOR ALL TO authenticated
-USING (private.is_super_admin(auth.uid()))
-WITH CHECK (private.is_super_admin(auth.uid()));
+USING (public.is_current_super_admin())
+WITH CHECK (public.is_current_super_admin());
 
--- Keep updated_at current without introducing a dependency on an existing trigger helper.
 CREATE OR REPLACE FUNCTION public.set_partner_crm_updated_at()
 RETURNS trigger
 LANGUAGE plpgsql
+SET search_path = public
 AS $$
 BEGIN
   NEW.updated_at = now();
