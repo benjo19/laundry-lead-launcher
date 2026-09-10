@@ -3,12 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { useGlobalSettings } from '@/hooks/useGlobalSettings';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, Settings, Database, TrendingUp, UserPlus } from 'lucide-react';
+import { Users, Settings, Database, TrendingUp, UserPlus, ContactRound } from 'lucide-react';
 import LoadingSpinner from './ui/loading-spinner';
 import SalesPartnerManagement from '@/components/admin/SalesPartnerManagement';
+import AdminPartnerOverview from '@/components/admin/AdminPartnerOverview';
 import { toast } from 'sonner';
 
 interface UserStats {
@@ -102,14 +102,16 @@ const AdminDashboard: React.FC = () => {
         <p className="text-muted-foreground">Upravljanje terencima, korisnicima i CRM sustavom.</p>
       </div>
 
-      <Tabs defaultValue="partners" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-4">
+      <Tabs defaultValue="partner-crm" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-5">
+          <TabsTrigger value="partner-crm"><ContactRound className="mr-2 h-4 w-4" />CRM terenaca</TabsTrigger>
           <TabsTrigger value="partners"><UserPlus className="mr-2 h-4 w-4" />Terenci</TabsTrigger>
           <TabsTrigger value="overview"><TrendingUp className="mr-2 h-4 w-4" />Pregled</TabsTrigger>
           <TabsTrigger value="users"><Users className="mr-2 h-4 w-4" />Korisnici</TabsTrigger>
           <TabsTrigger value="settings"><Settings className="mr-2 h-4 w-4" />Postavke</TabsTrigger>
         </TabsList>
 
+        <TabsContent value="partner-crm" className="mt-5"><AdminPartnerOverview /></TabsContent>
         <TabsContent value="partners" className="mt-5"><SalesPartnerManagement /></TabsContent>
 
         <TabsContent value="overview" className="mt-5 space-y-4">
