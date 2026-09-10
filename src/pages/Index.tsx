@@ -47,7 +47,7 @@ const Index = () => {
   const location = useLocation();
   const [activeModule, setActiveModule] = useState('dashboard');
   const { addLead } = useLeadManagement();
-  const { isSalesPartner, loading: roleLoading } = useUserRole();
+  const { isAdmin, isSalesPartner, loading: roleLoading } = useUserRole();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const isMobile = useIsMobile();
 
@@ -172,6 +172,10 @@ const Index = () => {
 
   if (isSalesPartner && location.pathname !== '/admin') {
     return <PartnerWorkspace />;
+  }
+
+  if (isAdmin) {
+    return <AdminDashboard />;
   }
 
   if (isMobile) {
