@@ -4,7 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuthContext } from "@/contexts/AuthContext";
-import { LanguageProvider, useLanguage } from "@/contexts/LanguageContext";
+import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { LeadSearchProvider } from "@/contexts/LeadSearchContext";
 import LanguageErrorBoundary from "@/components/LanguageErrorBoundary";
@@ -16,20 +16,20 @@ import AdminDashboard from "./components/AdminDashboard";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import OAuthWrapper from "./components/OAuthWrapper";
 import ErrorBoundary from "./components/ErrorBoundary";
-import { AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
+      staleTime: 5 * 60 * 1000,
     },
   },
 });
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading, error } = useAuthContext();
-  
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -48,77 +48,73 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
       </div>
     );
   }
-  
-  if (error) {
+
+  if (error || !user) {
     return <Navigate to="/auth" replace />;
   }
-  
-  if (!user) {
-    return <Navigate to="/auth" replace />;
-  }
-  
+
   return <>{children}</>;
 };
 
 const AppContent: React.FC = () => {
-  try {
-    return (
-      <ErrorBoundary>
-        <QueryClientProvider client={queryClient}>
-          <TooltipProvider>
-            <ThemeProvider>
-              <AuthProvider>
+  return (
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <ThemeProvider>
+            <AuthProvider>
               <LeadSearchProvider>
-              <div className="min-h-screen w-full">
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                <OAuthWrapper>
-                  <Routes>
-                    <Route path="/auth" element={<Auth />} />
-                    <Route path="/install" element={<Install />} />
-                    <Route path="/" element={
-                      <ProtectedRoute>
-                        <Index />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/settings" element={
-                      <ProtectedRoute>
-                        <Settings />
-                      </ProtectedRoute>
-                    } />
-                    <Route path="/admin" element={
-                      <ProtectedRoute>
-                        <ProtectedAdminRoute>
-                          <Index />
-                        </ProtectedAdminRoute>
-                      </ProtectedRoute>
-                    } />
-                  </Routes>
-                </OAuthWrapper>
-                </BrowserRouter>
-              </div>
+                <div className="min-h-screen w-full">
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <OAuthWrapper>
+                      <Routes>
+                        <Route path="/auth" element={<Auth />} />
+                        <Route path="/install" element={<Install />} />
+                        <Route path="/" element={
+                          <ProtectedRoute>
+                            <Index />
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/settings" element={
+                          <ProtectedRoute>
+                            <Settings />
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/admin" element={
+                          <ProtectedRoute>
+                            <ProtectedAdminRoute>
+                              <Navigate to="/" replace />
+                            </ProtectedAdminRoute>
+                          </ProtectedRoute>
+                        } />
+                        <Route path="/system-admin" element={
+                          <ProtectedRoute>
+                            <ProtectedAdminRoute>
+                              <AdminDashboard />
+                            </ProtectedAdminRoute>
+                          </ProtectedRoute>
+                        } />
+                      </Routes>
+                    </OAuthWrapper>
+                  </BrowserRouter>
+                </div>
               </LeadSearchProvider>
             </AuthProvider>
-            </ThemeProvider>
-          </TooltipProvider>
-        </QueryClientProvider>
-      </ErrorBoundary>
-    );
-  } catch (error) {
-    console.error('App: Error in App component:', error);
-    throw error;
-  }
-};
-
-const App: React.FC = () => {
-  return (
-    <LanguageErrorBoundary>
-      <LanguageProvider>
-        <AppContent />
-      </LanguageProvider>
-    </LanguageErrorBoundary>
+          </ThemeProvider>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   );
 };
+
+const App: React.FC = () => (
+  <LanguageErrorBoundary>
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
+  </LanguageErrorBoundary>
+);
 
 export default App;
