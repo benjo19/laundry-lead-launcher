@@ -25,18 +25,27 @@ interface ReminderFormProps {
   onCreateReminder: () => void;
   editingReminder?: Reminder | null;
   onCancelEdit?: () => void;
+  partnerMode?: boolean;
 }
 
-const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder, editingReminder, onCancelEdit }: ReminderFormProps) => {
+const ReminderForm = ({
+  newReminder,
+  setNewReminder,
+  leads,
+  onCreateReminder,
+  editingReminder,
+  onCancelEdit,
+  partnerMode = false,
+}: ReminderFormProps) => {
   const { toast } = useToast();
 
   const handleSubmit = () => {
     try {
       if (!newReminder.title || !newReminder.date || !newReminder.time || !newReminder.company) {
         toast({
-          title: "Nedostaju podaci",
-          description: "Molimo unesite sve potrebne podatke za podsjetnik.",
-          variant: "destructive"
+          title: 'Nedostaju podaci',
+          description: 'Molimo unesite sve potrebne podatke za podsjetnik.',
+          variant: 'destructive',
         });
         return;
       }
@@ -44,12 +53,40 @@ const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder, ed
     } catch (error) {
       console.error('Error creating reminder:', error);
       toast({
-        title: "Greška",
-        description: "Dogodila se greška prilikom kreiranja podsjetnika.",
-        variant: "destructive"
+        title: 'Greška',
+        description: 'Dogodila se greška prilikom kreiranja podsjetnika.',
+        variant: 'destructive',
       });
     }
   };
+
+  const clientSelect = (
+    <Select
+      value={newReminder.company}
+      onValueChange={(value) => setNewReminder({ ...newReminder, company: value, companyInputMode: 'select' })}
+    >
+      <SelectTrigger>
+        <SelectValue placeholder={partnerMode ? 'Odaberi klijenta' : 'Odaberite tvrtku'} />
+      </SelectTrigger>
+      <SelectContent>
+        {leads.length > 0 ? (
+          leads.map((lead) => (
+            <SelectItem key={lead.id} value={lead.company}>
+              <div className="flex items-center">
+                <Users className="h-4 w-4 mr-2" />
+                {lead.company}
+                <span className="text-xs text-slate-500 ml-2">({lead.status})</span>
+              </div>
+            </SelectItem>
+          ))
+        ) : (
+          <div className="px-2 py-2 text-sm text-slate-500">
+            {partnerMode ? 'Nema klijenata na tvom računu' : 'Nema leadova u sustavu'}
+          </div>
+        )}
+      </SelectContent>
+    </Select>
+  );
 
   return (
     <Card>
@@ -68,96 +105,69 @@ const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder, ed
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Naslov *
-          </label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Naslov *</label>
           <Input
             placeholder="Naslov podsjetnika"
             value={newReminder.title}
-            onChange={(e) => setNewReminder({...newReminder, title: e.target.value})}
+            onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            Tvrtka *
+            {partnerMode ? 'Klijent *' : 'Tvrtka *'}
           </label>
           <div className="space-y-2">
-            <Select 
-              value={newReminder.companyInputMode} 
-              onValueChange={(value: 'select' | 'manual') => {
-                setNewReminder({
-                  ...newReminder, 
-                  companyInputMode: value,
-                  company: ''
-                });
-              }}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Odaberite način unosa" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="select">Odaberi iz Lead Hunter-a</SelectItem>
-                <SelectItem value="manual">Unesi ručno</SelectItem>
-              </SelectContent>
-            </Select>
-
-            {newReminder.companyInputMode === 'select' ? (
-              <Select 
-                value={newReminder.company} 
-                onValueChange={(value) => setNewReminder({...newReminder, company: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Odaberite tvrtku" />
-                </SelectTrigger>
-                <SelectContent>
-                  {leads.length > 0 ? (
-                    leads.map((lead) => (
-                      <SelectItem key={lead.id} value={lead.company}>
-                        <div className="flex items-center">
-                          <Users className="h-4 w-4 mr-2" />
-                          {lead.company}
-                          <span className="text-xs text-slate-500 ml-2">({lead.status})</span>
-                        </div>
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="px-2 py-1 text-sm text-slate-500">
-                      Nema leadova u sustavu
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
+            {partnerMode ? (
+              clientSelect
             ) : (
-              <Input
-                placeholder="Unesite naziv tvrtke"
-                value={newReminder.company}
-                onChange={(e) => setNewReminder({...newReminder, company: e.target.value})}
-              />
+              <>
+                <Select
+                  value={newReminder.companyInputMode}
+                  onValueChange={(value: 'select' | 'manual') => {
+                    setNewReminder({ ...newReminder, companyInputMode: value, company: '' });
+                  }}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Odaberite način unosa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="select">Odaberi iz Lead Hunter-a</SelectItem>
+                    <SelectItem value="manual">Unesi ručno</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {newReminder.companyInputMode === 'select' ? (
+                  clientSelect
+                ) : (
+                  <Input
+                    placeholder="Unesite naziv tvrtke"
+                    value={newReminder.company}
+                    onChange={(e) => setNewReminder({ ...newReminder, company: e.target.value })}
+                  />
+                )}
+              </>
             )}
           </div>
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Opis
-          </label>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Opis</label>
           <Textarea
             placeholder="Opis aktivnosti"
             value={newReminder.description}
-            onChange={(e) => setNewReminder({...newReminder, description: e.target.value})}
+            onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })}
             className="min-h-16"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            Prioritet
-          </label>
-          <Select value={newReminder.priority} onValueChange={(value: Reminder['priority']) => setNewReminder({...newReminder, priority: value})}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
+          <label className="block text-sm font-medium text-slate-700 mb-2">Prioritet</label>
+          <Select
+            value={newReminder.priority}
+            onValueChange={(value: Reminder['priority']) => setNewReminder({ ...newReminder, priority: value })}
+          >
+            <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="Visok">Visok</SelectItem>
               <SelectItem value="Srednji">Srednji</SelectItem>
@@ -168,23 +178,19 @@ const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder, ed
 
         <div className="grid grid-cols-2 gap-2">
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Datum *
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Datum *</label>
             <Input
               type="date"
               value={newReminder.date}
-              onChange={(e) => setNewReminder({...newReminder, date: e.target.value})}
+              onChange={(e) => setNewReminder({ ...newReminder, date: e.target.value })}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">
-              Vrijeme *
-            </label>
+            <label className="block text-sm font-medium text-slate-700 mb-2">Vrijeme *</label>
             <Input
               type="time"
               value={newReminder.time}
-              onChange={(e) => setNewReminder({...newReminder, time: e.target.value})}
+              onChange={(e) => setNewReminder({ ...newReminder, time: e.target.value })}
             />
           </div>
         </div>
