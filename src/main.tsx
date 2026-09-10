@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
 import './crm-responsive.css'
+import { registerServiceWorker } from './lib/registerServiceWorker'
 
 // Add global error handler
 window.addEventListener('error', (event) => {
@@ -94,3 +95,5 @@ if (document.readyState === 'loading') {
 } else {
   initializeApp();
 }
+
+registerServiceWorker();
