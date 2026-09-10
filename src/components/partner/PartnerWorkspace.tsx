@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { BarChart3, CalendarClock, CircleDollarSign, Home, Plus, Users } from 'lucide-react';
-import LeadHunter from '@/components/LeadHunter';
+import PartnerLeads from '@/components/partner/PartnerLeads';
 import CRMReminder from '@/components/CRMReminder';
 import AddLeadDialog from '@/components/AddLeadDialog';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
@@ -15,8 +15,6 @@ const NAV_ITEMS: Array<{ id: PartnerModule; label: string; icon: React.Component
   { id: 'earnings', label: 'Zarada', icon: CircleDollarSign },
 ];
 
-const normalize = (value?: string) => (value ?? '').trim().toLowerCase();
-
 const PartnerWorkspace = () => {
   const [activeModule, setActiveModule] = useState<PartnerModule>('today');
   const [addLeadOpen, setAddLeadOpen] = useState(false);
@@ -24,22 +22,11 @@ const PartnerWorkspace = () => {
 
   const stats = useMemo(() => {
     const allLeads = leads ?? [];
-    const demo = allLeads.filter((lead) => normalize(lead.status).includes('demo')).length;
-    const paying = allLeads.filter((lead) => {
-      const status = normalize(lead.status);
-      return status === 'plaća' || status === 'placa' || status === 'zatvoren' || status === 'closed';
-    }).length;
-    const activePipeline = allLeads.filter((lead) => {
-      const status = normalize(lead.status);
-      return !['odbačen', 'odbacen', 'izgubljen', 'lost'].includes(status);
-    }).length;
+    const demo = allLeads.filter((lead) => lead.status === 'Demo').length;
+    const paying = allLeads.filter((lead) => lead.status === 'Plaća').length;
+    const activePipeline = allLeads.filter((lead) => ['Nova', 'Kontaktiran', 'Demo', 'Trial'].includes(lead.status)).length;
 
-    return {
-      total: allLeads.length,
-      activePipeline,
-      demo,
-      paying,
-    };
+    return { total: allLeads.length, activePipeline, demo, paying };
   }, [leads]);
 
   const renderToday = () => (
@@ -65,11 +52,9 @@ const PartnerWorkspace = () => {
       </div>
 
       <div className="rounded-2xl border bg-card p-4 shadow-sm sm:p-5">
-        <div className="mb-3 flex items-center justify-between">
-          <div>
-            <h2 className="font-semibold">Brze akcije</h2>
-            <p className="text-sm text-muted-foreground">Najčešće stvari koje radiš na terenu.</p>
-          </div>
+        <div className="mb-3">
+          <h2 className="font-semibold">Brze akcije</h2>
+          <p className="text-sm text-muted-foreground">Najčešće stvari koje radiš na terenu.</p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <Button size="lg" className="h-14 justify-start gap-3" onClick={() => setAddLeadOpen(true)}>
@@ -91,7 +76,7 @@ const PartnerWorkspace = () => {
       <div>
         <p className="text-sm font-medium text-muted-foreground">Orderly partner</p>
         <h1 className="text-2xl font-bold tracking-tight">Moja zarada</h1>
-        <p className="mt-1 text-sm text-muted-foreground">Ovdje će biti obračun provizije po aktivnoj lokaciji i povijest isplata.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Provizija se računa po aktivnoj plaćenoj lokaciji.</p>
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
@@ -114,7 +99,7 @@ const PartnerWorkspace = () => {
 
   const renderModule = () => {
     if (activeModule === 'today') return renderToday();
-    if (activeModule === 'leads') return <LeadHunter onNavigateToEmailGenerator={() => undefined} />;
+    if (activeModule === 'leads') return <PartnerLeads onAddLead={() => setAddLeadOpen(true)} />;
     if (activeModule === 'follow-up') return <CRMReminder />;
     return renderEarnings();
   };
@@ -132,13 +117,7 @@ const PartnerWorkspace = () => {
               const Icon = item.icon;
               const active = activeModule === item.id;
               return (
-                <Button
-                  key={item.id}
-                  variant={active ? 'secondary' : 'ghost'}
-                  size="sm"
-                  className="gap-2"
-                  onClick={() => setActiveModule(item.id)}
-                >
+                <Button key={item.id} variant={active ? 'secondary' : 'ghost'} size="sm" className="gap-2" onClick={() => setActiveModule(item.id)}>
                   <Icon className="h-4 w-4" /> {item.label}
                 </Button>
               );
@@ -154,20 +133,11 @@ const PartnerWorkspace = () => {
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 backdrop-blur md:hidden">
         <div className="mx-auto grid max-w-md grid-cols-5 gap-1">
-          {NAV_ITEMS.slice(0, 2).map((item) => (
-            <MobileNavButton key={item.id} item={item} active={activeModule === item.id} onClick={() => setActiveModule(item.id)} />
-          ))}
-          <button
-            type="button"
-            onClick={() => setAddLeadOpen(true)}
-            className="mx-auto flex h-12 w-12 -translate-y-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg"
-            aria-label="Dodaj lead"
-          >
+          {NAV_ITEMS.slice(0, 2).map((item) => <MobileNavButton key={item.id} item={item} active={activeModule === item.id} onClick={() => setActiveModule(item.id)} />)}
+          <button type="button" onClick={() => setAddLeadOpen(true)} className="mx-auto flex h-12 w-12 -translate-y-3 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg" aria-label="Dodaj lead">
             <Plus className="h-6 w-6" />
           </button>
-          {NAV_ITEMS.slice(2).map((item) => (
-            <MobileNavButton key={item.id} item={item} active={activeModule === item.id} onClick={() => setActiveModule(item.id)} />
-          ))}
+          {NAV_ITEMS.slice(2).map((item) => <MobileNavButton key={item.id} item={item} active={activeModule === item.id} onClick={() => setActiveModule(item.id)} />)}
         </div>
       </nav>
 
@@ -193,11 +163,7 @@ const MobileNavButton = ({ item, active, onClick }: {
 }) => {
   const Icon = item.icon;
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium ${active ? 'text-primary' : 'text-muted-foreground'}`}
-    >
+    <button type="button" onClick={onClick} className={`flex min-h-12 flex-col items-center justify-center gap-1 rounded-xl px-1 text-[11px] font-medium ${active ? 'text-primary' : 'text-muted-foreground'}`}>
       <Icon className="h-5 w-5" />
       <span>{item.label}</span>
     </button>
