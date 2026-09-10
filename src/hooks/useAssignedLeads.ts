@@ -6,6 +6,8 @@ import { Lead } from '@/types';
 
 type LeadRow = {
   id: string;
+  user_id: string | null;
+  assigned_to: string | null;
   company: string;
   location: string | null;
   employees: string | null;
@@ -19,11 +21,36 @@ type LeadRow = {
   country: string | null;
   city: string | null;
   interested_in: string | null;
+  next_step: string | null;
+  next_action_at: string | null;
+  last_contact_at: string | null;
+  contact_outcome: string | null;
+  contact_type: string | null;
+  locations_count: number | null;
+  won_locations_count: number | null;
+  opportunity_value: number | null;
+  actual_mrr: number | null;
+  source: string | null;
   created_at: string | null;
 };
 
+const legacyNumericId = (uuid: string) => Number.parseInt(uuid.replace(/-/g, '').slice(0, 12), 16);
+const normalize = (value?: string | null) => (value || '').trim().toLowerCase().replace(/\s+/g, ' ');
+const normalizePhone = (value?: string | null) => (value || '').replace(/\D/g, '');
+const domainOf = (value?: string | null) => {
+  const raw = (value || '').trim().toLowerCase();
+  if (!raw) return '';
+  try {
+    const url = raw.startsWith('http') ? raw : `https://${raw}`;
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return raw.replace(/^www\./, '').split('/')[0];
+  }
+};
+
 const mapRow = (row: LeadRow): Lead => ({
-  id: parseInt(row.id.replace(/-/g, ''), 16),
+  id: legacyNumericId(row.id),
+  uuid: row.id,
   company: row.company,
   location: row.location || '',
   employees: row.employees || '',
@@ -38,6 +65,18 @@ const mapRow = (row: LeadRow): Lead => ({
   country: row.country || undefined,
   city: row.city || undefined,
   interested_in: row.interested_in || undefined,
+  user_id: row.user_id || undefined,
+  assigned_to: row.assigned_to || undefined,
+  next_step: row.next_step || undefined,
+  next_action_at: row.next_action_at || undefined,
+  last_contact_at: row.last_contact_at || undefined,
+  contact_outcome: row.contact_outcome || undefined,
+  contact_type: row.contact_type || undefined,
+  locations_count: row.locations_count ?? undefined,
+  won_locations_count: row.won_locations_count ?? undefined,
+  opportunity_value: row.opportunity_value ?? undefined,
+  actual_mrr: row.actual_mrr ?? undefined,
+  source: row.source || undefined,
 });
 
 export const useAssignedLeads = () => {
@@ -59,7 +98,7 @@ export const useAssignedLeads = () => {
     const db = supabase as any;
     const { data, error: queryError } = await db
       .from('leads')
-      .select('id,company,location,employees,phone,email,website,status,potential,notes,industry,country,city,interested_in,created_at')
+      .select('id,user_id,assigned_to,company,location,employees,phone,email,website,status,potential,notes,industry,country,city,interested_in,next_step,next_action_at,last_contact_at,contact_outcome,contact_type,locations_count,won_locations_count,opportunity_value,actual_mrr,source,created_at')
       .order('created_at', { ascending: false });
 
     if (queryError) {
@@ -81,16 +120,30 @@ export const useAssignedLeads = () => {
     if (!user) return false;
     const db = supabase as any;
 
-    const { data: duplicate } = await db
+    const { data: candidates, error: duplicateError } = await db
       .from('leads')
-      .select('id')
-      .eq('company', newLeadData.company)
-      .limit(1);
+      .select('id,company,email,phone,website');
 
-    if (duplicate?.length) {
+    if (duplicateError) {
+      toast({ title: 'Greška', description: duplicateError.message, variant: 'destructive' });
+      return false;
+    }
+
+    const company = normalize(newLeadData.company);
+    const email = normalize(newLeadData.email);
+    const phone = normalizePhone(newLeadData.phone);
+    const domain = domainOf(newLeadData.website);
+    const duplicate = (candidates ?? []).find((row: any) =>
+      (company && normalize(row.company) === company) ||
+      (email && normalize(row.email) === email) ||
+      (phone && normalizePhone(row.phone) === phone) ||
+      (domain && domainOf(row.website) === domain)
+    );
+
+    if (duplicate) {
       toast({
         title: 'Lead već postoji',
-        description: `Lead s nazivom "${newLeadData.company}" već postoji među tvojim dodijeljenim leadovima.`,
+        description: `Pronađen je postojeći CRM account za ${duplicate.company}. Otvori postojeći lead umjesto stvaranja duplikata.`,
         variant: 'destructive',
       });
       return false;
@@ -100,7 +153,7 @@ export const useAssignedLeads = () => {
       user_id: user.id,
       created_by: user.id,
       assigned_to: user.id,
-      company: newLeadData.company,
+      company: newLeadData.company.trim(),
       location: newLeadData.location || null,
       employees: newLeadData.employees || null,
       phone: newLeadData.phone || null,
@@ -109,11 +162,16 @@ export const useAssignedLeads = () => {
       status: newLeadData.status || 'Nova',
       potential: newLeadData.potential || 'Srednji',
       notes: newLeadData.notes || null,
-      source: 'Manual',
+      source: newLeadData.source || 'Manual',
       industry: newLeadData.industry || null,
       country: newLeadData.country || null,
       city: newLeadData.city || null,
       interested_in: newLeadData.interested_in || null,
+      next_step: newLeadData.next_step || null,
+      locations_count: newLeadData.locations_count ?? null,
+      won_locations_count: newLeadData.won_locations_count ?? null,
+      opportunity_value: newLeadData.opportunity_value ?? null,
+      actual_mrr: newLeadData.actual_mrr ?? null,
     });
 
     if (insertError) {
@@ -122,18 +180,18 @@ export const useAssignedLeads = () => {
     }
 
     await fetchLeads();
-    toast({ title: 'Lead dodan', description: `${newLeadData.company} je dodan u tvoj CRM.` });
+    toast({ title: 'Lead dodan', description: `${newLeadData.company} je dodan u CRM.` });
     return true;
   };
 
   const updateLeadStatus = async (leadId: number, status: Lead['status']) => {
     const lead = leads.find((item) => item.id === leadId);
-    if (!lead) return;
+    if (!lead?.uuid) return;
     const db = supabase as any;
     const { error: updateError } = await db
       .from('leads')
       .update({ status, updated_at: new Date().toISOString() })
-      .eq('company', lead.company);
+      .eq('id', lead.uuid);
 
     if (updateError) {
       toast({ title: 'Greška', description: updateError.message, variant: 'destructive' });
