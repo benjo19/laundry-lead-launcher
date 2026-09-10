@@ -33,6 +33,14 @@ type LeadRow = {
   notes: string | null;
   source: string | null;
   created_at: string | null;
+  last_contact_at: string | null;
+  contact_outcome: string | null;
+  next_step: string | null;
+  next_action_at: string | null;
+  contact_type: string | null;
+  locations_count: number | null;
+  opportunity_value: number | null;
+  lost_reason: string | null;
 };
 
 type Owner = {
@@ -60,7 +68,7 @@ const OrderlyOwnerCRM: React.FC = () => {
       const db = supabase as any;
       const [leadResult, profileResult, roleResult] = await Promise.all([
         db.from('leads')
-          .select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,interested_in,notes,source,created_at')
+          .select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,interested_in,notes,source,created_at,last_contact_at,contact_outcome,next_step,next_action_at,contact_type,locations_count,opportunity_value,lost_reason')
           .order('created_at', { ascending: false }),
         db.from('profiles').select('id,email'),
         db.from('user_roles').select('user_id,role'),
@@ -109,9 +117,22 @@ const OrderlyOwnerCRM: React.FC = () => {
       const ownerId = effectiveOwnerId(lead);
       const owner = ownerMap.get(ownerId);
       const creator = ownerMap.get(lead.created_by || lead.user_id);
-      const matchesSearch = !needle || [lead.company, lead.location, lead.city, lead.contact_person, lead.phone, lead.phone2, lead.email, lead.website, lead.interested_in, owner?.email, creator?.email]
-        .filter(Boolean)
-        .some((value) => String(value).toLowerCase().includes(needle));
+      const matchesSearch = !needle || [
+        lead.company,
+        lead.location,
+        lead.city,
+        lead.contact_person,
+        lead.phone,
+        lead.phone2,
+        lead.email,
+        lead.website,
+        lead.interested_in,
+        lead.contact_outcome,
+        lead.next_step,
+        lead.lost_reason,
+        owner?.email,
+        creator?.email,
+      ].filter(Boolean).some((value) => String(value).toLowerCase().includes(needle));
       const matchesOwner = ownerFilter === 'all' || ownerId === ownerFilter;
       const matchesStatus = statusFilter === 'all' || (lead.status || 'Nova') === statusFilter;
       return matchesSearch && matchesOwner && matchesStatus;
@@ -169,7 +190,7 @@ const OrderlyOwnerCRM: React.FC = () => {
         <div>
           <p className="text-sm font-medium text-muted-foreground">Orderly</p>
           <h2 className="text-2xl font-bold tracking-tight">Leadovi</h2>
-          <p className="text-sm text-muted-foreground">Klikni na lead za kompletan account, follow-up, uređivanje ili brisanje.</p>
+          <p className="text-sm text-muted-foreground">Klikni na lead za kompletan account, timeline, follow-up, uređivanje ili brisanje.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={load} disabled={loading} className="gap-2">
@@ -197,7 +218,7 @@ const OrderlyOwnerCRM: React.FC = () => {
           <div className="grid gap-3 md:grid-cols-[1fr_220px_180px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Traži lokal, kontakt, interes, grad, email, telefon ili terenca..." className="pl-9" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Traži lokal, kontakt, interes, sljedeći korak, email, telefon ili terenca..." className="pl-9" />
             </div>
             <Select value={ownerFilter} onValueChange={setOwnerFilter}>
               <SelectTrigger><SelectValue placeholder="Svi vlasnici" /></SelectTrigger>
@@ -228,7 +249,7 @@ const OrderlyOwnerCRM: React.FC = () => {
                   <th className="px-4 py-3 font-medium">Status</th>
                   <th className="px-4 py-3 font-medium">Čiji je lead</th>
                   <th className="px-4 py-3 font-medium">Kontakt</th>
-                  <th className="px-4 py-3 font-medium">Dodano</th>
+                  <th className="px-4 py-3 font-medium">Sljedeće</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -248,17 +269,13 @@ const OrderlyOwnerCRM: React.FC = () => {
                         <Select value={ownerId} onValueChange={(value) => assignLead(lead.id, value)} disabled={assigningId === lead.id}>
                           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                           <SelectContent>
-                            {owners.map((owner) => (
-                              <SelectItem key={owner.id} value={owner.id}>{ownerLabel(owner.id)}</SelectItem>
-                            ))}
+                            {owners.map((owner) => <SelectItem key={owner.id} value={owner.id}>{ownerLabel(owner.id)}</SelectItem>)}
                           </SelectContent>
                         </Select>
-                        <div className="mt-1 text-xs text-muted-foreground">
-                          Kreirao: {creatorId === user?.id ? 'Benjamin' : creator?.email || 'nepoznat korisnik'}
-                        </div>
+                        <div className="mt-1 text-xs text-muted-foreground">Kreirao: {creatorId === user?.id ? 'Benjamin' : creator?.email || 'nepoznat korisnik'}</div>
                       </td>
                       <td className="px-4 py-3"><p>{lead.phone || '—'}</p><p className="text-xs text-muted-foreground">{lead.email || ''}</p></td>
-                      <td className="px-4 py-3 text-muted-foreground">{lead.created_at ? new Date(lead.created_at).toLocaleDateString('hr-HR') : '—'}</td>
+                      <td className="px-4 py-3"><p>{lead.next_step || '—'}</p><p className="text-xs text-muted-foreground">{lead.next_action_at ? new Date(lead.next_action_at).toLocaleString('hr-HR') : ''}</p></td>
                     </tr>
                   );
                 })}
