@@ -14,6 +14,8 @@ import { toast } from 'sonner';
 type LeadRow = {
   id: string;
   user_id: string;
+  created_by: string | null;
+  assigned_to: string | null;
   company: string;
   location: string | null;
   city: string | null;
@@ -40,6 +42,7 @@ const OrderlyOwnerCRM: React.FC = () => {
   const [search, setSearch] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [assigningId, setAssigningId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
@@ -47,7 +50,7 @@ const OrderlyOwnerCRM: React.FC = () => {
       const db = supabase as any;
       const [leadResult, profileResult, roleResult] = await Promise.all([
         db.from('leads')
-          .select('id,user_id,company,location,city,phone,email,status,source,created_at')
+          .select('id,user_id,created_by,assigned_to,company,location,city,phone,email,status,source,created_at')
           .order('created_at', { ascending: false }),
         db.from('profiles').select('id,email'),
         db.from('user_roles').select('user_id,role'),
@@ -87,15 +90,18 @@ const OrderlyOwnerCRM: React.FC = () => {
   }, []);
 
   const ownerMap = useMemo(() => new Map(owners.map((owner) => [owner.id, owner])), [owners]);
+  const effectiveOwnerId = (lead: LeadRow) => lead.assigned_to || lead.user_id;
 
   const filteredLeads = useMemo(() => {
     const needle = search.trim().toLowerCase();
     return leads.filter((lead) => {
-      const owner = ownerMap.get(lead.user_id);
-      const matchesSearch = !needle || [lead.company, lead.location, lead.city, lead.phone, lead.email, owner?.email]
+      const ownerId = effectiveOwnerId(lead);
+      const owner = ownerMap.get(ownerId);
+      const creator = ownerMap.get(lead.created_by || lead.user_id);
+      const matchesSearch = !needle || [lead.company, lead.location, lead.city, lead.phone, lead.email, owner?.email, creator?.email]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(needle));
-      const matchesOwner = ownerFilter === 'all' || lead.user_id === ownerFilter;
+      const matchesOwner = ownerFilter === 'all' || ownerId === ownerFilter;
       const matchesStatus = statusFilter === 'all' || (lead.status || 'Nova') === statusFilter;
       return matchesSearch && matchesOwner && matchesStatus;
     });
@@ -105,8 +111,8 @@ const OrderlyOwnerCRM: React.FC = () => {
     const partnerIds = new Set(owners.filter((owner) => owner.role === 'sales_partner').map((owner) => owner.id));
     return {
       total: leads.length,
-      mine: leads.filter((lead) => lead.user_id === user?.id).length,
-      partner: leads.filter((lead) => partnerIds.has(lead.user_id)).length,
+      mine: leads.filter((lead) => effectiveOwnerId(lead) === user?.id).length,
+      partner: leads.filter((lead) => partnerIds.has(effectiveOwnerId(lead))).length,
       paying: leads.filter((lead) => lead.status === 'Plaća').length,
     };
   }, [leads, owners, user?.id]);
@@ -122,10 +128,28 @@ const OrderlyOwnerCRM: React.FC = () => {
     return result;
   };
 
-  const ownerLabel = (lead: LeadRow) => {
-    if (lead.user_id === user?.id) return 'Benjamin / moj lead';
-    const owner = ownerMap.get(lead.user_id);
-    return owner?.email || 'Nepoznat vlasnik';
+  const ownerLabel = (ownerId: string) => {
+    if (ownerId === user?.id) return 'Benjamin / moj lead';
+    return ownerMap.get(ownerId)?.email || 'Nepoznat vlasnik';
+  };
+
+  const assignLead = async (leadId: string, assignedTo: string) => {
+    setAssigningId(leadId);
+    try {
+      const db = supabase as any;
+      const { error } = await db
+        .from('leads')
+        .update({ assigned_to: assignedTo, updated_at: new Date().toISOString() })
+        .eq('id', leadId);
+      if (error) throw error;
+      setLeads((current) => current.map((lead) => lead.id === leadId ? { ...lead, assigned_to: assignedTo } : lead));
+      toast.success('Lead je dodijeljen.');
+    } catch (error: any) {
+      console.error('Lead assignment error:', error);
+      toast.error(error?.message || 'Nije moguće dodijeliti lead.');
+    } finally {
+      setAssigningId(null);
+    }
   };
 
   return (
@@ -149,14 +173,14 @@ const OrderlyOwnerCRM: React.FC = () => {
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <Stat label="Svi leadovi" value={stats.total} icon={Users} />
         <Stat label="Moji leadovi" value={stats.mine} icon={UserRound} />
-        <Stat label="Od terenaca" value={stats.partner} icon={MapPin} />
+        <Stat label="Kod terenaca" value={stats.partner} icon={MapPin} />
         <Stat label="Plaćajući" value={stats.paying} icon={CircleDollarSign} />
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Leadovi</CardTitle>
-          <CardDescription>Owner stupac pokazuje čiji je lead. Leadovi terenaca ulaze automatski jer se čitaju iz iste centralne baze.</CardDescription>
+          <CardDescription>Lead možeš prebaciti sebi ili bilo kojem terencu. Kreator ostaje zapisan radi povijesti.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-[1fr_220px_180px]">
@@ -185,7 +209,7 @@ const OrderlyOwnerCRM: React.FC = () => {
           </div>
 
           <div className="overflow-x-auto rounded-xl border">
-            <table className="w-full min-w-[900px] text-sm">
+            <table className="w-full min-w-[1000px] text-sm">
               <thead className="border-b bg-muted/40 text-left">
                 <tr>
                   <th className="px-4 py-3 font-medium">Lead</th>
@@ -201,15 +225,26 @@ const OrderlyOwnerCRM: React.FC = () => {
                   <tr><td colSpan={6} className="px-4 py-10 text-center text-muted-foreground">Nema leadova za odabrane filtere.</td></tr>
                 )}
                 {filteredLeads.map((lead) => {
-                  const owner = ownerMap.get(lead.user_id);
+                  const ownerId = effectiveOwnerId(lead);
+                  const creatorId = lead.created_by || lead.user_id;
+                  const creator = ownerMap.get(creatorId);
                   return (
                     <tr key={lead.id} className="hover:bg-muted/20">
                       <td className="px-4 py-3"><p className="font-medium">{lead.company}</p><p className="text-xs text-muted-foreground">{lead.source || 'Manual'}</p></td>
                       <td className="px-4 py-3">{[lead.location, lead.city].filter(Boolean).join(' · ') || '—'}</td>
                       <td className="px-4 py-3"><Badge variant="secondary">{lead.status || 'Nova'}</Badge></td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium">{ownerLabel(lead)}</div>
-                        <div className="text-xs text-muted-foreground">{lead.user_id === user?.id ? 'Owner' : owner?.role === 'sales_partner' ? 'Terenac' : owner?.role || 'Korisnik'}</div>
+                      <td className="px-4 py-3 min-w-[250px]">
+                        <Select value={ownerId} onValueChange={(value) => assignLead(lead.id, value)} disabled={assigningId === lead.id}>
+                          <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            {owners.map((owner) => (
+                              <SelectItem key={owner.id} value={owner.id}>{ownerLabel(owner.id)}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <div className="mt-1 text-xs text-muted-foreground">
+                          Kreirao: {creatorId === user?.id ? 'Benjamin' : creator?.email || 'nepoznat korisnik'}
+                        </div>
                       </td>
                       <td className="px-4 py-3"><p>{lead.phone || '—'}</p><p className="text-xs text-muted-foreground">{lead.email || ''}</p></td>
                       <td className="px-4 py-3 text-muted-foreground">{lead.created_at ? new Date(lead.created_at).toLocaleDateString('hr-HR') : '—'}</td>
