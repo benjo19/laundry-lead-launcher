@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Plus, Users } from 'lucide-react';
 import { Reminder, Lead } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface NewReminderForm {
   title: string;
@@ -38,6 +39,8 @@ const ReminderForm = ({
   partnerMode = false,
 }: ReminderFormProps) => {
   const { toast } = useToast();
+  const { isSalesPartner } = useUserRole();
+  const effectivePartnerMode = partnerMode || isSalesPartner;
 
   const handleSubmit = () => {
     try {
@@ -66,7 +69,7 @@ const ReminderForm = ({
       onValueChange={(value) => setNewReminder({ ...newReminder, company: value, companyInputMode: 'select' })}
     >
       <SelectTrigger>
-        <SelectValue placeholder={partnerMode ? 'Odaberi klijenta' : 'Odaberite tvrtku'} />
+        <SelectValue placeholder={effectivePartnerMode ? 'Odaberi klijenta' : 'Odaberite tvrtku'} />
       </SelectTrigger>
       <SelectContent>
         {leads.length > 0 ? (
@@ -81,7 +84,7 @@ const ReminderForm = ({
           ))
         ) : (
           <div className="px-2 py-2 text-sm text-slate-500">
-            {partnerMode ? 'Nema klijenata na tvom računu' : 'Nema leadova u sustavu'}
+            {effectivePartnerMode ? 'Nema klijenata na tvom računu' : 'Nema leadova u sustavu'}
           </div>
         )}
       </SelectContent>
@@ -115,10 +118,10 @@ const ReminderForm = ({
 
         <div>
           <label className="block text-sm font-medium text-slate-700 mb-2">
-            {partnerMode ? 'Klijent *' : 'Tvrtka *'}
+            {effectivePartnerMode ? 'Klijent *' : 'Tvrtka *'}
           </label>
           <div className="space-y-2">
-            {partnerMode ? (
+            {effectivePartnerMode ? (
               clientSelect
             ) : (
               <>
