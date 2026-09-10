@@ -7,7 +7,6 @@ import AddLeadDialog from '@/components/AddLeadDialog';
 import OrderlyOwnerCRM from '@/components/admin/OrderlyOwnerCRM';
 import AdminPartnerOverview from '@/components/admin/AdminPartnerOverview';
 import CRMReminder from '@/components/CRMReminder';
-import { useLeadManagement } from '@/hooks/useLeadManagement';
 
 type OwnerModule = 'today' | 'leads' | 'follow-up' | 'partners';
 
@@ -23,8 +22,7 @@ const OrderlyOwnerWorkspace: React.FC = () => {
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const { signOut, user } = useAuthContext();
-  const { leads, loading, refreshLeads } = useAssignedLeads();
-  const { addLead } = useLeadManagement();
+  const { leads, loading, refreshLeads, addLead } = useAssignedLeads();
 
   const stats = useMemo(() => {
     const all = leads ?? [];
@@ -49,6 +47,7 @@ const OrderlyOwnerWorkspace: React.FC = () => {
     if (result) {
       setAddLeadOpen(false);
       await refreshLeads();
+      setActiveModule('leads');
     }
     return result;
   };
