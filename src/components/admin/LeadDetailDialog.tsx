@@ -31,6 +31,7 @@ type LeadDetail = {
   status: string | null;
   potential?: string | null;
   industry?: string | null;
+  interested_in?: string | null;
   notes?: string | null;
   source: string | null;
   created_at: string | null;
@@ -81,6 +82,7 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
       city: lead.city || '',
       country: lead.country || '',
       industry: lead.industry || '',
+      interested_in: lead.interested_in || '',
       status: lead.status || 'Nova',
       potential: lead.potential || 'Srednji',
       notes: lead.notes || '',
@@ -117,6 +119,7 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
         city: form.city.trim() || null,
         country: form.country.trim() || null,
         industry: form.industry.trim() || null,
+        interested_in: form.interested_in.trim() || null,
         status: form.status,
         potential: form.potential,
         notes: form.notes.trim() || null,
@@ -210,6 +213,7 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
               <Field label="Lokacija / adresa"><Input value={form.location || ''} onChange={(e) => setField('location', e.target.value)} /></Field>
               <Field label="Grad"><Input value={form.city || ''} onChange={(e) => setField('city', e.target.value)} /></Field>
             </div>
+            <Field label="Zainteresiran za"><Textarea rows={3} value={form.interested_in || ''} onChange={(e) => setField('interested_in', e.target.value)} placeholder="Npr. Orderly za 3 lokacije, demo, centralna nabava..." /></Field>
             <div className="grid grid-cols-2 gap-3">
               <Field label="Status"><Select value={form.status || 'Nova'} onValueChange={(v) => setField('status', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent></Select></Field>
               <Field label="Potencijal"><Select value={form.potential || 'Srednji'} onValueChange={(v) => setField('potential', v)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>{PRIORITIES.map((p) => <SelectItem key={p} value={p}>{p}</SelectItem>)}</SelectContent></Select></Field>
