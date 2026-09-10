@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { useAssignedLeads } from '@/hooks/useAssignedLeads';
 import AddLeadDialog from '@/components/AddLeadDialog';
+import LeadDetailDialog from '@/components/admin/LeadDetailDialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,9 +20,16 @@ type LeadRow = {
   company: string;
   location: string | null;
   city: string | null;
+  country: string | null;
+  contact_person: string | null;
   phone: string | null;
+  phone2: string | null;
   email: string | null;
+  website: string | null;
   status: string | null;
+  potential: string | null;
+  industry: string | null;
+  notes: string | null;
   source: string | null;
   created_at: string | null;
 };
@@ -34,11 +42,12 @@ type Owner = {
 
 const OrderlyOwnerCRM: React.FC = () => {
   const { user } = useAuthContext();
-  const { addLead } = useLeadManagement();
+  const { addLead } = useAssignedLeads();
   const [leads, setLeads] = useState<LeadRow[]>([]);
   const [owners, setOwners] = useState<Owner[]>([]);
   const [loading, setLoading] = useState(true);
   const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<LeadRow | null>(null);
   const [search, setSearch] = useState('');
   const [ownerFilter, setOwnerFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -50,7 +59,7 @@ const OrderlyOwnerCRM: React.FC = () => {
       const db = supabase as any;
       const [leadResult, profileResult, roleResult] = await Promise.all([
         db.from('leads')
-          .select('id,user_id,created_by,assigned_to,company,location,city,phone,email,status,source,created_at')
+          .select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,notes,source,created_at')
           .order('created_at', { ascending: false }),
         db.from('profiles').select('id,email'),
         db.from('user_roles').select('user_id,role'),
@@ -77,6 +86,7 @@ const OrderlyOwnerCRM: React.FC = () => {
 
       setOwners(ownerRows);
       setLeads(leadResult.data ?? []);
+      setSelectedLead((current) => current ? (leadResult.data ?? []).find((row: LeadRow) => row.id === current.id) ?? null : null);
     } catch (error: any) {
       console.error('Orderly owner CRM load error:', error);
       toast.error(error?.message || 'Nije moguće učitati Orderly CRM.');
@@ -98,7 +108,7 @@ const OrderlyOwnerCRM: React.FC = () => {
       const ownerId = effectiveOwnerId(lead);
       const owner = ownerMap.get(ownerId);
       const creator = ownerMap.get(lead.created_by || lead.user_id);
-      const matchesSearch = !needle || [lead.company, lead.location, lead.city, lead.phone, lead.email, owner?.email, creator?.email]
+      const matchesSearch = !needle || [lead.company, lead.location, lead.city, lead.contact_person, lead.phone, lead.phone2, lead.email, lead.website, owner?.email, creator?.email]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(needle));
       const matchesOwner = ownerFilter === 'all' || ownerId === ownerFilter;
@@ -157,8 +167,8 @@ const OrderlyOwnerCRM: React.FC = () => {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <p className="text-sm font-medium text-muted-foreground">Orderly</p>
-          <h2 className="text-2xl font-bold tracking-tight">Owner CRM</h2>
-          <p className="text-sm text-muted-foreground">Svi tvoji leadovi i leadovi terenaca na jednom mjestu, s jasnim vlasnikom svakog leada.</p>
+          <h2 className="text-2xl font-bold tracking-tight">Leadovi</h2>
+          <p className="text-sm text-muted-foreground">Klikni na lead za kompletan account, follow-up, uređivanje ili brisanje.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={load} disabled={loading} className="gap-2">
@@ -180,13 +190,13 @@ const OrderlyOwnerCRM: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle>Leadovi</CardTitle>
-          <CardDescription>Lead možeš prebaciti sebi ili bilo kojem terencu. Kreator ostaje zapisan radi povijesti.</CardDescription>
+          <CardDescription>Lead možeš otvoriti klikom na red ili odmah promijeniti vlasnika iz tablice.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-3 md:grid-cols-[1fr_220px_180px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Traži lokal, grad, email, telefon ili terenca..." className="pl-9" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Traži lokal, kontakt, grad, email, telefon ili terenca..." className="pl-9" />
             </div>
             <Select value={ownerFilter} onValueChange={setOwnerFilter}>
               <SelectTrigger><SelectValue placeholder="Svi vlasnici" /></SelectTrigger>
@@ -229,11 +239,11 @@ const OrderlyOwnerCRM: React.FC = () => {
                   const creatorId = lead.created_by || lead.user_id;
                   const creator = ownerMap.get(creatorId);
                   return (
-                    <tr key={lead.id} className="hover:bg-muted/20">
-                      <td className="px-4 py-3"><p className="font-medium">{lead.company}</p><p className="text-xs text-muted-foreground">{lead.source || 'Manual'}</p></td>
+                    <tr key={lead.id} onClick={() => setSelectedLead(lead)} className="cursor-pointer hover:bg-muted/30">
+                      <td className="px-4 py-3"><p className="font-medium">{lead.company}</p><p className="text-xs text-muted-foreground">{lead.contact_person || lead.source || 'Manual'}</p></td>
                       <td className="px-4 py-3">{[lead.location, lead.city].filter(Boolean).join(' · ') || '—'}</td>
                       <td className="px-4 py-3"><Badge variant="secondary">{lead.status || 'Nova'}</Badge></td>
-                      <td className="px-4 py-3 min-w-[250px]">
+                      <td className="px-4 py-3 min-w-[250px]" onClick={(event) => event.stopPropagation()}>
                         <Select value={ownerId} onValueChange={(value) => assignLead(lead.id, value)} disabled={assigningId === lead.id}>
                           <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                           <SelectContent>
@@ -257,6 +267,13 @@ const OrderlyOwnerCRM: React.FC = () => {
         </CardContent>
       </Card>
 
+      <LeadDetailDialog
+        lead={selectedLead}
+        owners={owners}
+        open={Boolean(selectedLead)}
+        onOpenChange={(nextOpen) => { if (!nextOpen) setSelectedLead(null); }}
+        onChanged={load}
+      />
       <AddLeadDialog open={addLeadOpen} onOpenChange={setAddLeadOpen} onAddLead={handleAddLead} />
     </div>
   );
