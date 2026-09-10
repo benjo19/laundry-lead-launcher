@@ -18,6 +18,7 @@ type LeadRow = {
   industry: string | null;
   country: string | null;
   city: string | null;
+  interested_in: string | null;
   created_at: string | null;
 };
 
@@ -36,6 +37,7 @@ const mapRow = (row: LeadRow): Lead => ({
   notes: row.notes || '',
   country: row.country || undefined,
   city: row.city || undefined,
+  interested_in: row.interested_in || undefined,
 });
 
 export const useAssignedLeads = () => {
@@ -57,7 +59,7 @@ export const useAssignedLeads = () => {
     const db = supabase as any;
     const { data, error: queryError } = await db
       .from('leads')
-      .select('id,company,location,employees,phone,email,website,status,potential,notes,industry,country,city,created_at')
+      .select('id,company,location,employees,phone,email,website,status,potential,notes,industry,country,city,interested_in,created_at')
       .order('created_at', { ascending: false });
 
     if (queryError) {
@@ -111,6 +113,7 @@ export const useAssignedLeads = () => {
       industry: newLeadData.industry || null,
       country: newLeadData.country || null,
       city: newLeadData.city || null,
+      interested_in: newLeadData.interested_in || null,
     });
 
     if (insertError) {
