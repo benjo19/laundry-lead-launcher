@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, RefreshCw, Eye, EyeOff } from 'lucide-react';
+import { UserPlus, RefreshCw, Eye, EyeOff, KeyRound, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 type PartnerInvite = {
@@ -30,6 +30,10 @@ const SalesPartnerManagement: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<PartnerInvite[]>([]);
   const [partners, setPartners] = useState<PartnerUser[]>([]);
+  const [editingUserId, setEditingUserId] = useState<string | null>(null);
+  const [editPassword, setEditPassword] = useState('');
+  const [showEditPassword, setShowEditPassword] = useState(false);
+  const [updatingPassword, setUpdatingPassword] = useState(false);
 
   const db = supabase as any;
 
@@ -84,6 +88,7 @@ const SalesPartnerManagement: React.FC = () => {
     try {
       const { data, error } = await supabase.functions.invoke('admin-create-sales-partner', {
         body: {
+          action: 'create',
           email: normalizedEmail,
           password,
           fullName: fullName.trim(),
@@ -104,6 +109,48 @@ const SalesPartnerManagement: React.FC = () => {
       toast.error(message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const startPasswordEdit = (userId: string) => {
+    setEditingUserId(userId);
+    setEditPassword('');
+    setShowEditPassword(false);
+  };
+
+  const cancelPasswordEdit = () => {
+    setEditingUserId(null);
+    setEditPassword('');
+    setShowEditPassword(false);
+  };
+
+  const updatePartnerPassword = async (userId: string) => {
+    if (editPassword.length < 8) {
+      toast.error('Nova lozinka mora imati najmanje 8 znakova.');
+      return;
+    }
+
+    setUpdatingPassword(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('admin-create-sales-partner', {
+        body: {
+          action: 'update_password',
+          userId,
+          password: editPassword,
+        },
+      });
+
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || 'Promjena lozinke nije uspjela.');
+
+      toast.success('Lozinka je promijenjena. Korisnik se može odmah prijaviti novom lozinkom.');
+      cancelPasswordEdit();
+    } catch (error: any) {
+      console.error('Update partner password error:', error);
+      const message = error?.context?.body?.error || error?.message || 'Promjena lozinke nije uspjela.';
+      toast.error(message);
+    } finally {
+      setUpdatingPassword(false);
     }
   };
 
@@ -184,18 +231,71 @@ const SalesPartnerManagement: React.FC = () => {
       <Card>
         <CardHeader>
           <CardTitle>Aktivni terenci</CardTitle>
-          <CardDescription>{partners.length} korisnika trenutno ima sales_partner rolu.</CardDescription>
+          <CardDescription>{partners.length} korisnika trenutno ima sales_partner rolu. Ovdje možeš postaviti novu lozinku postojećem korisniku.</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="space-y-3">
           {partners.length === 0 ? (
             <p className="text-sm text-muted-foreground">Još nema aktivnih terenaca.</p>
           ) : partners.map((partner) => (
-            <div key={partner.user_id} className="flex items-center justify-between rounded-lg border p-3">
-              <div>
-                <p className="font-medium">{partner.email || partner.user_id}</p>
-                <p className="text-xs text-muted-foreground">Orderly Partner CRM</p>
+            <div key={partner.user_id} className="rounded-lg border p-3 space-y-3">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="font-medium">{partner.email || partner.user_id}</p>
+                  <p className="text-xs text-muted-foreground">Orderly Partner CRM</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">Aktivan</span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="gap-2"
+                    onClick={() => startPasswordEdit(partner.user_id)}
+                  >
+                    <KeyRound className="h-4 w-4" />
+                    Promijeni lozinku
+                  </Button>
+                </div>
               </div>
-              <span className="rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">Aktivan</span>
+
+              {editingUserId === partner.user_id && (
+                <div className="rounded-md bg-muted/40 p-3">
+                  <Label htmlFor={`password-${partner.user_id}`}>Nova lozinka</Label>
+                  <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                    <div className="relative flex-1">
+                      <Input
+                        id={`password-${partner.user_id}`}
+                        type={showEditPassword ? 'text' : 'password'}
+                        placeholder="Najmanje 8 znakova"
+                        value={editPassword}
+                        onChange={(e) => setEditPassword(e.target.value)}
+                        minLength={8}
+                        className="pr-10"
+                        disabled={updatingPassword}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowEditPassword((value) => !value)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                        tabIndex={-1}
+                      >
+                        {showEditPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                    <Button
+                      type="button"
+                      onClick={() => updatePartnerPassword(partner.user_id)}
+                      disabled={updatingPassword || editPassword.length < 8}
+                    >
+                      {updatingPassword ? 'Spremam…' : 'Spremi lozinku'}
+                    </Button>
+                    <Button type="button" variant="ghost" onClick={cancelPasswordEdit} disabled={updatingPassword} className="gap-1">
+                      <X className="h-4 w-4" />
+                      Odustani
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </CardContent>
