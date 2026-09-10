@@ -21,9 +21,9 @@ export default defineConfig(({ mode }) => ({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: {
-        name: 'Marketing Agent',
-        short_name: 'Marketing Agent',
-        description: 'AI platforma za marketing automatizaciju - pronađite leadove, generirajte sadržaj i automatizirajte komunikaciju',
+        name: 'Automind CRM',
+        short_name: 'Automind CRM',
+        description: 'Prodajni CRM za Orderly, AutomindAI i opremu za praonice',
         theme_color: '#3b82f6',
         background_color: '#ffffff',
         display: 'standalone',
