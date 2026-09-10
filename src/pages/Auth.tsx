@@ -6,7 +6,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
-import { Mail, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
+import { User, Lock, Loader2, Eye, EyeOff } from 'lucide-react';
+
+const PARTNER_EMAIL_DOMAIN = 'partner.orderlycrm.app';
 
 const isStorageQuotaError = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error ?? '');
@@ -16,7 +18,6 @@ const isStorageQuotaError = (error: unknown) => {
 };
 
 const clearLegacyMarketingCache = () => {
-  // This is only browser-side cache from the old Marketing Manager. CRM leads remain in Supabase.
   const largeLegacyKeys = ['discoveredLeads'];
   largeLegacyKeys.forEach((key) => {
     try {
@@ -27,8 +28,13 @@ const clearLegacyMarketingCache = () => {
   });
 };
 
+const resolveLoginEmail = (login: string) => {
+  const normalized = login.trim().toLowerCase();
+  return normalized.includes('@') ? normalized : `${normalized}@${PARTNER_EMAIL_DOMAIN}`;
+};
+
 const Auth: React.FC = () => {
-  const [email, setEmail] = useState('');
+  const [login, setLogin] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -62,13 +68,13 @@ const Auth: React.FC = () => {
   }, [navigate]);
 
   const signIn = () => supabase.auth.signInWithPassword({
-    email: email.trim().toLowerCase(),
+    email: resolveLoginEmail(login),
     password,
   });
 
   const handleSignIn = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!email.trim() || !password) return;
+    if (!login.trim() || !password) return;
 
     setLoading(true);
     try {
@@ -87,7 +93,7 @@ const Auth: React.FC = () => {
       toast({
         title: 'Prijava nije uspjela',
         description: error?.message === 'Invalid login credentials'
-          ? 'Pogrešan email ili lozinka.'
+          ? 'Pogrešno korisničko ime ili lozinka.'
           : isStorageQuotaError(error)
             ? 'Preglednik nema dovoljno prostora za prijavu. Osvježi stranicu i pokušaj ponovno.'
             : (error?.message || 'Provjeri podatke za prijavu.'),
@@ -118,10 +124,10 @@ const Auth: React.FC = () => {
         <CardContent>
           <form onSubmit={handleSignIn} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="login">Korisničko ime</Label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input id="email" type="email" autoComplete="username" placeholder="ime@firma.hr" value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} className="h-11 pl-10" required />
+                <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input id="login" type="text" autoComplete="username" placeholder="ivan" value={login} onChange={(e) => setLogin(e.target.value)} disabled={loading} className="h-11 pl-10" required />
               </div>
             </div>
 
@@ -142,6 +148,7 @@ const Auth: React.FC = () => {
           </form>
 
           <p className="mt-5 text-center text-xs text-muted-foreground">Pristupne podatke dobivaš od administratora.</p>
+          <p className="mt-2 text-center text-[11px] text-muted-foreground/70">Administrator se i dalje može prijaviti svojim emailom.</p>
         </CardContent>
       </Card>
     </div>
