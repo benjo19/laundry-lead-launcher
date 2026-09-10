@@ -3,7 +3,7 @@ import { BarChart3, CalendarClock, CircleDollarSign, Home, LogOut, MapPin, Plus,
 import PartnerLeads from '@/components/partner/PartnerLeads';
 import CRMReminder from '@/components/CRMReminder';
 import AddLeadDialog from '@/components/AddLeadDialog';
-import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { useAssignedLeads } from '@/hooks/useAssignedLeads';
 import { usePartnerEarnings } from '@/hooks/usePartnerEarnings';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -28,7 +28,7 @@ const PartnerWorkspace = () => {
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const { signOut } = useAuthContext();
-  const { leads, addLead, loading } = useLeadManagement();
+  const { leads, addLead, loading } = useAssignedLeads();
   const { locations, commissions, summary, loading: earningsLoading, error: earningsError } = usePartnerEarnings();
 
   const handleSignOut = async () => {
