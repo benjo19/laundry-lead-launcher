@@ -1,6 +1,6 @@
-
 export interface Lead {
   id: number;
+  uuid?: string;
   company: string;
   location: string;
   employees: string;
@@ -11,6 +11,7 @@ export interface Lead {
     | 'Nova'
     | 'Kvalificiran'
     | 'Kontaktiran'
+    | 'Odgovorio'
     | 'Demo'
     | 'Trial'
     | 'Plaća'
@@ -19,7 +20,6 @@ export interface Lead {
     | 'Pregovori'
     | 'Dobiveno'
     | 'Izgubljeno'
-    // Legacy values kept for backwards-compat with existing Supabase rows
     | 'Zainteresiran'
     | 'Odbačen'
     | 'Zatvoren';
@@ -30,6 +30,18 @@ export interface Lead {
   country?: string;
   city?: string;
   interested_in?: 'Orderly' | 'AutomindAI' | 'Oprema praone' | string;
+  assigned_to?: string;
+  user_id?: string;
+  next_step?: string;
+  next_action_at?: string;
+  last_contact_at?: string;
+  contact_outcome?: string;
+  contact_type?: string;
+  locations_count?: number;
+  won_locations_count?: number;
+  opportunity_value?: number;
+  actual_mrr?: number;
+  source?: string;
   businessProfileId?: string;
   businessProfileName?: string;
   businessCompanyName?: string;
@@ -60,5 +72,4 @@ export interface Reminder {
   calendarEventId?: string;
 }
 
-// Re-export ContentPost from contentTypes
 export type { ContentPost, ContentGenerationParams, GeneratedContent } from './contentTypes';
