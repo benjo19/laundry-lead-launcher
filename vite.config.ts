@@ -63,7 +63,8 @@ export default defineConfig(({ mode }) => ({
         navigationPreload: true,
         runtimeCaching: [
           {
-            urlPattern: ({ request }) => request.mode === 'navigate',
+            urlPattern: ({ request, url }) =>
+              request.mode === 'navigate' && !url.pathname.startsWith('/~oauth'),
             handler: 'NetworkFirst',
             options: {
               cacheName: 'html-navigations',
