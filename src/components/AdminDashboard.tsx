@@ -158,7 +158,7 @@ const AdminDashboard: React.FC = () => {
             <CardContent className="space-y-6">
               <SettingField id="make-webhook" label="Make.com Webhook URL" value={settings.make_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('make_webhook_url', value)} />
               <SettingField id="zapier-webhook" label="Zapier Webhook URL" value={settings.zapier_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('zapier_webhook_url', value)} />
-              <SettingField id="content-webhook" label="Content Booster Webhook URL" value={settings.content_booster_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('content_webhook_url', value)} />
+              <SettingField id="content-webhook" label="Content Booster Webhook URL" value={settings.content_booster_webhook_url?.url || ''} onBlur={(value) => handleUpdateWebhook('content_booster_webhook_url', value)} />
             </CardContent>
           </Card>
         </TabsContent>
