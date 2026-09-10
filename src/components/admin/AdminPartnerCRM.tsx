@@ -67,7 +67,7 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
       const [leadResult, reminderResult, locationResult, commissionResult] = await Promise.all([
         db.from('leads')
           .select('id,company,location,phone,email,status,created_at')
-          .eq('user_id', partnerUserId)
+          .eq('assigned_to', partnerUserId)
           .order('created_at', { ascending: false }),
         db.from('reminders')
           .select('id,title,company,date,time,status,priority')
@@ -122,7 +122,7 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
           </Button>
           <p className="text-sm font-medium text-muted-foreground">CRM terenca</p>
           <h2 className="text-2xl font-bold">{partnerEmail || partnerUserId}</h2>
-          <p className="text-sm text-muted-foreground">Admin pregled leadova, follow-upova, lokacija i provizije.</p>
+          <p className="text-sm text-muted-foreground">Admin pregled trenutno dodijeljenih leadova, follow-upova, lokacija i provizije.</p>
         </div>
         <Button variant="outline" onClick={load} disabled={loading} className="gap-2">
           <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> Osvježi
@@ -141,7 +141,7 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
         <Card>
           <CardHeader>
             <CardTitle>Leadovi</CardTitle>
-            <CardDescription>Samo leadovi ovog terenca.</CardDescription>
+            <CardDescription>Leadovi koji su trenutno dodijeljeni ovom terencu.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {!loading && leads.length === 0 && <p className="text-sm text-muted-foreground">Nema leadova.</p>}
