@@ -143,19 +143,113 @@ export type Database = {
         }
         Relationships: []
       }
+      lead_activities: {
+        Row: {
+          activity_type: string
+          created_at: string
+          id: string
+          lead_id: string
+          notes: string | null
+          occurred_at: string
+          title: string | null
+          user_id: string | null
+        }
+        Insert: {
+          activity_type: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          notes?: string | null
+          occurred_at?: string
+          title?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          activity_type?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          notes?: string | null
+          occurred_at?: string
+          title?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lead_audit_log: {
+        Row: {
+          action: string
+          actor_user_id: string | null
+          created_at: string
+          id: string
+          lead_id: string
+          new_data: Json | null
+          old_data: Json | null
+          source: string
+        }
+        Insert: {
+          action: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id: string
+          new_data?: Json | null
+          old_data?: Json | null
+          source?: string
+        }
+        Update: {
+          action?: string
+          actor_user_id?: string | null
+          created_at?: string
+          id?: string
+          lead_id?: string
+          new_data?: Json | null
+          old_data?: Json | null
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_audit_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leads: {
         Row: {
+          actual_mrr: number | null
+          assigned_to: string | null
           city: string | null
           company: string
+          contact_outcome: string | null
           contact_person: string | null
+          contact_type: string | null
           country: string | null
           created_at: string | null
+          created_by: string | null
           email: string | null
           employees: string | null
           id: string
           industry: string | null
+          interested_in: string | null
+          last_contact_at: string | null
           location: string | null
+          locations_count: number | null
+          lost_reason: string | null
+          next_action_at: string | null
+          next_step: string | null
           notes: string | null
+          opportunity_value: number | null
           phone: string | null
           phone2: string | null
           pipeline_stage: string | null
@@ -166,19 +260,32 @@ export type Database = {
           updated_at: string | null
           user_id: string
           website: string | null
+          won_locations_count: number | null
         }
         Insert: {
+          actual_mrr?: number | null
+          assigned_to?: string | null
           city?: string | null
           company: string
+          contact_outcome?: string | null
           contact_person?: string | null
+          contact_type?: string | null
           country?: string | null
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           employees?: string | null
           id?: string
           industry?: string | null
+          interested_in?: string | null
+          last_contact_at?: string | null
           location?: string | null
+          locations_count?: number | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          next_step?: string | null
           notes?: string | null
+          opportunity_value?: number | null
           phone?: string | null
           phone2?: string | null
           pipeline_stage?: string | null
@@ -189,19 +296,32 @@ export type Database = {
           updated_at?: string | null
           user_id: string
           website?: string | null
+          won_locations_count?: number | null
         }
         Update: {
+          actual_mrr?: number | null
+          assigned_to?: string | null
           city?: string | null
           company?: string
+          contact_outcome?: string | null
           contact_person?: string | null
+          contact_type?: string | null
           country?: string | null
           created_at?: string | null
+          created_by?: string | null
           email?: string | null
           employees?: string | null
           id?: string
           industry?: string | null
+          interested_in?: string | null
+          last_contact_at?: string | null
           location?: string | null
+          locations_count?: number | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          next_step?: string | null
           notes?: string | null
+          opportunity_value?: number | null
           phone?: string | null
           phone2?: string | null
           pipeline_stage?: string | null
@@ -212,6 +332,7 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
           website?: string | null
+          won_locations_count?: number | null
         }
         Relationships: []
       }
@@ -369,6 +490,106 @@ export type Database = {
           },
         ]
       }
+      partner_commissions: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          location_id: string
+          note: string | null
+          paid_at: string | null
+          partner_user_id: string
+          period_start: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          location_id: string
+          note?: string | null
+          paid_at?: string | null
+          partner_user_id: string
+          period_start: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          location_id?: string
+          note?: string | null
+          paid_at?: string | null
+          partner_user_id?: string
+          period_start?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_commissions_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "partner_locations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_locations: {
+        Row: {
+          activated_at: string
+          city: string | null
+          created_at: string
+          customer_name: string
+          deactivated_at: string | null
+          id: string
+          lead_id: string | null
+          location_name: string
+          monthly_commission: number
+          partner_user_id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          activated_at?: string
+          city?: string | null
+          created_at?: string
+          customer_name: string
+          deactivated_at?: string | null
+          id?: string
+          lead_id?: string | null
+          location_name: string
+          monthly_commission?: number
+          partner_user_id: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          activated_at?: string
+          city?: string | null
+          created_at?: string
+          customer_name?: string
+          deactivated_at?: string | null
+          id?: string
+          lead_id?: string | null
+          location_name?: string
+          monthly_commission?: number
+          partner_user_id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_locations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -377,6 +598,7 @@ export type Database = {
           full_name: string | null
           id: string
           updated_at: string
+          username: string | null
         }
         Insert: {
           avatar_url?: string | null
@@ -385,6 +607,7 @@ export type Database = {
           full_name?: string | null
           id: string
           updated_at?: string
+          username?: string | null
         }
         Update: {
           avatar_url?: string | null
@@ -393,6 +616,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           updated_at?: string
+          username?: string | null
         }
         Relationships: []
       }
@@ -441,6 +665,33 @@ export type Database = {
           title?: string
           updated_at?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      sales_partner_invites: {
+        Row: {
+          accepted_at: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string | null
+          status: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          invited_by?: string | null
+          status?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string | null
+          status?: string
         }
         Relationships: []
       }
@@ -590,7 +841,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      delete_lead_complete: { Args: { p_lead_id: string }; Returns: undefined }
+      is_current_super_admin: { Args: never; Returns: boolean }
     }
     Enums: {
       app_role: "super_admin" | "user" | "sales_partner"

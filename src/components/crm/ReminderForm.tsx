@@ -1,5 +1,4 @@
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -29,182 +28,50 @@ interface ReminderFormProps {
   partnerMode?: boolean;
 }
 
-const ReminderForm = ({
-  newReminder,
-  setNewReminder,
-  leads,
-  onCreateReminder,
-  editingReminder,
-  onCancelEdit,
-  partnerMode = false,
-}: ReminderFormProps) => {
+const ReminderForm = ({ newReminder, setNewReminder, leads, onCreateReminder, editingReminder, onCancelEdit, partnerMode = false }: ReminderFormProps) => {
   const { toast } = useToast();
   const { isSalesPartner } = useUserRole();
   const effectivePartnerMode = partnerMode || isSalesPartner;
 
   const handleSubmit = () => {
-    try {
-      if (!newReminder.title || !newReminder.date || !newReminder.time || !newReminder.company) {
-        toast({
-          title: 'Nedostaju podaci',
-          description: 'Molimo unesite sve potrebne podatke za podsjetnik.',
-          variant: 'destructive',
-        });
-        return;
-      }
-      onCreateReminder();
-    } catch (error) {
-      console.error('Error creating reminder:', error);
-      toast({
-        title: 'Greška',
-        description: 'Dogodila se greška prilikom kreiranja podsjetnika.',
-        variant: 'destructive',
-      });
+    if (!newReminder.title || !newReminder.date || !newReminder.time || !newReminder.company) {
+      toast({ title: 'Nedostaju podaci', description: 'Unesi naslov, klijenta, datum i vrijeme.', variant: 'destructive' });
+      return;
     }
+    onCreateReminder();
   };
 
   const clientSelect = (
-    <Select
-      value={newReminder.company}
-      onValueChange={(value) => setNewReminder({ ...newReminder, company: value, companyInputMode: 'select' })}
-    >
-      <SelectTrigger>
-        <SelectValue placeholder={effectivePartnerMode ? 'Odaberi klijenta' : 'Odaberite tvrtku'} />
-      </SelectTrigger>
+    <Select value={newReminder.company} onValueChange={(value) => setNewReminder({ ...newReminder, company: value, companyInputMode: 'select' })}>
+      <SelectTrigger className="h-11"><SelectValue placeholder={effectivePartnerMode ? 'Odaberi klijenta' : 'Odaberi lead'} /></SelectTrigger>
       <SelectContent>
-        {leads.length > 0 ? (
-          leads.map((lead) => (
-            <SelectItem key={lead.id} value={lead.company}>
-              <div className="flex items-center">
-                <Users className="h-4 w-4 mr-2" />
-                {lead.company}
-                <span className="text-xs text-slate-500 ml-2">({lead.status})</span>
-              </div>
-            </SelectItem>
-          ))
-        ) : (
-          <div className="px-2 py-2 text-sm text-slate-500">
-            {effectivePartnerMode ? 'Nema klijenata na tvom računu' : 'Nema leadova u sustavu'}
-          </div>
-        )}
+        {leads.length > 0 ? leads.map((lead) => <SelectItem key={lead.uuid || lead.id} value={lead.company}><div className="flex items-center"><Users className="mr-2 h-4 w-4" />{lead.company}<span className="ml-2 text-xs text-muted-foreground">({lead.status})</span></div></SelectItem>) : <div className="px-2 py-2 text-sm text-muted-foreground">Nema dostupnih leadova.</div>}
       </SelectContent>
     </Select>
   );
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center justify-between">
-          <div className="flex items-center">
-            <Plus className="h-5 w-5 mr-2 text-green-600" />
-            {editingReminder ? 'Uredi podsjetnik' : 'Novi Podsjetnik'}
-          </div>
-          {editingReminder && onCancelEdit && (
-            <Button variant="ghost" size="sm" onClick={onCancelEdit}>
-              Odustani
-            </Button>
-          )}
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Naslov *</label>
-          <Input
-            placeholder="Naslov podsjetnika"
-            value={newReminder.title}
-            onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })}
-          />
+    <div className="space-y-4">
+      {editingReminder && onCancelEdit && <div className="flex justify-end"><Button variant="ghost" size="sm" onClick={onCancelEdit}>Odustani od uređivanja</Button></div>}
+      <Field label="Naslov *"><Input className="h-11" placeholder="Npr. nazvati vlasnika" value={newReminder.title} onChange={(e) => setNewReminder({ ...newReminder, title: e.target.value })} /></Field>
+      <Field label={effectivePartnerMode ? 'Klijent *' : 'Lead / tvrtka *'}>
+        <div className="space-y-2">
+          {effectivePartnerMode ? clientSelect : <>
+            <Select value={newReminder.companyInputMode} onValueChange={(value: 'select' | 'manual') => setNewReminder({ ...newReminder, companyInputMode: value, company: '' })}>
+              <SelectTrigger className="h-11"><SelectValue /></SelectTrigger>
+              <SelectContent><SelectItem value="select">Odaberi postojeći lead</SelectItem><SelectItem value="manual">Unesi ručno</SelectItem></SelectContent>
+            </Select>
+            {newReminder.companyInputMode === 'select' ? clientSelect : <Input className="h-11" placeholder="Naziv tvrtke" value={newReminder.company} onChange={(e) => setNewReminder({ ...newReminder, company: e.target.value })} />}
+          </>}
         </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
-            {effectivePartnerMode ? 'Klijent *' : 'Tvrtka *'}
-          </label>
-          <div className="space-y-2">
-            {effectivePartnerMode ? (
-              clientSelect
-            ) : (
-              <>
-                <Select
-                  value={newReminder.companyInputMode}
-                  onValueChange={(value: 'select' | 'manual') => {
-                    setNewReminder({ ...newReminder, companyInputMode: value, company: '' });
-                  }}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Odaberite način unosa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="select">Odaberi iz Lead Hunter-a</SelectItem>
-                    <SelectItem value="manual">Unesi ručno</SelectItem>
-                  </SelectContent>
-                </Select>
-
-                {newReminder.companyInputMode === 'select' ? (
-                  clientSelect
-                ) : (
-                  <Input
-                    placeholder="Unesite naziv tvrtke"
-                    value={newReminder.company}
-                    onChange={(e) => setNewReminder({ ...newReminder, company: e.target.value })}
-                  />
-                )}
-              </>
-            )}
-          </div>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Opis</label>
-          <Textarea
-            placeholder="Opis aktivnosti"
-            value={newReminder.description}
-            onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })}
-            className="min-h-16"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">Prioritet</label>
-          <Select
-            value={newReminder.priority}
-            onValueChange={(value: Reminder['priority']) => setNewReminder({ ...newReminder, priority: value })}
-          >
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="Visok">Visok</SelectItem>
-              <SelectItem value="Srednji">Srednji</SelectItem>
-              <SelectItem value="Nizak">Nizak</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Datum *</label>
-            <Input
-              type="date"
-              value={newReminder.date}
-              onChange={(e) => setNewReminder({ ...newReminder, date: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">Vrijeme *</label>
-            <Input
-              type="time"
-              value={newReminder.time}
-              onChange={(e) => setNewReminder({ ...newReminder, time: e.target.value })}
-            />
-          </div>
-        </div>
-
-        <Button onClick={handleSubmit} className="w-full bg-green-600 hover:bg-green-700">
-          <Plus className="h-4 w-4 mr-2" />
-          {editingReminder ? 'Ažuriraj Podsjetnik' : 'Stvori Podsjetnik'}
-        </Button>
-      </CardContent>
-    </Card>
+      </Field>
+      <Field label="Napomena"><Textarea placeholder="Što treba napraviti?" value={newReminder.description} onChange={(e) => setNewReminder({ ...newReminder, description: e.target.value })} className="min-h-20" /></Field>
+      <Field label="Prioritet"><Select value={newReminder.priority} onValueChange={(value: Reminder['priority']) => setNewReminder({ ...newReminder, priority: value })}><SelectTrigger className="h-11"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="Visok">Visok</SelectItem><SelectItem value="Srednji">Srednji</SelectItem><SelectItem value="Nizak">Nizak</SelectItem></SelectContent></Select></Field>
+      <div className="grid grid-cols-2 gap-2"><Field label="Datum *"><Input className="h-11" type="date" value={newReminder.date} onChange={(e) => setNewReminder({ ...newReminder, date: e.target.value })} /></Field><Field label="Vrijeme *"><Input className="h-11" type="time" value={newReminder.time} onChange={(e) => setNewReminder({ ...newReminder, time: e.target.value })} /></Field></div>
+      <Button onClick={handleSubmit} className="h-11 w-full"><Plus className="mr-2 h-4 w-4" />{editingReminder ? 'Spremi izmjene' : 'Postavi follow-up'}</Button>
+    </div>
   );
 };
 
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => <div className="space-y-1.5"><label className="text-sm font-medium">{label}</label>{children}</div>;
 export default ReminderForm;
