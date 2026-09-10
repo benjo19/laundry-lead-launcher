@@ -29,6 +29,7 @@ type LeadRow = {
   status: string | null;
   potential: string | null;
   industry: string | null;
+  interested_in: string | null;
   notes: string | null;
   source: string | null;
   created_at: string | null;
@@ -59,7 +60,7 @@ const OrderlyOwnerCRM: React.FC = () => {
       const db = supabase as any;
       const [leadResult, profileResult, roleResult] = await Promise.all([
         db.from('leads')
-          .select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,notes,source,created_at')
+          .select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,interested_in,notes,source,created_at')
           .order('created_at', { ascending: false }),
         db.from('profiles').select('id,email'),
         db.from('user_roles').select('user_id,role'),
@@ -108,7 +109,7 @@ const OrderlyOwnerCRM: React.FC = () => {
       const ownerId = effectiveOwnerId(lead);
       const owner = ownerMap.get(ownerId);
       const creator = ownerMap.get(lead.created_by || lead.user_id);
-      const matchesSearch = !needle || [lead.company, lead.location, lead.city, lead.contact_person, lead.phone, lead.phone2, lead.email, lead.website, owner?.email, creator?.email]
+      const matchesSearch = !needle || [lead.company, lead.location, lead.city, lead.contact_person, lead.phone, lead.phone2, lead.email, lead.website, lead.interested_in, owner?.email, creator?.email]
         .filter(Boolean)
         .some((value) => String(value).toLowerCase().includes(needle));
       const matchesOwner = ownerFilter === 'all' || ownerId === ownerFilter;
@@ -196,7 +197,7 @@ const OrderlyOwnerCRM: React.FC = () => {
           <div className="grid gap-3 md:grid-cols-[1fr_220px_180px]">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Traži lokal, kontakt, grad, email, telefon ili terenca..." className="pl-9" />
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Traži lokal, kontakt, interes, grad, email, telefon ili terenca..." className="pl-9" />
             </div>
             <Select value={ownerFilter} onValueChange={setOwnerFilter}>
               <SelectTrigger><SelectValue placeholder="Svi vlasnici" /></SelectTrigger>
@@ -240,7 +241,7 @@ const OrderlyOwnerCRM: React.FC = () => {
                   const creator = ownerMap.get(creatorId);
                   return (
                     <tr key={lead.id} onClick={() => setSelectedLead(lead)} className="cursor-pointer hover:bg-muted/30">
-                      <td className="px-4 py-3"><p className="font-medium">{lead.company}</p><p className="text-xs text-muted-foreground">{lead.contact_person || lead.source || 'Manual'}</p></td>
+                      <td className="px-4 py-3"><p className="font-medium">{lead.company}</p><p className="text-xs text-muted-foreground">{lead.interested_in || lead.contact_person || lead.source || 'Manual'}</p></td>
                       <td className="px-4 py-3">{[lead.location, lead.city].filter(Boolean).join(' · ') || '—'}</td>
                       <td className="px-4 py-3"><Badge variant="secondary">{lead.status || 'Nova'}</Badge></td>
                       <td className="px-4 py-3 min-w-[250px]" onClick={(event) => event.stopPropagation()}>
