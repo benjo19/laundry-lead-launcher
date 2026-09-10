@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserPlus, RefreshCw } from 'lucide-react';
+import { UserPlus, RefreshCw, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 
 type PartnerInvite = {
@@ -22,7 +22,10 @@ type PartnerUser = {
 };
 
 const SalesPartnerManagement: React.FC = () => {
+  const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [invites, setInvites] = useState<PartnerInvite[]>([]);
@@ -71,30 +74,34 @@ const SalesPartnerManagement: React.FC = () => {
   const addPartner = async (event: React.FormEvent) => {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) return;
+    if (!normalizedEmail || !password) return;
+    if (password.length < 8) {
+      toast.error('Lozinka mora imati najmanje 8 znakova.');
+      return;
+    }
 
     setSaving(true);
     try {
-      const { data: { user }, error: userError } = await supabase.auth.getUser();
-      if (userError || !user) throw userError || new Error('Nisi prijavljen kao admin.');
-
-      const { error } = await db.from('sales_partner_invites').insert({
-        email: normalizedEmail,
-        invited_by: user.id,
-        status: 'pending',
+      const { data, error } = await supabase.functions.invoke('admin-create-sales-partner', {
+        body: {
+          email: normalizedEmail,
+          password,
+          fullName: fullName.trim(),
+        },
       });
 
-      if (error) {
-        if (error.code === '23505') throw new Error('Taj email je već dodan kao terenac.');
-        throw error;
-      }
+      if (error) throw error;
+      if (!data?.ok) throw new Error(data?.error || 'Kreiranje terenca nije uspjelo.');
 
-      toast.success('Terenac je dodan. Može se prijaviti Google računom s tim emailom.');
+      toast.success('Korisnik je kreiran. Može se odmah prijaviti emailom i lozinkom.');
+      setFullName('');
       setEmail('');
+      setPassword('');
       await loadData();
     } catch (error: any) {
       console.error('Add partner error:', error);
-      toast.error(error?.message || 'Dodavanje terenca nije uspjelo.');
+      const message = error?.context?.body?.error || error?.message || 'Dodavanje terenca nije uspjelo.';
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -104,33 +111,72 @@ const SalesPartnerManagement: React.FC = () => {
     <div className="space-y-5">
       <Card>
         <CardHeader>
-          <CardTitle>Terenci / sales partneri</CardTitle>
+          <CardTitle>Kreiraj terenca</CardTitle>
           <CardDescription>
-            Dodaj email terenca. Kad se prijavi Google računom s tim emailom, dobit će samo svoj Orderly Partner CRM.
+            Ti određuješ email i početnu lozinku. Korisnik se zatim odmah prijavljuje u svoj Orderly Partner CRM.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={addPartner} className="flex flex-col gap-3 sm:flex-row sm:items-end">
-            <div className="flex-1 space-y-2">
-              <Label htmlFor="partner-email">Google email terenca</Label>
+          <form onSubmit={addPartner} className="grid gap-3 md:grid-cols-3 md:items-end">
+            <div className="space-y-2">
+              <Label htmlFor="partner-name">Ime i prezime</Label>
+              <Input
+                id="partner-name"
+                placeholder="Ivan Horvat"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                disabled={saving}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="partner-email">Email</Label>
               <Input
                 id="partner-email"
                 type="email"
-                placeholder="terenac@gmail.com"
+                placeholder="terenac@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={saving}
                 required
               />
             </div>
-            <Button type="submit" disabled={saving} className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              {saving ? 'Dodajem…' : 'Dodaj terenca'}
-            </Button>
-            <Button type="button" variant="outline" onClick={loadData} disabled={loading} className="gap-2">
-              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Osvježi
-            </Button>
+
+            <div className="space-y-2">
+              <Label htmlFor="partner-password">Početna lozinka</Label>
+              <div className="relative">
+                <Input
+                  id="partner-password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Najmanje 8 znakova"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  disabled={saving}
+                  minLength={8}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((value) => !value)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </div>
+
+            <div className="md:col-span-3 flex flex-col gap-2 sm:flex-row">
+              <Button type="submit" disabled={saving} className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                {saving ? 'Kreiram…' : 'Kreiraj korisnika'}
+              </Button>
+              <Button type="button" variant="outline" onClick={loadData} disabled={loading} className="gap-2">
+                <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                Osvježi
+              </Button>
+            </div>
           </form>
         </CardContent>
       </Card>
@@ -155,25 +201,25 @@ const SalesPartnerManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Pozvani emailovi</CardTitle>
-          <CardDescription>Pending čeka prvu Google prijavu; accepted znači da je partner aktiviran.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {invites.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nema pozvanih terenaca.</p>
-          ) : invites.map((invite) => (
-            <div key={invite.id} className="flex items-center justify-between rounded-lg border p-3">
-              <div>
-                <p className="font-medium">{invite.email}</p>
-                <p className="text-xs text-muted-foreground">Dodano {new Date(invite.created_at).toLocaleDateString('hr-HR')}</p>
+      {invites.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Evidencija korisnika</CardTitle>
+            <CardDescription>Korisnici koje si kreirao ili ranije pozvao.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {invites.map((invite) => (
+              <div key={invite.id} className="flex items-center justify-between rounded-lg border p-3">
+                <div>
+                  <p className="font-medium">{invite.email}</p>
+                  <p className="text-xs text-muted-foreground">Dodano {new Date(invite.created_at).toLocaleDateString('hr-HR')}</p>
+                </div>
+                <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium capitalize">{invite.status}</span>
               </div>
-              <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium capitalize">{invite.status}</span>
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+            ))}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };
