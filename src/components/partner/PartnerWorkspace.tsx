@@ -1,10 +1,11 @@
 import React, { useMemo, useState } from 'react';
-import { BarChart3, CalendarClock, CircleDollarSign, Home, MapPin, Plus, Users, WalletCards } from 'lucide-react';
+import { BarChart3, CalendarClock, CircleDollarSign, Home, LogOut, MapPin, Plus, Users, WalletCards } from 'lucide-react';
 import PartnerLeads from '@/components/partner/PartnerLeads';
 import CRMReminder from '@/components/CRMReminder';
 import AddLeadDialog from '@/components/AddLeadDialog';
 import { useLeadManagement } from '@/hooks/useLeadManagement';
 import { usePartnerEarnings } from '@/hooks/usePartnerEarnings';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 
 type PartnerModule = 'today' | 'leads' | 'follow-up' | 'earnings';
@@ -25,8 +26,20 @@ const eur = (value: number) => new Intl.NumberFormat('hr-HR', {
 const PartnerWorkspace = () => {
   const [activeModule, setActiveModule] = useState<PartnerModule>('today');
   const [addLeadOpen, setAddLeadOpen] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
+  const { signOut } = useAuthContext();
   const { leads, addLead, loading } = useLeadManagement();
   const { locations, commissions, summary, loading: earningsLoading, error: earningsError } = usePartnerEarnings();
+
+  const handleSignOut = async () => {
+    if (signingOut) return;
+    try {
+      setSigningOut(true);
+      await signOut();
+    } finally {
+      setSigningOut(false);
+    }
+  };
 
   const stats = useMemo(() => {
     const allLeads = leads ?? [];
@@ -179,9 +192,23 @@ const PartnerWorkspace = () => {
             <Button size="sm" className="ml-2 gap-2" onClick={() => setAddLeadOpen(true)}>
               <Plus className="h-4 w-4" /> Dodaj lead
             </Button>
+            <Button size="sm" variant="ghost" className="ml-1 gap-2 text-muted-foreground" onClick={handleSignOut} disabled={signingOut}>
+              <LogOut className="h-4 w-4" /> {signingOut ? 'Odjava…' : 'Odjava'}
+            </Button>
           </div>
         </div>
       </div>
+
+      <button
+        type="button"
+        onClick={handleSignOut}
+        disabled={signingOut}
+        className="fixed right-3 top-3 z-50 flex items-center gap-2 rounded-xl border bg-background/95 px-3 py-2 text-sm font-medium text-muted-foreground shadow-sm backdrop-blur md:hidden"
+        aria-label="Odjava"
+      >
+        <LogOut className="h-4 w-4" />
+        {signingOut ? 'Odjava…' : 'Odjava'}
+      </button>
 
       <main>{renderModule()}</main>
 
