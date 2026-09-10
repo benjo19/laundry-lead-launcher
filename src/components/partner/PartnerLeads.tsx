@@ -3,7 +3,7 @@ import { Search, Phone, MessageCircle, MapPin, Plus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useLeadManagement } from '@/hooks/useLeadManagement';
+import { useAssignedLeads } from '@/hooks/useAssignedLeads';
 import { Lead } from '@/types';
 
 const PARTNER_STATUSES: Array<{ value: Lead['status']; label: string }> = [
@@ -20,7 +20,7 @@ interface PartnerLeadsProps {
 }
 
 const PartnerLeads = ({ onAddLead }: PartnerLeadsProps) => {
-  const { leads, loading, updateLeadStatus } = useLeadManagement();
+  const { leads, loading, updateLeadStatus } = useAssignedLeads();
   const [query, setQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
 
@@ -41,7 +41,7 @@ const PartnerLeads = ({ onAddLead }: PartnerLeadsProps) => {
         <div>
           <p className="text-sm font-medium text-muted-foreground">Orderly partner</p>
           <h1 className="text-2xl font-bold tracking-tight">Moji leadovi</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Samo tvoji lokali i sljedeći prodajni korak.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Leadovi koji su trenutno dodijeljeni tebi.</p>
         </div>
         <Button onClick={onAddLead} className="shrink-0 gap-2">
           <Plus className="h-4 w-4" />
@@ -69,7 +69,7 @@ const PartnerLeads = ({ onAddLead }: PartnerLeadsProps) => {
       ) : filtered.length === 0 ? (
         <div className="rounded-2xl border border-dashed bg-card/50 p-8 text-center">
           <p className="font-medium">Nema leadova</p>
-          <p className="mt-1 text-sm text-muted-foreground">Dodaj prvi lokal ili promijeni filter.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Dodaj prvi lokal ili pričekaj da ti owner dodijeli lead.</p>
         </div>
       ) : (
         <div className="space-y-3">
