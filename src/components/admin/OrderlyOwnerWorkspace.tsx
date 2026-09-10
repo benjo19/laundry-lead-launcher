@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { AlertTriangle, BarChart3, CalendarClock, Clock3, Home, LogOut, Plus, UserRoundSearch, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAssignedLeads } from '@/hooks/useAssignedLeads';
+import { supabase } from '@/integrations/supabase/client';
 import AddLeadDialog from '@/components/AddLeadDialog';
 import OrderlyOwnerCRM from '@/components/admin/OrderlyOwnerCRM';
 import AdminPartnerOverview from '@/components/admin/AdminPartnerOverview';
@@ -25,8 +26,33 @@ const OrderlyOwnerWorkspace: React.FC = () => {
   const [activeModule, setActiveModule] = useState<OwnerModule>('today');
   const [addLeadOpen, setAddLeadOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [salesPartnerIds, setSalesPartnerIds] = useState<Set<string>>(new Set());
   const { signOut, user } = useAuthContext();
   const { leads, loading, refreshLeads, addLead } = useAssignedLeads();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSalesPartnerIds = async () => {
+      const db = supabase as any;
+      const { data, error } = await db
+        .from('user_roles')
+        .select('user_id')
+        .eq('role', 'sales_partner');
+
+      if (cancelled) return;
+      if (error) {
+        console.error('Sales partner roles load error:', error);
+        setSalesPartnerIds(new Set());
+        return;
+      }
+
+      setSalesPartnerIds(new Set((data ?? []).map((row: any) => row.user_id).filter(Boolean)));
+    };
+
+    loadSalesPartnerIds();
+    return () => { cancelled = true; };
+  }, []);
 
   const dashboard = useMemo(() => {
     const all = leads ?? [];
@@ -44,9 +70,9 @@ const OrderlyOwnerWorkspace: React.FC = () => {
       return now.getTime() - new Date(lead.last_contact_at).getTime() > 7 * 24 * 60 * 60 * 1000;
     });
     const mine = all.filter((lead) => (lead.assigned_to || lead.user_id) === user?.id).length;
-    const partner = all.length - mine;
+    const partner = all.filter((lead) => !!lead.assigned_to && salesPartnerIds.has(lead.assigned_to)).length;
     return { total: all.length, mine, partner, activePipeline: active.length, overdue, today, noNextStep, stale };
-  }, [leads, user?.id]);
+  }, [leads, salesPartnerIds, user?.id]);
 
   const handleSignOut = async () => {
     if (signingOut) return;
