@@ -14,6 +14,7 @@ import AdminDashboard from '@/components/AdminDashboard';
 import BusinessDocuments from '@/components/BusinessDocuments';
 import MakeIntegration from '@/components/MakeIntegration';
 import PartnerWorkspace from '@/components/partner/PartnerWorkspace';
+import OrderlyOwnerWorkspace from '@/components/admin/OrderlyOwnerWorkspace';
 
 import MobileHeader from '@/components/MobileHeader';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -174,8 +175,8 @@ const Index = () => {
     return <PartnerWorkspace />;
   }
 
-  if (isAdmin) {
-    return <AdminDashboard />;
+  if (isAdmin && location.pathname !== '/admin') {
+    return <OrderlyOwnerWorkspace />;
   }
 
   if (isMobile) {
