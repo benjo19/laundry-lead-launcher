@@ -16,7 +16,7 @@ type LeadRow = {
   id:string; user_id:string; created_by:string|null; assigned_to:string|null; company:string; location:string|null; city:string|null; country:string|null;
   contact_person:string|null; phone:string|null; phone2:string|null; email:string|null; website:string|null; status:string|null; potential:string|null;
   industry:string|null; interested_in:string|null; notes:string|null; source:string|null; created_at:string|null; last_contact_at:string|null;
-  contact_outcome:string|null; next_step:string|null; next_action_at:string|null; contact_type:string|null; locations_count:number|null;
+  contact_outcome:string|null; next_step:string|null; next_action_at:string|null; contact_type:string|null; pipeline_stage:string|null; locations_count:number|null;
   won_locations_count:number|null; opportunity_value:number|null; actual_mrr:number|null; lost_reason:string|null;
 };
 type Owner = { id:string; email:string|null; role:string };
@@ -58,7 +58,7 @@ const OrderlyOwnerCRM: React.FC = () => {
     try {
       const db = supabase as any;
       const [leadResult,profileResult,roleResult] = await Promise.all([
-        db.from('leads').select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,interested_in,notes,source,created_at,last_contact_at,contact_outcome,next_step,next_action_at,contact_type,locations_count,won_locations_count,opportunity_value,actual_mrr,lost_reason').order('created_at',{ascending:false}),
+        db.from('leads').select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,interested_in,notes,source,created_at,last_contact_at,contact_outcome,next_step,next_action_at,contact_type,pipeline_stage,locations_count,won_locations_count,opportunity_value,actual_mrr,lost_reason').order('created_at',{ascending:false}),
         db.from('profiles').select('id,email'), db.from('user_roles').select('user_id,role'),
       ]);
       const error = leadResult.error || profileResult.error || roleResult.error;
@@ -72,13 +72,14 @@ const OrderlyOwnerCRM: React.FC = () => {
   useEffect(()=>{load();},[]);
   const ownerMap=useMemo(()=>new Map(owners.map(o=>[o.id,o])),[owners]);
   const effectiveOwnerId=(lead:LeadRow)=>lead.assigned_to||lead.user_id;
-  const statuses=useMemo(()=>Array.from(new Set(leads.map(l=>l.status||'Nova'))).sort(),[leads]);
+  const statuses=useMemo(()=>Array.from(new Set([...leads.map(l=>l.status||'Nova'),'Draft spreman'])).sort(),[leads]);
   const filteredLeads=useMemo(()=>{
     const q=search.trim().toLowerCase();
     return leads.filter(lead=>{
       const ownerId=effectiveOwnerId(lead); const owner=ownerMap.get(ownerId);
       const searchOk=!q||[lead.company,lead.location,lead.city,lead.contact_person,lead.phone,lead.phone2,lead.email,lead.website,lead.interested_in,lead.contact_outcome,lead.next_step,lead.lost_reason,owner?.email].filter(Boolean).some(v=>String(v).toLowerCase().includes(q));
-      return searchOk && (ownerFilter==='all'||ownerId===ownerFilter) && (statusFilter==='all'||(lead.status||'Nova')===statusFilter) && (interestFilter==='all'||lead.interested_in===interestFilter);
+      const statusOk = statusFilter==='all' || (statusFilter==='Draft spreman' ? lead.pipeline_stage==='Draft spreman' : (lead.status||'Nova')===statusFilter);
+      return searchOk && (ownerFilter==='all'||ownerId===ownerFilter) && statusOk && (interestFilter==='all'||lead.interested_in===interestFilter);
     });
   },[leads,ownerMap,ownerFilter,statusFilter,interestFilter,search]);
   const sortedLeads=useMemo(()=>{
