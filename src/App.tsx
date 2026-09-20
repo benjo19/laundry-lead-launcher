@@ -15,6 +15,7 @@ import Settings from "./components/Settings";
 import AdminDashboard from "./components/AdminDashboard";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import OAuthWrapper from "./components/OAuthWrapper";
+import NotFound from "./pages/NotFound";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AlertTriangle } from 'lucide-react';
 
@@ -96,6 +97,7 @@ const AppContent: React.FC = () => {
                             </ProtectedAdminRoute>
                           </ProtectedRoute>
                         } />
+                        <Route path="*" element={<NotFound />} />
                       </Routes>
                     </OAuthWrapper>
                   </BrowserRouter>

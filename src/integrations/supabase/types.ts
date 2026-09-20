@@ -228,6 +228,12 @@ export type Database = {
       leads: {
         Row: {
           actual_mrr: number | null
+          ai_call_duration_secs: number | null
+          ai_call_sid: string | null
+          ai_call_status: string | null
+          ai_call_summary: string | null
+          ai_conversation_id: string | null
+          ai_last_call_at: string | null
           assigned_to: string | null
           city: string | null
           company: string
@@ -264,6 +270,12 @@ export type Database = {
         }
         Insert: {
           actual_mrr?: number | null
+          ai_call_duration_secs?: number | null
+          ai_call_sid?: string | null
+          ai_call_status?: string | null
+          ai_call_summary?: string | null
+          ai_conversation_id?: string | null
+          ai_last_call_at?: string | null
           assigned_to?: string | null
           city?: string | null
           company: string
@@ -300,6 +312,12 @@ export type Database = {
         }
         Update: {
           actual_mrr?: number | null
+          ai_call_duration_secs?: number | null
+          ai_call_sid?: string | null
+          ai_call_status?: string | null
+          ai_call_summary?: string | null
+          ai_conversation_id?: string | null
+          ai_last_call_at?: string | null
           assigned_to?: string | null
           city?: string | null
           company?: string
@@ -841,8 +859,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      debug_automind_payload: { Args: { "": Json }; Returns: Json }
       delete_lead_complete: { Args: { p_lead_id: string }; Returns: undefined }
       is_current_super_admin: { Args: never; Returns: boolean }
+      process_automind_ai_interest:
+        | { Args: { "": Json }; Returns: Json }
+        | { Args: { p_info: string }; Returns: Json }
     }
     Enums: {
       app_role: "super_admin" | "user" | "sales_partner"
