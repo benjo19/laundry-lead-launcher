@@ -22,6 +22,7 @@ type LeadRow = {
 type Owner = { id:string; email:string|null; role:string };
 type SortMode = 'newest' | 'oldest' | 'company-asc' | 'company-desc';
 const INTERESTS = ['Orderly','AutomindAI','Oprema praone'];
+const CRM_STATUS_FILTERS = ['Nova','Draft spreman','Kontaktiran','Odgovorio','Zainteresiran','Neisporučeno','Izgubljeno'];
 
 const dateOnly = (date: Date) => {
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
@@ -72,13 +73,15 @@ const OrderlyOwnerCRM: React.FC = () => {
   useEffect(()=>{load();},[]);
   const ownerMap=useMemo(()=>new Map(owners.map(o=>[o.id,o])),[owners]);
   const effectiveOwnerId=(lead:LeadRow)=>lead.assigned_to||lead.user_id;
-  const statuses=useMemo(()=>Array.from(new Set([...leads.map(l=>l.status||'Nova'),'Draft spreman'])).sort(),[leads]);
+  const statuses=CRM_STATUS_FILTERS;
   const filteredLeads=useMemo(()=>{
     const q=search.trim().toLowerCase();
     return leads.filter(lead=>{
       const ownerId=effectiveOwnerId(lead); const owner=ownerMap.get(ownerId);
       const searchOk=!q||[lead.company,lead.location,lead.city,lead.contact_person,lead.phone,lead.phone2,lead.email,lead.website,lead.interested_in,lead.contact_outcome,lead.next_step,lead.lost_reason,owner?.email].filter(Boolean).some(v=>String(v).toLowerCase().includes(q));
-      const statusOk = statusFilter==='all' || (statusFilter==='Draft spreman' ? lead.pipeline_stage==='Draft spreman' : (lead.status||'Nova')===statusFilter);
+      const rawStatus = lead.status || 'Nova';
+      const normalizedStatus = rawStatus === 'Novi' ? 'Nova' : rawStatus === 'Izgubljen' ? 'Izgubljeno' : rawStatus;
+      const statusOk = statusFilter==='all' || (statusFilter==='Draft spreman' ? lead.pipeline_stage==='Draft spreman' : normalizedStatus===statusFilter);
       return searchOk && (ownerFilter==='all'||ownerId===ownerFilter) && statusOk && (interestFilter==='all'||lead.interested_in===interestFilter);
     });
   },[leads,ownerMap,ownerFilter,statusFilter,interestFilter,search]);
