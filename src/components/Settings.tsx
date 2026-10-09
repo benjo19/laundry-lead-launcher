@@ -13,6 +13,7 @@ import GoogleCalendarIntegration from './GoogleCalendarIntegration';
 import ContentBoosterWebhook from './ContentBoosterWebhook';
 import SimpleWebhookIntegration from './SimpleWebhookIntegration';
 import AISettings from './AISettings';
+import JarvisTelegramLink from './JarvisTelegramLink';
 import { AccountSettings } from './AccountSettings';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAdminStatus } from '@/hooks/useAdminStatus';
@@ -92,6 +93,7 @@ const Settings = () => {
               </TabsContent>
 
               <TabsContent value="integrations" className="space-y-6">
+                <JarvisTelegramLink />
                 <div className="space-y-6">
                   {isAdmin ? (
                     // Admin vidi sve integracije kao do sad
