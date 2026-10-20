@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllLeadRows } from '@/lib/fetchAllLeadRows';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAssignedLeads } from '@/hooks/useAssignedLeads';
 import AddLeadDialog from '@/components/AddLeadDialog';
@@ -59,7 +60,7 @@ const OrderlyOwnerCRM: React.FC = () => {
     try {
       const db = supabase as any;
       const [leadResult,profileResult,roleResult] = await Promise.all([
-        db.from('leads').select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,interested_in,notes,source,created_at,last_contact_at,contact_outcome,next_step,next_action_at,contact_type,pipeline_stage,locations_count,won_locations_count,opportunity_value,actual_mrr,lost_reason').order('created_at',{ascending:false}),
+        fetchAllLeadRows<LeadRow>((from, to) => db.from('leads').select('id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,interested_in,notes,source,created_at,last_contact_at,contact_outcome,next_step,next_action_at,contact_type,pipeline_stage,locations_count,won_locations_count,opportunity_value,actual_mrr,lost_reason').order('created_at',{ascending:false}).order('id',{ascending:true}).range(from,to)),
         db.from('profiles').select('id,email'), db.from('user_roles').select('user_id,role'),
       ]);
       const error = leadResult.error || profileResult.error || roleResult.error;

@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllLeadRows } from '@/lib/fetchAllLeadRows';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, CalendarClock, CircleDollarSign, MapPin, RefreshCw, Users } from 'lucide-react';
@@ -65,10 +66,12 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
     try {
       const db = supabase as any;
       const [leadResult, reminderResult, locationResult, commissionResult] = await Promise.all([
-        db.from('leads')
+        fetchAllLeadRows<LeadRow>((from, to) => db.from('leads')
           .select('id,company,location,phone,email,status,created_at')
           .eq('assigned_to', partnerUserId)
-          .order('created_at', { ascending: false }),
+          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
+          .range(from, to)),
         db.from('reminders')
           .select('id,title,company,date,time,status,priority')
           .eq('user_id', partnerUserId)
