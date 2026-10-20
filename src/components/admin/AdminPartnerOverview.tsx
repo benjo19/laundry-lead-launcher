@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { fetchAllLeadRows } from '@/lib/fetchAllLeadRows';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,7 @@ const AdminPartnerOverview: React.FC = () => {
 
       const [profilesResult, leadsResult, remindersResult, locationsResult] = await Promise.all([
         db.from('profiles').select('id,email').in('id', ids),
-        db.from('leads').select('id,user_id,assigned_to,status,next_action_at'),
+        fetchAllLeadRows((from, to) => db.from('leads').select('id,user_id,assigned_to,status,next_action_at').order('id', { ascending: true }).range(from, to)),
         db.from('reminders').select('id,user_id,date,status').in('user_id', ids),
         db.from('partner_locations').select('partner_user_id,status,monthly_commission').in('partner_user_id', ids),
       ]);

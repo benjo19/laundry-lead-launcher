@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Lead } from '@/types';
+import { fetchAllLeadRows } from '@/lib/fetchAllLeadRows';
 
 type LeadRow = {
   id: string;
@@ -96,10 +97,12 @@ export const useAssignedLeads = () => {
     setLoading(true);
     setError(null);
     const db = supabase as any;
-    const { data, error: queryError } = await db
+    const { data, error: queryError } = await fetchAllLeadRows<LeadRow>((from, to) => db
       .from('leads')
       .select('id,user_id,assigned_to,company,location,employees,phone,email,website,status,potential,notes,industry,country,city,interested_in,next_step,next_action_at,last_contact_at,contact_outcome,contact_type,locations_count,won_locations_count,opportunity_value,actual_mrr,source,created_at')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .order('id', { ascending: true })
+      .range(from, to));
 
     if (queryError) {
       console.error('Assigned leads load error:', queryError);
@@ -120,9 +123,11 @@ export const useAssignedLeads = () => {
     if (!user) return false;
     const db = supabase as any;
 
-    const { data: candidates, error: duplicateError } = await db
+    const { data: candidates, error: duplicateError } = await fetchAllLeadRows((from, to) => db
       .from('leads')
-      .select('id,company,email,phone,website');
+      .select('id,company,email,phone,website')
+      .order('id', { ascending: true })
+      .range(from, to));
 
     if (duplicateError) {
       toast({ title: 'Greška', description: duplicateError.message, variant: 'destructive' });

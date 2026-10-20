@@ -5,6 +5,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useMakeIntegration } from '@/hooks/useMakeIntegration';
 import { Lead } from '@/types';
+import { fetchAllLeadRows } from '@/lib/fetchAllLeadRows';
 
 interface SupabaseLead {
   id: string;
@@ -58,13 +59,13 @@ export const useSupabaseLeads = () => {
     try {
       setLoading(true);
       setError(null);
-      console.log('Fetching leads from Supabase for user:', user.id);
-
-      const { data, error } = await supabase
+      const { data, error } = await fetchAllLeadRows<SupabaseLead>((from, to) => supabase
         .from('leads')
         .select('*')
         .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })
+        .range(from, to));
 
       if (error) {
         console.error('Error fetching leads:', error);
