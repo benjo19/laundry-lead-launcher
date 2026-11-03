@@ -16,6 +16,7 @@ import AdminDashboard from "./components/AdminDashboard";
 import ProtectedAdminRoute from "./components/ProtectedAdminRoute";
 import OAuthWrapper from "./components/OAuthWrapper";
 import NotFound from "./pages/NotFound";
+import GoogleCalendarReturn from "./pages/GoogleCalendarReturn";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { AlertTriangle } from 'lucide-react';
 
@@ -73,6 +74,7 @@ const AppContent: React.FC = () => {
                       <Routes>
                         <Route path="/auth" element={<Auth />} />
                         <Route path="/install" element={<Install />} />
+                        <Route path="/oauth/google-calendar/return" element={<GoogleCalendarReturn />} />
                         <Route path="/" element={
                           <ProtectedRoute>
                             <Index />
