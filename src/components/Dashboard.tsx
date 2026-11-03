@@ -244,6 +244,16 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
     [leads]
   );
 
+  // CRM outreach overview derived from lead records, not from Make execution logs.
+  const outreach = useMemo(() => {
+    const active = (leads ?? []).filter((l: Lead) => l.status !== 'Odbačen' && l.status !== 'Izgubljeno');
+    const contacted = active.filter((l: Lead) => Boolean(l.last_contact_at) || ['Kontaktiran', 'Odgovorio', 'Demo', 'Trial', 'Plaća', 'Sastanak', 'Ponuda', 'Pregovori', 'Dobiveno', 'Zainteresiran'].includes(l.status));
+    const awaiting = active.filter((l: Lead) => l.status === 'Kontaktiran');
+    const replies = active.filter((l: Lead) => ['Odgovorio', 'Zainteresiran'].includes(l.status));
+    const uncontacted = active.filter((l: Lead) => !l.last_contact_at && ['Nova', 'Kvalificiran'].includes(l.status));
+    return { contacted: contacted.length, awaiting: awaiting.length, replies: replies.length, uncontacted: uncontacted.length };
+  }, [leads]);
+
   const offerTotals = useMemo(() => {
     const totals = new Map<string, number>();
     for (const it of offerItems) {
@@ -396,6 +406,36 @@ const Dashboard = ({ onNavigateToModule }: DashboardProps) => {
               compact={compact}
             />
           </div>
+
+          {/* Outreach: CRM data only. Do not infer Make live state from these counters. */}
+          <section className="surface-card p-4 sm:p-5 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h2 className="text-sm font-semibold text-foreground">Komunikacija s leadovima</h2>
+                <p className="text-xs text-muted-foreground">Prema CRM zapisima · nije evidencija Gmail isporuke</p>
+              </div>
+              <button type="button" onClick={() => onNavigateToModule?.('lead-hunter')} className="text-xs font-medium text-primary hover:text-primary-hover">
+                Otvori leadove →
+              </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: 'Bez kontakta', value: outreach.uncontacted },
+                { label: 'Kontaktirani', value: outreach.contacted },
+                { label: 'Čekaju odgovor', value: outreach.awaiting },
+                { label: 'Odgovor / interes', value: outreach.replies },
+              ].map((item) => (
+                <div key={item.label} className="rounded-lg bg-muted/50 border border-border px-3 py-3">
+                  <p className="text-xs text-muted-foreground">{item.label}</p>
+                  <p className="text-2xl font-semibold tabular-nums mt-1">{item.value}</p>
+                </div>
+              ))}
+            </div>
+            <div className="rounded-md border border-warning/30 bg-warning/5 px-3 py-2 flex flex-wrap gap-2 items-center justify-between">
+              <p className="text-xs text-foreground"><strong>AI slanje:</strong> status nije povezan uživo s Makeom. Ne uključuj kampanju bez provjere dnevnog limita.</p>
+              <button type="button" onClick={() => onNavigateToModule?.('integrations')} className="text-xs font-medium text-primary hover:text-primary-hover">Integracije →</button>
+            </div>
+          </section>
 
           {/* Sales funnel snapshot */}
           <SalesFunnel
