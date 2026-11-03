@@ -54,6 +54,7 @@ const OrderlyOwnerCRM: React.FC = () => {
   const [actionFilter,setActionFilter] = useState('all');
   const [interestFilter,setInterestFilter] = useState('all');
   const [sortMode,setSortMode] = useState<SortMode>('newest');
+  const [workspaceView,setWorkspaceView] = useState<'today'|'all'|'pipeline'>('today');
   const [assigningId,setAssigningId] = useState<string|null>(null);
 
   const load = async () => {
@@ -90,9 +91,11 @@ const OrderlyOwnerCRM: React.FC = () => {
       return searchOk && (ownerFilter==='all'||ownerId===ownerFilter) && statusOk && actionOk && (interestFilter==='all'||lead.interested_in===interestFilter);
     });
   },[leads,ownerMap,ownerFilter,statusFilter,actionFilter,interestFilter,search]);
+  const workspaceLeads=useMemo(()=>workspaceView==='today'?filteredLeads.filter(l=>{const a=actionTone(l.next_action_at);return a==='today'||a==='overdue';}):filteredLeads,[filteredLeads,workspaceView]);
   const sortedLeads=useMemo(()=>{
-    const rows=[...filteredLeads];
+    const rows=[...workspaceLeads];
     rows.sort((a,b)=>{
+      if(workspaceView==='today') {const priority=(l:LeadRow)=>actionTone(l.next_action_at)==='overdue'?0:1;const p=priority(a)-priority(b);if(p)return p;return new Date(a.next_action_at||0).getTime()-new Date(b.next_action_at||0).getTime();}
       if(sortMode==='company-asc') return a.company.localeCompare(b.company,'hr',{sensitivity:'base'});
       if(sortMode==='company-desc') return b.company.localeCompare(a.company,'hr',{sensitivity:'base'});
       const aTime=a.created_at?new Date(a.created_at).getTime():0;
@@ -100,7 +103,7 @@ const OrderlyOwnerCRM: React.FC = () => {
       return sortMode==='oldest'?aTime-bTime:bTime-aTime;
     });
     return rows;
-  },[filteredLeads,sortMode]);
+  },[workspaceLeads,sortMode,workspaceView]);
   const stats=useMemo(()=>({
     total:leads.length,
     orderly:leads.filter(l=>l.interested_in==='Orderly').length,
@@ -127,6 +130,8 @@ const OrderlyOwnerCRM: React.FC = () => {
   return <div className="mx-auto w-full max-w-7xl space-y-4 px-3 pb-24 pt-4 sm:space-y-5 sm:px-5 md:px-6 md:pb-8">
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0 pr-12 sm:pr-0"><p className="text-xs font-medium text-muted-foreground sm:text-sm">Automind CRM</p><h2 className="text-xl font-bold tracking-tight sm:text-2xl">Leadovi</h2><p className="mt-1 hidden text-sm text-muted-foreground sm:block">Klikni na lead za puni account, timeline, follow-up i uređivanje.</p></div><div className="grid grid-cols-2 gap-2 sm:flex"><Button variant="outline" onClick={load} disabled={loading} className="h-11 gap-2 sm:h-10"><RefreshCw className={`h-4 w-4 ${loading?'animate-spin':''}`} />Osvježi</Button><Button onClick={()=>setAddLeadOpen(true)} className="h-11 gap-2 sm:h-10"><Plus className="h-4 w-4" />Dodaj lead</Button></div></div>
 
+    <section aria-label="Prodajni radni prostor" className="rounded-2xl border bg-card p-3 sm:p-4"><div className="flex flex-wrap items-center justify-between gap-3"><div><h3 className="font-semibold">Prodajni radni prostor</h3><p className="text-sm text-muted-foreground">Prvo riješi kupce kojima duguješ odgovor.</p></div><div className="flex flex-wrap gap-2"><Button size="sm" variant={workspaceView==='today'?'default':'outline'} onClick={()=>setWorkspaceView('today')}>Za danas</Button><Button size="sm" variant={workspaceView==='all'?'default':'outline'} onClick={()=>setWorkspaceView('all')}>Svi leadovi</Button><Button size="sm" variant={workspaceView==='pipeline'?'default':'outline'} onClick={()=>setWorkspaceView('pipeline')}>Pipeline</Button></div></div>{workspaceView==='pipeline'&&<div className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">{['Nova','Kontaktiran','Odgovorio','Zainteresiran'].map(stage=><button key={stage} type="button" className="rounded-xl border bg-muted/20 p-3 text-left hover:bg-muted/40" onClick={()=>{setStatusFilter(stage);setWorkspaceView('all');}}><p className="text-sm text-muted-foreground">{stage}</p><p className="text-2xl font-semibold">{leads.filter(l=>(l.status||'Nova')===stage).length}</p><p className="text-xs text-muted-foreground">Otvori leadove →</p></button>)}</div>}</section>
+
     <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4"><Stat label="Svi leadovi" value={stats.total} icon={Users}/><Stat label="Orderly leadovi" value={stats.orderly} icon={UserRound}/><Stat label="Osvojene lokacije" value={stats.wonLocations} icon={MapPin}/><Stat label="Stvarni MRR" value={`${stats.actualMrr.toFixed(0)} €`} icon={CircleDollarSign}/></div>
 
     <div className="grid grid-cols-3 gap-2 sm:gap-3">
@@ -136,7 +141,7 @@ const OrderlyOwnerCRM: React.FC = () => {
     </div>
     {actionFilter!=='all'&&<Button variant="ghost" size="sm" onClick={()=>setActionFilter('all')}>Poništi filter zadataka</Button>}
 
-    <Card className="overflow-hidden"><CardHeader className="px-3 pb-3 pt-4 sm:px-6 sm:pt-6"><CardTitle className="text-lg sm:text-xl">Leadovi</CardTitle><CardDescription>{filteredLeads.length} prikazano od {leads.length}</CardDescription></CardHeader><CardContent className="space-y-4 px-3 pb-4 sm:px-6 sm:pb-6">
+    <Card className="overflow-hidden"><CardHeader className="px-3 pb-3 pt-4 sm:px-6 sm:pt-6"><CardTitle className="text-lg sm:text-xl">Leadovi</CardTitle><CardDescription>{sortedLeads.length} prikazano od {leads.length}</CardDescription></CardHeader><CardContent className="space-y-4 px-3 pb-4 sm:px-6 sm:pb-6">
       <div className="flex gap-1 overflow-x-auto rounded-xl border bg-muted/20 p-1">
         {[['all','Svi'],...INTERESTS.map(x=>[x,x])].map(([value,label])=><button key={value} type="button" onClick={()=>setInterestFilter(value)} className={`min-h-10 shrink-0 rounded-lg px-3 text-sm font-medium transition ${interestFilter===value?'bg-background text-foreground shadow-sm':'text-muted-foreground hover:text-foreground'}`}>{label}</button>)}
       </div>
