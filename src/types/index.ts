@@ -59,17 +59,48 @@ export interface Email {
   clickRate?: string;
 }
 
+export type ReminderEventType = 'meeting' | 'call' | 'follow_up';
+export type CalendarSyncStatus = 'not_synced' | 'pending' | 'synced' | 'error' | 'cancelled';
+
 export interface Reminder {
   id: number;
+  /** Database UUID — the only reliable key for updates and Google sync. */
+  uuid?: string;
   title: string;
   description: string;
   date: string;
   time: string;
   priority: 'Visok' | 'Srednji' | 'Nizak';
-  status: 'Aktivan' | 'Završen' | 'Odgođen';
+  status: 'Aktivan' | 'Završen' | 'Odgođen' | 'Otkazan';
   company: string;
   leadId?: number;
+  leadUuid?: string;
   calendarEventId?: string;
+  eventType?: ReminderEventType;
+  project?: string | null;
+  durationMinutes?: number;
+  syncStatus?: CalendarSyncStatus;
+  syncError?: string | null;
+  lastSyncedAt?: string | null;
 }
+
+export interface ReminderFormData {
+  title: string;
+  description: string;
+  date: string;
+  time: string;
+  priority: Reminder['priority'];
+  company: string;
+  companyInputMode: 'select' | 'manual';
+  eventType: ReminderEventType;
+  project: string;
+  durationMinutes: number;
+  leadUuid?: string;
+}
+
+export const EMPTY_REMINDER_FORM: ReminderFormData = {
+  title: '', description: '', date: '', time: '', priority: 'Srednji', company: '', companyInputMode: 'select',
+  eventType: 'follow_up', project: '', durationMinutes: 60,
+};
 
 export type { ContentPost, ContentGenerationParams, GeneratedContent } from './contentTypes';

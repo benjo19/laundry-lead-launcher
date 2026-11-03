@@ -1,202 +1,104 @@
-import { useState } from 'react';
-import { useUserSettings } from './useUserSettings';
-import { useToast } from '@/hooks/use-toast';
-import { Reminder } from '@/types';
+import { useCallback, useEffect, useState } from 'react';
+import { FunctionsHttpError } from '@supabase/supabase-js';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
-interface GoogleCalendarSettings {
-  integration_type?: 'simple' | 'api';
-  enabled?: boolean;
-  api_key?: string;
-  client_id?: string;
-  calendar_id?: string;
-  auto_sync?: boolean;
+export interface GoogleCalendarStatus {
+  configured: boolean;
+  connected: boolean;
+  reconnectRequired?: boolean;
+  missing?: string[];
+  calendar?: { summary?: string; timeZone?: string };
+  error?: string;
 }
 
-interface GoogleCalendarEvent {
-  summary: string;
-  description?: string;
-  start: {
-    dateTime: string;
-    timeZone: string;
-  };
-  end: {
-    dateTime: string;
-    timeZone: string;
-  };
+type Result<T> = { ok: boolean; data?: T; error?: string; reconnectRequired?: boolean };
+
+async function invoke<T>(body: Record<string, unknown>): Promise<Result<T>> {
+  const { data, error } = await supabase.functions.invoke('google-calendar', { body });
+  if (!error) return { ok: true, data: data as T };
+  let message = error.message;
+  let reconnectRequired = false;
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const parsed = await error.context.json();
+      message = parsed?.error ? (typeof parsed.error === 'string' ? parsed.error : JSON.stringify(parsed.error)) : message;
+      reconnectRequired = !!parsed?.reconnectRequired;
+    } catch { /* keep generic message */ }
+  }
+  return { ok: false, error: message, reconnectRequired };
+}
+
+function waitForOAuthCompletion(popup: Window) {
+  return new Promise<void>((resolve, reject) => {
+    const cleanup = () => { window.removeEventListener('message', onMessage); window.clearInterval(poll); };
+    const onMessage = (event: MessageEvent) => {
+      const type = event.data?.type;
+      if (event.origin !== window.location.origin || event.source !== popup || event.data?.connectorId !== 'google_calendar'
+        || (type !== 'appUserConnectorOAuthComplete' && type !== 'appUserConnectorOAuthFailed')) return;
+      cleanup();
+      if (type === 'appUserConnectorOAuthComplete') return resolve();
+      popup.close();
+      reject(new Error(event.data?.reason ?? 'Povezivanje s Googleom nije uspjelo.'));
+    };
+    window.addEventListener('message', onMessage);
+    const poll = window.setInterval(() => {
+      if (!popup.closed) return;
+      cleanup();
+      reject(new Error('Prozor za Google prijavu je zatvoren prije završetka.'));
+    }, 500);
+  });
 }
 
 export const useGoogleCalendar = () => {
-  const [isLoading, setIsLoading] = useState(false);
-  const { value: gcalSettings } = useUserSettings<GoogleCalendarSettings>('google_calendar_settings', {});
-  const { toast } = useToast();
+  const { user } = useAuth();
+  const [status, setStatus] = useState<GoogleCalendarStatus | null>(null);
+  const [checking, setChecking] = useState(false);
 
-  const createCalendarEvent = async (reminder: Reminder): Promise<string | null> => {
-    // Check if integration is enabled
-    if (!gcalSettings?.enabled) {
-      console.log('Google Calendar integration not enabled');
-      return null;
-    }
+  const refreshStatus = useCallback(async () => {
+    if (!user) return;
+    setChecking(true);
+    const res = await invoke<GoogleCalendarStatus>({ action: 'status' });
+    setStatus(res.ok && res.data ? res.data : { configured: false, connected: false, error: res.error });
+    setChecking(false);
+  }, [user]);
 
-    // For simple integration, return null (will use links)
-    if (gcalSettings.integration_type === 'simple' || !gcalSettings.api_key) {
-      console.log('Using simple integration - calendar link will be generated');
-      return null;
-    }
+  useEffect(() => { refreshStatus(); }, [refreshStatus]);
 
-    setIsLoading(true);
-    
+  /** Must be called directly from a click handler (popup opens synchronously). */
+  const connect = async (): Promise<void> => {
+    const popup = window.open('', 'google-calendar-oauth', 'width=600,height=720');
+    if (!popup) throw new Error('Preglednik je blokirao skočni prozor. Dopusti skočne prozore i pokušaj ponovno.');
     try {
-      // Check if gapi is loaded
-      if (!window.gapi || !window.gapi.client || !window.gapi.client.calendar) {
-        console.log('Google Calendar API not loaded, falling back to link');
-        return null;
-      }
-
-      const startDateTime = new Date(`${reminder.date}T${reminder.time}`);
-      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // 1 hour later
-
-      const event: GoogleCalendarEvent = {
-        summary: reminder.title,
-        description: `${reminder.description || ''}\n\nTvrtka: ${reminder.company}`,
-        start: {
-          dateTime: startDateTime.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        end: {
-          dateTime: endDateTime.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-      };
-
-      const response = await window.gapi.client.calendar.events.insert({
-        calendarId: gcalSettings.calendar_id || 'primary',
-        resource: event,
-      });
-
-      console.log('Event created:', response);
-      
-      toast({
-        title: "Događaj dodan",
-        description: "Podsjetnik je uspješno dodan u Google Calendar.",
-      });
-
-      return response.result.id || null;
-    } catch (error) {
-      console.error('Error creating calendar event:', error);
-      toast({
-        title: "Greška",
-        description: "Nije moguće dodati događaj u kalendar. Koristite link za manualno dodavanje.",
-        variant: "destructive",
-      });
-      return null;
-    } finally {
-      setIsLoading(false);
+      const res = await invoke<{ authorizationUrl: string }>({ action: 'start', origin: window.location.origin });
+      if (!res.ok) throw new Error(res.error);
+      const completion = waitForOAuthCompletion(popup);
+      popup.location.href = res.data!.authorizationUrl;
+      await completion;
+      await refreshStatus();
+    } catch (e) {
+      popup.close();
+      throw e;
     }
   };
 
-  const updateCalendarEvent = async (reminder: Reminder, eventId: string): Promise<boolean> => {
-    if (!gcalSettings?.enabled || gcalSettings.integration_type === 'simple') {
-      return false;
-    }
-
-    setIsLoading(true);
-
-    try {
-      if (!window.gapi || !window.gapi.client || !window.gapi.client.calendar) {
-        console.log('Google Calendar API not loaded');
-        return false;
-      }
-
-      const startDateTime = new Date(`${reminder.date}T${reminder.time}`);
-      const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000);
-
-      const event: GoogleCalendarEvent = {
-        summary: reminder.title,
-        description: `${reminder.description || ''}\n\nTvrtka: ${reminder.company}`,
-        start: {
-          dateTime: startDateTime.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-        end: {
-          dateTime: endDateTime.toISOString(),
-          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        },
-      };
-
-      await window.gapi.client.calendar.events.update({
-        calendarId: gcalSettings.calendar_id || 'primary',
-        eventId: eventId,
-        resource: event,
-      });
-
-      toast({
-        title: "Događaj ažuriran",
-        description: "Podsjetnik je uspješno ažuriran u Google Calendar.",
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Error updating calendar event:', error);
-      toast({
-        title: "Greška",
-        description: "Nije moguće ažurirati događaj u kalendaru.",
-        variant: "destructive",
-      });
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
+  const disconnect = async () => {
+    const res = await invoke<{ ok: boolean }>({ action: 'disconnect' });
+    if (!res.ok) throw new Error(res.error);
+    await refreshStatus();
   };
 
-  const initGoogleCalendar = async (): Promise<boolean> => {
-    if (!gcalSettings?.api_key || !gcalSettings?.client_id) {
-      return false;
-    }
+  const syncReminder = (reminderId: string, op: 'upsert' | 'cancel') =>
+    invoke<{ ok: boolean; sync_status: string; calendar_event_id?: string }>({ action: 'sync', reminder_id: reminderId, op });
 
-    try {
-      await new Promise((resolve, reject) => {
-        window.gapi.load('client:auth2', {
-          callback: resolve,
-          onerror: reject,
-        });
-      });
+  const pullChanges = () => invoke<{ checked: number; updated: number; cancelled: number }>({ action: 'pull' });
 
-      await window.gapi.client.init({
-        apiKey: gcalSettings.api_key,
-        clientId: gcalSettings.client_id,
-        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest'],
-        scope: 'https://www.googleapis.com/auth/calendar.events',
-      });
-
-      return true;
-    } catch (error) {
-      console.error('Error initializing Google Calendar:', error);
-      return false;
-    }
-  };
-
-  const signInToGoogle = async (): Promise<boolean> => {
-    try {
-      const authInstance = window.gapi.auth2.getAuthInstance();
-      await authInstance.signIn();
-      return true;
-    } catch (error) {
-      console.error('Error signing in to Google:', error);
-      return false;
-    }
-  };
-
-  return {
-    createCalendarEvent,
-    updateCalendarEvent,
-    initGoogleCalendar,
-    signInToGoogle,
-    isLoading,
-  };
+  return { status, checking, refreshStatus, connect, disconnect, syncReminder, pullChanges, isConnected: !!status?.connected };
 };
 
 declare global {
   interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     gapi: any;
   }
 }

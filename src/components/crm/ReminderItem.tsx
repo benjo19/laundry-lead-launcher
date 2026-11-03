@@ -1,7 +1,8 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, CheckCircle2, Trash2, Users, Edit, CalendarPlus } from 'lucide-react';
+import { Calendar, Clock, CheckCircle2, Trash2, Users, Edit, CalendarPlus, RotateCw, Ban } from 'lucide-react';
+import { EVENT_TYPE_LABEL, SyncIcon } from './CRMCalendar';
 import { Reminder } from '@/types';
 import { generateGoogleCalendarLink } from '@/utils/googleCalendarLink';
 
@@ -11,6 +12,8 @@ interface ReminderItemProps {
   onPostpone: (id: number) => void;
   onDelete: (id: number) => void;
   onEdit: (reminder: Reminder) => void;
+  onRetrySync?: (reminder: Reminder) => void;
+  onCancel?: (reminder: Reminder) => void;
   compact?: boolean;
 }
 
@@ -20,8 +23,8 @@ const localDate = () => {
   return local.toISOString().split('T')[0];
 };
 
-const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit, compact = false }: ReminderItemProps) => {
-  const calendarUrl = generateGoogleCalendarLink({ title: reminder.title, description: reminder.description || '', date: reminder.date, time: reminder.time, company: reminder.company });
+const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit, onRetrySync, onCancel, compact = false }: ReminderItemProps) => {
+  const calendarUrl = generateGoogleCalendarLink({ title: reminder.title, description: reminder.description || '', date: reminder.date, time: reminder.time, company: reminder.company, durationMinutes: reminder.durationMinutes });
   const today = localDate();
   const overdue = reminder.status === 'Aktivan' && reminder.date < today;
   const dueToday = reminder.status === 'Aktivan' && reminder.date === today;
@@ -39,8 +42,12 @@ const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit, 
             <h3 className="font-medium">{reminder.title}</h3>
             <Badge variant={reminder.status === 'Završen' ? 'secondary' : 'outline'}>{reminder.status}</Badge>
             <Badge variant="outline" className={priorityClass}>{reminder.priority}</Badge>
+            <Badge variant="outline">{EVENT_TYPE_LABEL[reminder.eventType || 'follow_up']}</Badge>
+            {reminder.project && <Badge variant="secondary">{reminder.project}</Badge>}
+            <span className="flex items-center gap-1 text-xs text-muted-foreground"><SyncIcon r={reminder} />{reminder.syncStatus === 'synced' ? 'Google' : reminder.syncStatus === 'error' ? 'Greška sinkronizacije' : reminder.syncStatus === 'pending' ? 'Sinkroniziram…' : reminder.syncStatus === 'cancelled' ? 'Otkazano u Googleu' : 'Samo CRM'}</span>
           </div>
           {reminder.description && <p className="mt-1.5 text-sm text-muted-foreground">{reminder.description}</p>}
+          {reminder.syncStatus === 'error' && reminder.syncError && <p className="mt-1.5 text-xs text-destructive">{reminder.syncError}</p>}
           <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><Users className="h-3.5 w-3.5" />{reminder.company}</span>
             <span className={`flex items-center gap-1 font-medium ${dateClass}`}><Calendar className="h-3.5 w-3.5" />{overdue ? 'Kasni · ' : dueToday ? 'Danas · ' : ''}{reminder.date}</span>
@@ -54,7 +61,9 @@ const ReminderItem = ({ reminder, onUpdateStatus, onPostpone, onDelete, onEdit, 
             <Button variant="outline" size="sm" onClick={() => onPostpone(reminder.id)} className="h-9">Odgodi</Button>
           </> : <Button variant="outline" size="sm" onClick={() => onUpdateStatus(reminder.id, 'Aktivan')} className="h-9">Aktiviraj</Button>}
           <Button variant="ghost" size="icon" onClick={() => onEdit(reminder)} className="h-9 w-9" aria-label="Uredi"><Edit className="h-4 w-4" /></Button>
-          <Button variant="ghost" size="icon" asChild className="h-9 w-9" aria-label="Dodaj u kalendar"><a href={calendarUrl} target="_blank" rel="noopener noreferrer"><CalendarPlus className="h-4 w-4" /></a></Button>
+          {reminder.syncStatus === 'error' && onRetrySync && <Button variant="outline" size="sm" onClick={() => onRetrySync(reminder)} className="h-9 gap-1.5"><RotateCw className="h-3.5 w-3.5" />Ponovi sinkronizaciju</Button>}
+          {reminder.status !== 'Otkazan' && onCancel && <Button variant="ghost" size="icon" onClick={() => onCancel(reminder)} className="h-9 w-9" aria-label="Otkaži termin"><Ban className="h-4 w-4" /></Button>}
+          {!reminder.calendarEventId && <Button variant="ghost" size="icon" asChild className="h-9 w-9" aria-label="Ručno dodaj u Google kalendar"><a href={calendarUrl} target="_blank" rel="noopener noreferrer" title="Ručno dodaj u Google kalendar"><CalendarPlus className="h-4 w-4" /></a></Button>}
           <Button variant="ghost" size="icon" onClick={() => onDelete(reminder.id)} className="h-9 w-9 text-destructive hover:text-destructive" aria-label="Obriši"><Trash2 className="h-4 w-4" /></Button>
         </div>
       </div>
