@@ -24,7 +24,7 @@ type LeadDetail = {
 };
 type ReminderRow = { id: string; title: string; description: string | null; date: string; time: string; priority: string; status: string };
 type ActivityRow = { id: string; activity_type: string; title: string | null; notes: string | null; occurred_at: string; created_at: string };
-interface Props { lead: LeadDetail | null; owners: Owner[]; open: boolean; onOpenChange: (open: boolean) => void; onChanged: () => Promise<void> | void }
+interface Props { lead: LeadDetail | null; owners: Owner[]; emailDuplicateCount?: number; open: boolean; onOpenChange: (open: boolean) => void; onChanged: () => Promise<void> | void }
 
 const STATUSES = ['Nova','Kontaktiran','Odgovorio','Demo','Trial','Plaća','Sastanak','Ponuda','Pregovori','Dobiveno','Izgubljeno'];
 const PRIORITIES = ['Nizak','Srednji','Visok'];
@@ -34,7 +34,7 @@ const toLocalDateTimeInput = (value?: string | null) => { if (!value) return '';
 const localNowInput = () => toLocalDateTimeInput(new Date().toISOString());
 const toIsoOrNull = (value?: string) => value ? new Date(value).toISOString() : null;
 
-const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, onChanged }) => {
+const LeadDetailDialog: React.FC<Props> = ({ lead, owners, emailDuplicateCount = 0, open, onOpenChange, onChanged }) => {
   const { user } = useAuthContext();
   const [form,setForm] = useState<any>({});
   const [saving,setSaving] = useState(false);
@@ -180,6 +180,7 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
           <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
             <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="flex items-center gap-2 font-semibold"><Mail className="h-4 w-4" />Email komunikacija</h3><Badge variant="outline">Samo ručni CRM zapisi</Badge></div>
             <p className="text-sm text-muted-foreground">Ovdje su prikazane isključivo aktivnosti tipa Email koje su ručno unesene u CRM. Gmail i Make poruke još nisu sinkronizirane; njihov status slanja ili isporuke nije potvrđen ovim zapisima.</p>
+            {emailDuplicateCount > 1 && <div role="alert" className="rounded-lg border border-amber-500/50 p-3 text-sm"><strong>Provjeri primatelja:</strong> ova email adresa pojavljuje se kod {emailDuplicateCount} leadova. Automatsko povezivanje odgovora može biti dvosmisleno.</div>}
             {form.email ? <a className="inline-flex min-h-10 items-center text-sm font-medium text-primary underline underline-offset-4" href={`mailto:${form.email}`}>Napiši email: {form.email}</a> : <p className="text-sm text-muted-foreground">Ovaj lead nema email adresu.</p>}
           </section>
           <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
