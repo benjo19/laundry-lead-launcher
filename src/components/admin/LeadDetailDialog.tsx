@@ -46,6 +46,7 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
   const [activity,setActivity] = useState({ activity_type:'Poziv', notes:'', occurred_at:localNowInput() });
   const [savingActivity,setSavingActivity] = useState(false);
   const [activeTab,setActiveTab] = useState('overview');
+  const emailActivities = useMemo(() => activities.filter(item => item.activity_type === 'Email'), [activities]);
   const ownerMap = useMemo(() => new Map(owners.map(o => [o.id,o])), [owners]);
 
   const loadHistory = async (leadId: string) => {
@@ -145,7 +146,7 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4 pb-28 pt-4 sm:px-6 sm:pb-6">
-        <TabsList className="grid w-full grid-cols-3"><TabsTrigger value="overview">Pregled</TabsTrigger><TabsTrigger value="activities">Aktivnosti</TabsTrigger><TabsTrigger value="followup">Follow-up</TabsTrigger></TabsList>
+        <TabsList className="grid w-full grid-cols-4"><TabsTrigger value="overview">Pregled</TabsTrigger><TabsTrigger value="communications">Emailovi</TabsTrigger><TabsTrigger value="activities">Aktivnosti</TabsTrigger><TabsTrigger value="followup">Follow-up</TabsTrigger></TabsList>
 
         <TabsContent value="overview" className="mt-5 space-y-5">
           <div className="grid gap-5 lg:grid-cols-2">
@@ -173,6 +174,19 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
               {form.status==='Izgubljeno'&&<Field label="Razlog izgubljenog leada"><Textarea rows={2} value={form.lost_reason||''} onChange={e=>setField('lost_reason',e.target.value)} /></Field>}
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="communications" className="mt-5 space-y-4">
+          <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="flex items-center gap-2 font-semibold"><Mail className="h-4 w-4" />Email komunikacija</h3><Badge variant="outline">Samo ručni CRM zapisi</Badge></div>
+            <p className="text-sm text-muted-foreground">Ovdje su prikazane isključivo aktivnosti tipa Email koje su ručno unesene u CRM. Gmail i Make poruke još nisu sinkronizirane; njihov status slanja ili isporuke nije potvrđen ovim zapisima.</p>
+            {form.email ? <a className="inline-flex min-h-10 items-center text-sm font-medium text-primary underline underline-offset-4" href={`mailto:${form.email}`}>Napiši email: {form.email}</a> : <p className="text-sm text-muted-foreground">Ovaj lead nema email adresu.</p>}
+          </section>
+          <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
+            <h3 className="font-semibold">Evidentirani email kontakti ({emailActivities.length})</h3>
+            {emailActivities.length === 0 ? <p className="text-sm text-muted-foreground">Nema ručno evidentiranih email kontakata. To ne znači da emailovi nisu poslani.</p> : emailActivities.map(item => <div key={item.id} className="rounded-xl border p-3"><p className="font-medium">{item.title || 'Email kontakt'}</p><p className="text-xs text-muted-foreground">{new Date(item.occurred_at).toLocaleString('hr-HR')} · Ručni zapis</p>{item.notes && <p className="mt-2 whitespace-pre-wrap text-sm">{item.notes}</p>}</div>)}
+            <Button variant="outline" onClick={() => { setActivity(x=>({...x,activity_type:'Email'})); setActiveTab('activities'); }}>Evidentiraj email aktivnost</Button>
+          </section>
         </TabsContent>
 
         <TabsContent value="activities" className="mt-5 space-y-5">
