@@ -23,7 +23,7 @@ type LeadDetail = {
   locations_count?: number | null; won_locations_count?: number | null; opportunity_value?: number | null; actual_mrr?: number | null; lost_reason?: string | null;
 };
 type ReminderRow = { id: string; title: string; description: string | null; date: string; time: string; priority: string; status: string };
-type EmailRow = { id: string; to_email: string; subject: string | null; status: string | null; sent_at: string | null; created_at: string | null };
+type EmailRow = { id: string; direction: string; sender_email: string; subject: string | null; provider_status: string; received_at: string | null; created_at: string; match_status: string };
 type ActivityRow = { id: string; activity_type: string; title: string | null; notes: string | null; occurred_at: string; created_at: string };
 interface Props { lead: LeadDetail | null; owners: Owner[]; emailDuplicateCount?: number; open: boolean; onOpenChange: (open: boolean) => void; onChanged: () => Promise<void> | void }
 
@@ -79,15 +79,15 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, emailDuplicateCount =
 
   useEffect(() => {
     let active = true;
-    const address = (lead?.email || '').trim().toLowerCase();
+    const leadId = lead?.id;
     setEmailRows([]);
     setEmailError(false);
-    if (!open || !lead || !address || emailDuplicateCount > 1) return;
+    if (!open || !leadId || emailDuplicateCount > 1) return;
     setEmailLoading(true);
     (async () => {
-      const { data, error } = await (supabase as any).from('emails')
-        .select('id,to_email,subject,status,sent_at,created_at')
-        .ilike('to_email', address).order('created_at', { ascending: false }).limit(50);
+      const { data, error } = await (supabase as any).from('crm_email_messages')
+        .select('id,direction,sender_email,subject,provider_status,received_at,created_at,match_status')
+        .eq('matched_lead_id', leadId).order('created_at', { ascending: false }).limit(50);
       if (!active) return;
       setEmailRows(error ? [] : (data ?? []));
       setEmailError(Boolean(error));
@@ -208,13 +208,13 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, emailDuplicateCount =
             <p className="text-xs text-muted-foreground">Gmail poveznica otvara pretragu, ne potvrđuje povezivanje poruka s leadom. Provjeri pošiljatelja i primatelja prije zaključka.</p>
           </section>
           <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
-            <h3 className="font-semibold">Email zapisi u CRM bazi ({emailRows.length})</h3>
-            <p className="text-xs text-muted-foreground">Izvor: postojeća Supabase tablica emails (nije povezana s Gmail sinkronizacijom). Status je zapisan u CRM-u i nije neovisna potvrda dostave. Prikazano najviše 50 najnovijih zapisa za primatelja.</p>
+            <h3 className="font-semibold">Sinkronizirane Gmail poruke ({emailRows.length})</h3>
+            <p className="text-xs text-muted-foreground">Izvor: Supabase crm_email_messages. Prikazane su samo poruke jednoznačno povezane s ovim leadom. Gmail status nije dokaz da je primatelj pročitao poruku.</p>
             <div className="rounded-lg border border-dashed p-3 text-sm">
-              <p className="font-medium">Gmail sinkronizacija još nije aktivirana</p>
-              <p className="mt-1 text-muted-foreground">Dolazne i odlazne poruke iz Gmaila neće se automatski pojaviti ovdje dok se ne provede i testira zasebna integracija. Za trenutačnu komunikaciju koristi poveznicu „Pronađi u Gmailu”.</p>
+              <p className="font-medium">Gmail unos poruka još nije aktiviran</p>
+              <p className="mt-1 text-muted-foreground">Baza i prikaz su pripremljeni, ali Make još ne upisuje Gmail poruke u ovu tablicu. Za trenutačnu komunikaciju koristi poveznicu „Pronađi u Gmailu”.</p>
             </div>
-            {emailDuplicateCount > 1 ? <p className="text-sm text-amber-600">Zbog više leadova s istom adresom automatski prikaz je isključen.</p> : emailLoading ? <p className="text-sm text-muted-foreground">Učitavam…</p> : emailError ? <p role="alert" className="text-sm text-destructive">Zapise nije moguće učitati. Provjeri pristup i vezu s bazom.</p> : emailRows.length === 0 ? <p className="text-sm text-muted-foreground">Nema zapisa u CRM bazi za ovu adresu.</p> : emailRows.map(item => <div key={item.id} className="rounded-xl border p-3"><p className="font-medium">{item.subject || '(Bez naslova)'}</p><p className="text-xs text-muted-foreground">{new Date(item.sent_at || item.created_at || '').toLocaleString('hr-HR')} · Status u bazi: {item.status || 'Nepoznat'}</p></div>)}
+            {emailDuplicateCount > 1 ? <p className="text-sm text-amber-600">Zbog više leadova s istom adresom automatski prikaz je isključen.</p> : emailLoading ? <p className="text-sm text-muted-foreground">Učitavam…</p> : emailError ? <p role="alert" className="text-sm text-destructive">Zapise nije moguće učitati. Provjeri pristup i vezu s bazom.</p> : emailRows.length === 0 ? <p className="text-sm text-muted-foreground">Nema zapisa u CRM bazi za ovu adresu.</p> : emailRows.map(item => <div key={item.id} className="rounded-xl border p-3"><p className="font-medium">{item.subject || '(Bez naslova)'}</p><p className="text-xs text-muted-foreground">{item.direction === 'inbound' ? 'Primljeno' : 'Odlazno'} · {item.sender_email} · {new Date(item.received_at || item.created_at).toLocaleString('hr-HR')} · Gmail zapis: {item.provider_status}</p></div>)}
           </section>
           <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
             <h3 className="font-semibold">Evidentirani email kontakti ({emailActivities.length})</h3>
