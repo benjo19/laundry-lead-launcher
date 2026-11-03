@@ -23,8 +23,9 @@ type LeadDetail = {
   locations_count?: number | null; won_locations_count?: number | null; opportunity_value?: number | null; actual_mrr?: number | null; lost_reason?: string | null;
 };
 type ReminderRow = { id: string; title: string; description: string | null; date: string; time: string; priority: string; status: string };
+type EmailRow = { id: string; direction: string; sender_email: string; subject: string | null; provider_status: string; received_at: string | null; created_at: string; match_status: string };
 type ActivityRow = { id: string; activity_type: string; title: string | null; notes: string | null; occurred_at: string; created_at: string };
-interface Props { lead: LeadDetail | null; owners: Owner[]; open: boolean; onOpenChange: (open: boolean) => void; onChanged: () => Promise<void> | void }
+interface Props { lead: LeadDetail | null; owners: Owner[]; emailDuplicateCount?: number; open: boolean; onOpenChange: (open: boolean) => void; onChanged: () => Promise<void> | void }
 
 const STATUSES = ['Nova','Kontaktiran','Odgovorio','Demo','Trial','Plaća','Sastanak','Ponuda','Pregovori','Dobiveno','Izgubljeno'];
 const PRIORITIES = ['Nizak','Srednji','Visok'];
@@ -34,18 +35,22 @@ const toLocalDateTimeInput = (value?: string | null) => { if (!value) return '';
 const localNowInput = () => toLocalDateTimeInput(new Date().toISOString());
 const toIsoOrNull = (value?: string) => value ? new Date(value).toISOString() : null;
 
-const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, onChanged }) => {
+const LeadDetailDialog: React.FC<Props> = ({ lead, owners, emailDuplicateCount = 0, open, onOpenChange, onChanged }) => {
   const { user } = useAuthContext();
   const [form,setForm] = useState<any>({});
   const [saving,setSaving] = useState(false);
   const [deleting,setDeleting] = useState(false);
   const [reminders,setReminders] = useState<ReminderRow[]>([]);
   const [activities,setActivities] = useState<ActivityRow[]>([]);
+  const [emailRows,setEmailRows] = useState<EmailRow[]>([]);
+  const [emailLoading,setEmailLoading] = useState(false);
+  const [emailError,setEmailError] = useState(false);
   const [followUp,setFollowUp] = useState({ title:'Follow-up', description:'', date:'', time:'09:00', priority:'Srednji' });
   const [creatingFollowUp,setCreatingFollowUp] = useState(false);
   const [activity,setActivity] = useState({ activity_type:'Poziv', notes:'', occurred_at:localNowInput() });
   const [savingActivity,setSavingActivity] = useState(false);
   const [activeTab,setActiveTab] = useState('overview');
+  const emailActivities = useMemo(() => activities.filter(item => item.activity_type === 'Email'), [activities]);
   const ownerMap = useMemo(() => new Map(owners.map(o => [o.id,o])), [owners]);
 
   const loadHistory = async (leadId: string) => {
@@ -71,6 +76,25 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
     setActivity({ activity_type:'Poziv', notes:'', occurred_at:localNowInput() });
     loadHistory(lead.id);
   }, [lead?.id, open]);
+
+  useEffect(() => {
+    let active = true;
+    const leadId = lead?.id;
+    setEmailRows([]);
+    setEmailError(false);
+    if (!open || !leadId || emailDuplicateCount > 1) return;
+    setEmailLoading(true);
+    (async () => {
+      const { data, error } = await (supabase as any).from('crm_email_messages')
+        .select('id,direction,sender_email,subject,provider_status,received_at,created_at,match_status')
+        .eq('matched_lead_id', leadId).order('created_at', { ascending: false }).limit(50);
+      if (!active) return;
+      setEmailRows(error ? [] : (data ?? []));
+      setEmailError(Boolean(error));
+      setEmailLoading(false);
+    })();
+    return () => { active = false; };
+  }, [lead?.id, lead?.email, open, emailDuplicateCount]);
 
   const timeline = useMemo(() => [...activities.map(i => ({id:`a-${i.id}`,kind:'Aktivnost',type:i.activity_type,title:i.title||i.activity_type,note:i.notes,status:null as string|null,at:i.occurred_at})), ...reminders.map(i => ({id:`r-${i.id}`,kind:'Follow-up',type:'Follow-up',title:i.title,note:i.description,status:i.status,at:`${i.date}T${i.time||'00:00'}`}))].sort((a,b)=>new Date(b.at).getTime()-new Date(a.at).getTime()), [activities,reminders]);
   if (!lead) return null;
@@ -145,7 +169,7 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="px-4 pb-28 pt-4 sm:px-6 sm:pb-6">
-        <TabsList className="grid w-full grid-cols-3"><TabsTrigger value="overview">Pregled</TabsTrigger><TabsTrigger value="activities">Aktivnosti</TabsTrigger><TabsTrigger value="followup">Follow-up</TabsTrigger></TabsList>
+        <TabsList className="grid w-full grid-cols-4"><TabsTrigger value="overview">Pregled</TabsTrigger><TabsTrigger value="communications">Emailovi</TabsTrigger><TabsTrigger value="activities">Aktivnosti</TabsTrigger><TabsTrigger value="followup">Follow-up</TabsTrigger></TabsList>
 
         <TabsContent value="overview" className="mt-5 space-y-5">
           <div className="grid gap-5 lg:grid-cols-2">
@@ -173,6 +197,30 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, open, onOpenChange, o
               {form.status==='Izgubljeno'&&<Field label="Razlog izgubljenog leada"><Textarea rows={2} value={form.lost_reason||''} onChange={e=>setField('lost_reason',e.target.value)} /></Field>}
             </section>
           </div>
+        </TabsContent>
+
+        <TabsContent value="communications" className="mt-5 space-y-4">
+          <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="flex items-center gap-2 font-semibold"><Mail className="h-4 w-4" />Email komunikacija</h3><Badge variant="outline">Samo ručni CRM zapisi</Badge></div>
+            <p className="text-sm text-muted-foreground">Ovdje su prikazane isključivo aktivnosti tipa Email koje su ručno unesene u CRM. Gmail i Make poruke još nisu sinkronizirane; njihov status slanja ili isporuke nije potvrđen ovim zapisima.</p>
+            {emailDuplicateCount > 1 && <div role="alert" className="rounded-lg border border-amber-500/50 p-3 text-sm"><strong>Provjeri primatelja:</strong> ova email adresa pojavljuje se kod {emailDuplicateCount} leadova. Automatsko povezivanje odgovora može biti dvosmisleno.</div>}
+            {form.email ? <div className="flex flex-wrap items-center gap-3"><a className="inline-flex min-h-10 items-center text-sm font-medium text-primary underline underline-offset-4" href={`mailto:${form.email}`}>Napiši email: {form.email}</a><a className="inline-flex min-h-10 items-center text-sm font-medium text-primary underline underline-offset-4" href={`https://mail.google.com/mail/u/?authuser=auto.mind.ai2025%40gmail.com#search/${encodeURIComponent('from:('+form.email+') OR to:('+form.email+')')}`} target="_blank" rel="noopener noreferrer">Pronađi u Gmailu</a></div> : <p className="text-sm text-muted-foreground">Ovaj lead nema email adresu.</p>}
+            <p className="text-xs text-muted-foreground">Gmail poveznica otvara pretragu, ne potvrđuje povezivanje poruka s leadom. Provjeri pošiljatelja i primatelja prije zaključka.</p>
+          </section>
+          <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
+            <h3 className="font-semibold">Sinkronizirane Gmail poruke ({emailRows.length})</h3>
+            <p className="text-xs text-muted-foreground">Izvor: Supabase crm_email_messages. Prikazane su samo poruke jednoznačno povezane s ovim leadom. Gmail status nije dokaz da je primatelj pročitao poruku.</p>
+            <div className="rounded-lg border border-dashed p-3 text-sm">
+              <p className="font-medium">Gmail unos poruka još nije aktiviran</p>
+              <p className="mt-1 text-muted-foreground">Baza i prikaz su pripremljeni, ali Make još ne upisuje Gmail poruke u ovu tablicu. Za trenutačnu komunikaciju koristi poveznicu „Pronađi u Gmailu”.</p>
+            </div>
+            {emailDuplicateCount > 1 ? <p className="text-sm text-amber-600">Zbog više leadova s istom adresom automatski prikaz je isključen.</p> : emailLoading ? <p className="text-sm text-muted-foreground">Učitavam…</p> : emailError ? <p role="alert" className="text-sm text-destructive">Zapise nije moguće učitati. Provjeri pristup i vezu s bazom.</p> : emailRows.length === 0 ? <p className="text-sm text-muted-foreground">Nema zapisa u CRM bazi za ovu adresu.</p> : emailRows.map(item => <div key={item.id} className="rounded-xl border p-3"><p className="font-medium">{item.subject || '(Bez naslova)'}</p><p className="text-xs text-muted-foreground">{item.direction === 'inbound' ? 'Primljeno' : 'Odlazno'} · {item.sender_email} · {new Date(item.received_at || item.created_at).toLocaleString('hr-HR')} · Gmail zapis: {item.provider_status}</p></div>)}
+          </section>
+          <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
+            <h3 className="font-semibold">Evidentirani email kontakti ({emailActivities.length})</h3>
+            {emailActivities.length === 0 ? <p className="text-sm text-muted-foreground">Nema ručno evidentiranih email kontakata. To ne znači da emailovi nisu poslani.</p> : emailActivities.map(item => <div key={item.id} className="rounded-xl border p-3"><p className="font-medium">{item.title || 'Email kontakt'}</p><p className="text-xs text-muted-foreground">{new Date(item.occurred_at).toLocaleString('hr-HR')} · Ručni zapis</p>{item.notes && <p className="mt-2 whitespace-pre-wrap text-sm">{item.notes}</p>}</div>)}
+            <Button variant="outline" onClick={() => { setActivity(x=>({...x,activity_type:'Email'})); setActiveTab('activities'); }}>Evidentiraj email aktivnost</Button>
+          </section>
         </TabsContent>
 
         <TabsContent value="activities" className="mt-5 space-y-5">
