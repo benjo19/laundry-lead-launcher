@@ -209,7 +209,11 @@ const LeadDetailDialog: React.FC<Props> = ({ lead, owners, emailDuplicateCount =
           </section>
           <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
             <h3 className="font-semibold">Email zapisi u CRM bazi ({emailRows.length})</h3>
-            <p className="text-xs text-muted-foreground">Izvor: Supabase emails. Status je zapisan u CRM-u i nije neovisna Gmail potvrda dostave. Prikazano najviše 50 najnovijih zapisa za primatelja.</p>
+            <p className="text-xs text-muted-foreground">Izvor: postojeća Supabase tablica emails (nije povezana s Gmail sinkronizacijom). Status je zapisan u CRM-u i nije neovisna potvrda dostave. Prikazano najviše 50 najnovijih zapisa za primatelja.</p>
+            <div className="rounded-lg border border-dashed p-3 text-sm">
+              <p className="font-medium">Gmail sinkronizacija još nije aktivirana</p>
+              <p className="mt-1 text-muted-foreground">Dolazne i odlazne poruke iz Gmaila neće se automatski pojaviti ovdje dok se ne provede i testira zasebna integracija. Za trenutačnu komunikaciju koristi poveznicu „Pronađi u Gmailu”.</p>
+            </div>
             {emailDuplicateCount > 1 ? <p className="text-sm text-amber-600">Zbog više leadova s istom adresom automatski prikaz je isključen.</p> : emailLoading ? <p className="text-sm text-muted-foreground">Učitavam…</p> : emailError ? <p role="alert" className="text-sm text-destructive">Zapise nije moguće učitati. Provjeri pristup i vezu s bazom.</p> : emailRows.length === 0 ? <p className="text-sm text-muted-foreground">Nema zapisa u CRM bazi za ovu adresu.</p> : emailRows.map(item => <div key={item.id} className="rounded-xl border p-3"><p className="font-medium">{item.subject || '(Bez naslova)'}</p><p className="text-xs text-muted-foreground">{new Date(item.sent_at || item.created_at || '').toLocaleString('hr-HR')} · Status u bazi: {item.status || 'Nepoznat'}</p></div>)}
           </section>
           <section className="space-y-3 rounded-2xl border p-3 sm:p-4">
