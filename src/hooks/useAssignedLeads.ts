@@ -168,6 +168,7 @@ export const useAssignedLeads = () => {
       potential: newLeadData.potential || 'Srednji',
       notes: newLeadData.notes || null,
       source: newLeadData.source || 'Manual',
+      import_method: !newLeadData.source || newLeadData.source === 'Manual' ? 'manual' : 'unknown',
       industry: newLeadData.industry || null,
       country: newLeadData.country || null,
       city: newLeadData.city || null,
@@ -177,7 +178,7 @@ export const useAssignedLeads = () => {
       won_locations_count: newLeadData.won_locations_count ?? null,
       opportunity_value: newLeadData.opportunity_value ?? null,
       actual_mrr: newLeadData.actual_mrr ?? null,
-    });
+    } as any);
 
     if (insertError) {
       toast({ title: 'Greška', description: insertError.message, variant: 'destructive' });
