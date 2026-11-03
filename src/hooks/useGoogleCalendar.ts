@@ -29,21 +29,37 @@ async function invoke<T>(body: Record<string, unknown>): Promise<Result<T>> {
   return { ok: false, error: message, reconnectRequired };
 }
 
+/**
+ * The popup forwards only the one-time code; this (opener) window, which holds
+ * the signed-in session, exchanges it. The popup often has no session of its
+ * own (e.g. the editor preview runs in a partitioned iframe).
+ */
 function waitForOAuthCompletion(popup: Window) {
   return new Promise<void>((resolve, reject) => {
+    let finishing = false;
     const cleanup = () => { window.removeEventListener('message', onMessage); window.clearInterval(poll); };
     const onMessage = (event: MessageEvent) => {
       const type = event.data?.type;
       if (event.origin !== window.location.origin || event.source !== popup || event.data?.connectorId !== 'google_calendar'
-        || (type !== 'appUserConnectorOAuthComplete' && type !== 'appUserConnectorOAuthFailed')) return;
+        || (type !== 'appUserConnectorOAuthCode' && type !== 'appUserConnectorOAuthFailed')) return;
+      if (type === 'appUserConnectorOAuthFailed') {
+        cleanup();
+        reject(new Error(event.data?.reason ?? 'Povezivanje s Googleom nije uspjelo.'));
+        return;
+      }
+      const code = typeof event.data?.code === 'string' ? event.data.code : '';
+      if (!code) return;
+      finishing = true;
       cleanup();
-      if (type === 'appUserConnectorOAuthComplete') return resolve();
-      popup.close();
-      reject(new Error(event.data?.reason ?? 'Povezivanje s Googleom nije uspjelo.'));
+      invoke<{ ok: boolean }>({ action: 'complete', code }).then((res) => {
+        popup.close();
+        if (res.ok) resolve();
+        else reject(new Error(res.error ?? 'Povezivanje nije dovršeno.'));
+      });
     };
     window.addEventListener('message', onMessage);
     const poll = window.setInterval(() => {
-      if (!popup.closed) return;
+      if (finishing || !popup.closed) return;
       cleanup();
       reject(new Error('Prozor za Google prijavu je zatvoren prije završetka.'));
     }, 500);
