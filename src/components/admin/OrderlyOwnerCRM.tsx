@@ -51,6 +51,7 @@ const OrderlyOwnerCRM: React.FC = () => {
   const [search,setSearch] = useState('');
   const [ownerFilter,setOwnerFilter] = useState('all');
   const [statusFilter,setStatusFilter] = useState('all');
+  const [actionFilter,setActionFilter] = useState('all');
   const [interestFilter,setInterestFilter] = useState('all');
   const [sortMode,setSortMode] = useState<SortMode>('newest');
   const [assigningId,setAssigningId] = useState<string|null>(null);
@@ -83,9 +84,11 @@ const OrderlyOwnerCRM: React.FC = () => {
       const rawStatus = lead.status || 'Nova';
       const normalizedStatus = rawStatus === 'Novi' ? 'Nova' : rawStatus === 'Izgubljen' ? 'Izgubljeno' : rawStatus;
       const statusOk = statusFilter==='all' || (statusFilter==='Draft spreman' ? lead.pipeline_stage==='Draft spreman' : normalizedStatus===statusFilter);
-      return searchOk && (ownerFilter==='all'||ownerId===ownerFilter) && statusOk && (interestFilter==='all'||lead.interested_in===interestFilter);
+      const action = actionTone(lead.next_action_at);
+      const actionOk = actionFilter==='all' || (actionFilter==='overdue' && action==='overdue') || (actionFilter==='today' && action==='today') || (actionFilter==='missing' && !lead.next_action_at);
+      return searchOk && (ownerFilter==='all'||ownerId===ownerFilter) && statusOk && actionOk && (interestFilter==='all'||lead.interested_in===interestFilter);
     });
-  },[leads,ownerMap,ownerFilter,statusFilter,interestFilter,search]);
+  },[leads,ownerMap,ownerFilter,statusFilter,actionFilter,interestFilter,search]);
   const sortedLeads=useMemo(()=>{
     const rows=[...filteredLeads];
     rows.sort((a,b)=>{
@@ -102,6 +105,9 @@ const OrderlyOwnerCRM: React.FC = () => {
     orderly:leads.filter(l=>l.interested_in==='Orderly').length,
     wonLocations:leads.reduce((sum,l)=>sum+(l.won_locations_count||0),0),
     actualMrr:leads.reduce((sum,l)=>sum+Number(l.actual_mrr||0),0),
+    overdue:leads.filter(l=>actionTone(l.next_action_at)==='overdue').length,
+    today:leads.filter(l=>actionTone(l.next_action_at)==='today').length,
+    noNextAction:leads.filter(l=>!l.next_action_at).length,
   }),[leads]);
 
   const handleAddLead=async(...args:Parameters<typeof addLead>)=>{const ok=await addLead(...args);if(ok){setAddLeadOpen(false);await load();}return ok;};
@@ -121,6 +127,13 @@ const OrderlyOwnerCRM: React.FC = () => {
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between"><div className="min-w-0 pr-12 sm:pr-0"><p className="text-xs font-medium text-muted-foreground sm:text-sm">Automind CRM</p><h2 className="text-xl font-bold tracking-tight sm:text-2xl">Leadovi</h2><p className="mt-1 hidden text-sm text-muted-foreground sm:block">Klikni na lead za puni account, timeline, follow-up i uređivanje.</p></div><div className="grid grid-cols-2 gap-2 sm:flex"><Button variant="outline" onClick={load} disabled={loading} className="h-11 gap-2 sm:h-10"><RefreshCw className={`h-4 w-4 ${loading?'animate-spin':''}`} />Osvježi</Button><Button onClick={()=>setAddLeadOpen(true)} className="h-11 gap-2 sm:h-10"><Plus className="h-4 w-4" />Dodaj lead</Button></div></div>
 
     <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-4"><Stat label="Svi leadovi" value={stats.total} icon={Users}/><Stat label="Orderly leadovi" value={stats.orderly} icon={UserRound}/><Stat label="Osvojene lokacije" value={stats.wonLocations} icon={MapPin}/><Stat label="Stvarni MRR" value={`${stats.actualMrr.toFixed(0)} €`} icon={CircleDollarSign}/></div>
+
+    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+      <button type="button" onClick={()=>setActionFilter(actionFilter==='overdue'?'all':'overdue')} className={`rounded-xl border p-3 text-left transition hover:bg-muted/40 ${actionFilter==='overdue'?'ring-2 ring-destructive':''}`}><p className="text-xs text-muted-foreground">Kasne</p><p className="text-xl font-bold text-destructive">{stats.overdue}</p></button>
+      <button type="button" onClick={()=>setActionFilter(actionFilter==='today'?'all':'today')} className={`rounded-xl border p-3 text-left transition hover:bg-muted/40 ${actionFilter==='today'?'ring-2 ring-primary':''}`}><p className="text-xs text-muted-foreground">Danas</p><p className="text-xl font-bold">{stats.today}</p></button>
+      <button type="button" onClick={()=>setActionFilter(actionFilter==='missing'?'all':'missing')} className={`rounded-xl border p-3 text-left transition hover:bg-muted/40 ${actionFilter==='missing'?'ring-2 ring-primary':''}`}><p className="text-xs text-muted-foreground">Bez plana</p><p className="text-xl font-bold">{stats.noNextAction}</p></button>
+    </div>
+    {actionFilter!=='all'&&<Button variant="ghost" size="sm" onClick={()=>setActionFilter('all')}>Poništi filter zadataka</Button>}
 
     <Card className="overflow-hidden"><CardHeader className="px-3 pb-3 pt-4 sm:px-6 sm:pt-6"><CardTitle className="text-lg sm:text-xl">Leadovi</CardTitle><CardDescription>{filteredLeads.length} prikazano od {leads.length}</CardDescription></CardHeader><CardContent className="space-y-4 px-3 pb-4 sm:px-6 sm:pb-6">
       <div className="flex gap-1 overflow-x-auto rounded-xl border bg-muted/20 p-1">
