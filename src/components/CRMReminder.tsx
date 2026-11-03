@@ -49,7 +49,7 @@ const CRMReminder = () => {
     if (!gcal.isConnected || pulledRef.current) return;
     pulledRef.current = true;
     gcal.pullChanges().then(res => {
-      if (res.ok && (res.data.updated || res.data.cancelled)) {
+      if (res.ok && res.data && (res.data.updated || res.data.cancelled)) {
         toast({ title: 'Promjene iz Google kalendara', description: `Ažurirano: ${res.data.updated}, otkazano: ${res.data.cancelled}` });
       }
       refreshReminders();
@@ -174,7 +174,7 @@ const CRMReminder = () => {
 
       <GoogleCalendarConnectCard status={gcal.status} checking={gcal.checking}
         onConnect={gcal.connect} onDisconnect={gcal.disconnect}
-        onPull={async () => { const r = await gcal.pullChanges(); if (!r.ok) throw new Error(r.error); await refreshReminders(); toast({ title: 'Google promjene povučene', description: `Provjereno: ${r.data.checked}, ažurirano: ${r.data.updated}, otkazano: ${r.data.cancelled}` }); }} />
+        onPull={async () => { const r = await gcal.pullChanges(); if (!r.ok || !r.data) throw new Error(r.error); await refreshReminders(); toast({ title: 'Google promjene povučene', description: `Provjereno: ${r.data.checked}, ažurirano: ${r.data.updated}, otkazano: ${r.data.cancelled}` }); }} />
 
       <Card>
         <CardContent className="p-3 sm:p-5">

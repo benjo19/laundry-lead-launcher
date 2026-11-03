@@ -12,7 +12,7 @@ export interface GoogleCalendarStatus {
   error?: string;
 }
 
-type Result<T> = { ok: true; data: T } | { ok: false; error: string; reconnectRequired?: boolean };
+type Result<T> = { ok: boolean; data?: T; error?: string; reconnectRequired?: boolean };
 
 async function invoke<T>(body: Record<string, unknown>): Promise<Result<T>> {
   const { data, error } = await supabase.functions.invoke('google-calendar', { body });
@@ -59,7 +59,7 @@ export const useGoogleCalendar = () => {
     if (!user) return;
     setChecking(true);
     const res = await invoke<GoogleCalendarStatus>({ action: 'status' });
-    setStatus(res.ok ? res.data : { configured: false, connected: false, error: res.error });
+    setStatus(res.ok && res.data ? res.data : { configured: false, connected: false, error: res.error });
     setChecking(false);
   }, [user]);
 
@@ -73,7 +73,7 @@ export const useGoogleCalendar = () => {
       const res = await invoke<{ authorizationUrl: string }>({ action: 'start', origin: window.location.origin });
       if (!res.ok) throw new Error(res.error);
       const completion = waitForOAuthCompletion(popup);
-      popup.location.href = res.data.authorizationUrl;
+      popup.location.href = res.data!.authorizationUrl;
       await completion;
       await refreshStatus();
     } catch (e) {
@@ -95,3 +95,10 @@ export const useGoogleCalendar = () => {
 
   return { status, checking, refreshStatus, connect, disconnect, syncReminder, pullChanges, isConnected: !!status?.connected };
 };
+
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    gapi: any;
+  }
+}
