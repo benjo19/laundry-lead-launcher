@@ -62,7 +62,7 @@ export const useMakeIntegration = () => {
       
       // Determine which webhook to use based on event type
       const isContentEvent = eventType === 'content_published';
-      const isEmailEvent = eventType === 'sent' || eventType === 'draft';
+      const isEmailEvent = eventType === 'sent' || eventType === 'draft' || eventType === 'email_sent';
       const isCRMExportEvent = eventType === 'crm_export';
       const isLeadEvent = eventType === 'lead_added';
       
