@@ -161,6 +161,7 @@ export const useSupabaseLeads = () => {
         potential: newLeadData.potential || 'Srednji',
         notes: newLeadData.notes || null,
         source: 'Manual',
+        import_method: 'manual',
         industry: newLeadData.industry || null,
         country: newLeadData.country || null,
         city: newLeadData.city || null,
@@ -170,7 +171,7 @@ export const useSupabaseLeads = () => {
       
       const { data: insertedData, error } = await supabase
         .from('leads')
-        .insert(insertData)
+        .insert(insertData as any)
         .select();
 
       console.log('Insert result - data:', insertedData);
