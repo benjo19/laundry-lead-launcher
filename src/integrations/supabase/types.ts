@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_user_connections: {
+        Row: {
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at: string
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          connection_key_ciphertext: string
+          connector_id: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          connection_key_ciphertext?: string
+          connector_id?: string
+          created_at?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       business_profiles: {
         Row: {
           ai_goals: string[] | null
@@ -1594,11 +1621,19 @@ export type Database = {
           created_at: string | null
           date: string
           description: string | null
+          duration_minutes: number
+          event_type: string
           id: string
+          last_synced_at: string | null
           lead_id: string | null
           priority: string
+          project: string | null
           status: string
+          sync_attempts: number
+          sync_error: string | null
+          sync_status: string
           time: string
+          timezone: string
           title: string
           updated_at: string | null
           user_id: string
@@ -1609,11 +1644,19 @@ export type Database = {
           created_at?: string | null
           date: string
           description?: string | null
+          duration_minutes?: number
+          event_type?: string
           id?: string
+          last_synced_at?: string | null
           lead_id?: string | null
           priority?: string
+          project?: string | null
           status?: string
+          sync_attempts?: number
+          sync_error?: string | null
+          sync_status?: string
           time: string
+          timezone?: string
           title: string
           updated_at?: string | null
           user_id: string
@@ -1624,11 +1667,19 @@ export type Database = {
           created_at?: string | null
           date?: string
           description?: string | null
+          duration_minutes?: number
+          event_type?: string
           id?: string
+          last_synced_at?: string | null
           lead_id?: string | null
           priority?: string
+          project?: string | null
           status?: string
+          sync_attempts?: number
+          sync_error?: string | null
+          sync_status?: string
           time?: string
+          timezone?: string
           title?: string
           updated_at?: string | null
           user_id?: string
