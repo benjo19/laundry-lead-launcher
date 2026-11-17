@@ -62,11 +62,17 @@ const AddLeadDialog = ({ open, onOpenChange, onAddLead }: AddLeadDialogProps) =>
             <Field label="Industrija"><Input value={formData.industry} onChange={(e) => setFormData({...formData, industry: e.target.value})} placeholder="Restoran, hotel, praonica..." /></Field>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2">
             <Field label="Zainteresiran za">
               <Select value={formData.interested_in} onValueChange={(value) => setFormData({...formData, interested_in: value})}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="Orderly">Orderly</SelectItem><SelectItem value="AutomindAI">AutomindAI</SelectItem><SelectItem value="Oprema praone">Oprema praone</SelectItem></SelectContent>
+              </Select>
+            </Field>
+            <Field label="Status">
+              <Select value={formData.status} onValueChange={(value: Lead['status']) => setFormData({...formData, status: value})}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="Nova">Novi</SelectItem><SelectItem value="Kontaktiran">Kontaktiran</SelectItem><SelectItem value="Demo">Demo</SelectItem><SelectItem value="Trial">Trial</SelectItem><SelectItem value="Plaća">Plaća</SelectItem></SelectContent>
               </Select>
             </Field>
             <Field label="Potencijal">

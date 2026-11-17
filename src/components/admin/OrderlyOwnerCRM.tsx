@@ -54,7 +54,7 @@ const OrderlyOwnerCRM: React.FC = () => {
   const [actionFilter,setActionFilter] = useState('all');
   const [interestFilter,setInterestFilter] = useState('all');
   const [sortMode,setSortMode] = useState<SortMode>('newest');
-  const [workspaceView,setWorkspaceView] = useState<'today'|'all'|'pipeline'>('today');
+  const [workspaceView,setWorkspaceView] = useState<'today'|'all'|'pipeline'>('all');
   const [assigningId,setAssigningId] = useState<string|null>(null);
 
   const load = async () => {

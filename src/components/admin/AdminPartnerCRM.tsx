@@ -3,18 +3,24 @@ import { supabase } from '@/integrations/supabase/client';
 import { fetchAllLeadRows } from '@/lib/fetchAllLeadRows';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, CalendarClock, CircleDollarSign, MapPin, RefreshCw, Users } from 'lucide-react';
+import { ArrowLeft, CalendarClock, ChevronRight, CircleDollarSign, MapPin, MessageCircle, Phone, RefreshCw, Search, Users } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import LeadDetailDialog from '@/components/admin/LeadDetailDialog';
 import { toast } from 'sonner';
 
 type LeadRow = {
-  id: string;
-  company: string;
-  location: string | null;
-  phone: string | null;
-  email: string | null;
-  status: string | null;
-  created_at: string | null;
+  id: string; user_id: string; created_by: string | null; assigned_to: string | null; company: string;
+  location: string | null; city: string | null; country: string | null; contact_person: string | null;
+  phone: string | null; phone2: string | null; email: string | null; website: string | null; status: string | null;
+  potential: string | null; industry: string | null; interested_in: string | null; notes: string | null; source: string | null;
+  created_at: string | null; last_contact_at: string | null; contact_outcome: string | null; next_step: string | null;
+  next_action_at: string | null; contact_type: string | null; locations_count: number | null; won_locations_count: number | null;
+  opportunity_value: number | null; actual_mrr: number | null; lost_reason: string | null;
 };
+type Owner = { id: string; email: string | null; role: string };
+const LEAD_COLUMNS = 'id,user_id,created_by,assigned_to,company,location,city,country,contact_person,phone,phone2,email,website,status,potential,industry,interested_in,notes,source,created_at,last_contact_at,contact_outcome,next_step,next_action_at,contact_type,locations_count,won_locations_count,opportunity_value,actual_mrr,lost_reason';
+const STATUS_FILTERS = ['Nova', 'Kontaktiran', 'Demo', 'Trial', 'Plaća', 'Izgubljeno'];
+const normStatus = (s: string | null) => { const v = s || 'Nova'; return v === 'Novi' ? 'Nova' : v === 'Izgubljen' ? 'Izgubljeno' : v; };
 
 type ReminderRow = {
   id: number;
@@ -60,14 +66,18 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
   const [reminders, setReminders] = useState<ReminderRow[]>([]);
   const [locations, setLocations] = useState<LocationRow[]>([]);
   const [commissions, setCommissions] = useState<CommissionRow[]>([]);
+  const [owners, setOwners] = useState<Owner[]>([]);
+  const [query, setQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   const load = async () => {
     setLoading(true);
     try {
       const db = supabase as any;
-      const [leadResult, reminderResult, locationResult, commissionResult] = await Promise.all([
+      const [leadResult, reminderResult, locationResult, commissionResult, profileResult, roleResult] = await Promise.all([
         fetchAllLeadRows<LeadRow>((from, to) => db.from('leads')
-          .select('id,company,location,phone,email,status,created_at')
+          .select(LEAD_COLUMNS)
           .eq('assigned_to', partnerUserId)
           .order('created_at', { ascending: false })
           .order('id', { ascending: true })
@@ -84,12 +94,17 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
           .select('id,period_start,amount,status')
           .eq('partner_user_id', partnerUserId)
           .order('period_start', { ascending: false }),
+        db.from('profiles').select('id,email'),
+        db.from('user_roles').select('user_id,role'),
       ]);
 
       const firstError = leadResult.error || reminderResult.error || locationResult.error || commissionResult.error;
       if (firstError) throw firstError;
 
       setLeads(leadResult.data ?? []);
+      const roleMap = new Map<string, string>();
+      (roleResult.data ?? []).forEach((r: any) => { const c = roleMap.get(r.user_id); if (!c || r.role === 'super_admin' || (r.role === 'sales_partner' && c !== 'super_admin')) roleMap.set(r.user_id, r.role); });
+      setOwners((profileResult.data ?? []).map((p: any) => ({ id: p.id, email: p.email, role: roleMap.get(p.id) || 'user' })).filter((o: Owner) => o.role === 'super_admin' || o.role === 'sales_partner'));
       setReminders(reminderResult.data ?? []);
       setLocations((locationResult.data ?? []).map((row: any) => ({ ...row, monthly_commission: Number(row.monthly_commission ?? 0) })));
       setCommissions((commissionResult.data ?? []).map((row: any) => ({ ...row, amount: Number(row.amount ?? 0) })));
@@ -104,6 +119,15 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
   useEffect(() => {
     load();
   }, [partnerUserId]);
+
+  const filteredLeads = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return leads.filter((lead) => {
+      const qOk = !q || [lead.company, lead.city, lead.location, lead.phone, lead.email, lead.contact_person, lead.notes].filter(Boolean).some((v) => String(v).toLowerCase().includes(q));
+      return qOk && (statusFilter === 'all' || normStatus(lead.status) === statusFilter);
+    });
+  }, [leads, query, statusFilter]);
+  const selectedLead = leads.find((l) => l.id === selectedId) ?? null;
 
   const stats = useMemo(() => {
     const activePipeline = leads.filter((lead) => ['Nova', 'Kontaktiran', 'Demo', 'Trial'].includes(lead.status || '')).length;
@@ -146,18 +170,39 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
             <CardTitle>Leadovi</CardTitle>
             <CardDescription>Leadovi koji su trenutno dodijeljeni ovom terencu.</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-2">
-            {!loading && leads.length === 0 && <p className="text-sm text-muted-foreground">Nema leadova.</p>}
-            {leads.map((lead) => (
-              <div key={lead.id} className="rounded-lg border p-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <p className="font-medium">{lead.company}</p>
-                    <p className="text-xs text-muted-foreground">{lead.location || 'Lokacija nije unesena'}</p>
+          <CardContent className="space-y-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+              <Input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Traži lokal, grad, telefon..." className="h-11 pl-9" />
+            </div>
+            <div className="flex gap-1 overflow-x-auto rounded-xl border bg-muted/20 p-1">
+              {[['all', 'Svi'], ...STATUS_FILTERS.map((x) => [x, x === 'Nova' ? 'Novi' : x])].map(([value, label]) => {
+                const count = value === 'all' ? leads.length : leads.filter((l) => normStatus(l.status) === value).length;
+                return <button key={value} type="button" onClick={() => setStatusFilter(value)} className={`min-h-10 shrink-0 rounded-lg px-3 text-sm font-medium transition ${statusFilter === value ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>{label} <span className="text-xs opacity-70">{count}</span></button>;
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">{filteredLeads.length} od {leads.length} leadova · dodirni lead za uređivanje</p>
+            {!loading && filteredLeads.length === 0 && <div className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">{leads.length === 0 ? 'Terenac još nema leadova.' : 'Nema leadova za odabrani filter.'}</div>}
+            {filteredLeads.map((lead) => (
+              <div key={lead.id} className="rounded-xl border bg-card p-3 shadow-sm">
+                <button type="button" onClick={() => setSelectedId(lead.id)} className="flex w-full items-start justify-between gap-3 text-left">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate font-semibold">{lead.company}</p>
+                    <p className="truncate text-xs text-muted-foreground">{[lead.contact_person, lead.city || lead.location, lead.interested_in].filter(Boolean).join(' · ') || 'Lokacija nije unesena'}</p>
+                    {lead.next_step && <p className="mt-2 line-clamp-2 text-sm"><span className="text-muted-foreground">Sljedeće: </span>{lead.next_step}</p>}
+                    {!lead.next_step && lead.notes && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{lead.notes}</p>}
                   </div>
-                  <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{lead.status || 'Nova'}</span>
-                </div>
-                {(lead.phone || lead.email) && <p className="mt-2 text-xs text-muted-foreground">{[lead.phone, lead.email].filter(Boolean).join(' · ')}</p>}
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="rounded-full bg-muted px-2.5 py-1 text-xs font-medium">{normStatus(lead.status) === 'Nova' ? 'Novi' : normStatus(lead.status)}</span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                </button>
+                {lead.phone && (
+                  <div className="mt-3 grid grid-cols-2 gap-2 border-t pt-3">
+                    <Button asChild variant="outline" size="sm" className="h-10"><a href={`tel:${lead.phone}`}><Phone className="mr-1.5 h-4 w-4" />Nazovi</a></Button>
+                    <Button asChild variant="outline" size="sm" className="h-10"><a href={`https://wa.me/${lead.phone.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"><MessageCircle className="mr-1.5 h-4 w-4" />WhatsApp</a></Button>
+                  </div>
+                )}
               </div>
             ))}
           </CardContent>
@@ -230,6 +275,7 @@ const AdminPartnerCRM: React.FC<AdminPartnerCRMProps> = ({ partnerUserId, partne
           </CardContent>
         </Card>
       </div>
+      <LeadDetailDialog lead={selectedLead} owners={owners} open={Boolean(selectedLead)} onOpenChange={(next) => { if (!next) setSelectedId(null); }} onChanged={load} />
     </div>
   );
 };
