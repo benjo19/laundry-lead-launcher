@@ -101,6 +101,85 @@ export type Database = {
         }
         Relationships: []
       }
+      crm_email_messages: {
+        Row: {
+          created_at: string
+          direction: string
+          id: string
+          mailbox: string
+          match_count: number
+          match_status: string
+          matched_lead_id: string | null
+          provider_message_id: string
+          provider_status: string
+          provider_thread_id: string | null
+          received_at: string | null
+          recipient_emails: string[]
+          sender_email: string
+          snippet: string | null
+          subject: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          direction: string
+          id?: string
+          mailbox: string
+          match_count?: number
+          match_status?: string
+          matched_lead_id?: string | null
+          provider_message_id: string
+          provider_status?: string
+          provider_thread_id?: string | null
+          received_at?: string | null
+          recipient_emails?: string[]
+          sender_email: string
+          snippet?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          direction?: string
+          id?: string
+          mailbox?: string
+          match_count?: number
+          match_status?: string
+          matched_lead_id?: string | null
+          provider_message_id?: string
+          provider_status?: string
+          provider_thread_id?: string | null
+          received_at?: string | null
+          recipient_emails?: string[]
+          sender_email?: string
+          snippet?: string | null
+          subject?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "crm_email_messages_matched_lead_id_fkey"
+            columns: ["matched_lead_id"]
+            isOneToOne: false
+            referencedRelation: "automind_unique_reply_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_messages_matched_lead_id_fkey"
+            columns: ["matched_lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "crm_email_messages_matched_lead_id_fkey"
+            columns: ["matched_lead_id"]
+            isOneToOne: false
+            referencedRelation: "sales_controller_today"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       emails: {
         Row: {
           click_rate: string | null
@@ -977,6 +1056,13 @@ export type Database = {
             foreignKeyName: "lead_activities_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "automind_unique_reply_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_activities_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -1021,6 +1107,13 @@ export type Database = {
           source?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "lead_audit_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "automind_unique_reply_leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "lead_audit_log_lead_id_fkey"
             columns: ["lead_id"]
@@ -1127,6 +1220,13 @@ export type Database = {
             foreignKeyName: "lead_intelligence_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: true
+            referencedRelation: "automind_unique_reply_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_intelligence_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -1164,6 +1264,7 @@ export type Database = {
           followup_count: number
           followup_locked_at: string | null
           id: string
+          import_method: string
           industry: string | null
           interested_in: string | null
           last_contact_at: string | null
@@ -1222,6 +1323,7 @@ export type Database = {
           followup_count?: number
           followup_locked_at?: string | null
           id?: string
+          import_method?: string
           industry?: string | null
           interested_in?: string | null
           last_contact_at?: string | null
@@ -1280,6 +1382,7 @@ export type Database = {
           followup_count?: number
           followup_locked_at?: string | null
           id?: string
+          import_method?: string
           industry?: string | null
           interested_in?: string | null
           last_contact_at?: string | null
@@ -1465,6 +1568,13 @@ export type Database = {
             foreignKeyName: "offers_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "automind_unique_reply_leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -1568,6 +1678,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "partner_locations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "automind_unique_reply_leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "partner_locations_lead_id_fkey"
             columns: ["lead_id"]
@@ -1718,6 +1835,13 @@ export type Database = {
           project?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "sales_events_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "automind_unique_reply_leads"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "sales_events_lead_id_fkey"
             columns: ["lead_id"]
@@ -1904,6 +2028,186 @@ export type Database = {
       }
     }
     Views: {
+      automind_unique_reply_leads: {
+        Row: {
+          actual_mrr: number | null
+          ai_call_duration_secs: number | null
+          ai_call_sid: string | null
+          ai_call_status: string | null
+          ai_call_summary: string | null
+          ai_cold_call_enabled: boolean | null
+          ai_conversation_id: string | null
+          ai_last_call_at: string | null
+          assigned_to: string | null
+          city: string | null
+          company: string | null
+          contact_outcome: string | null
+          contact_person: string | null
+          contact_type: string | null
+          country: string | null
+          created_at: string | null
+          created_by: string | null
+          do_not_call: boolean | null
+          email: string | null
+          employees: string | null
+          followup_count: number | null
+          followup_locked_at: string | null
+          id: string | null
+          import_method: string | null
+          industry: string | null
+          interested_in: string | null
+          last_contact_at: string | null
+          last_followup_at: string | null
+          lead_score: number | null
+          location: string | null
+          locations_count: number | null
+          lost_reason: string | null
+          next_action_at: string | null
+          next_step: string | null
+          notes: string | null
+          opportunity_value: number | null
+          phone: string | null
+          phone2: string | null
+          pipeline_stage: string | null
+          potential: string | null
+          research_automation_opportunities: Json | null
+          research_business_summary: string | null
+          research_call_angle: string | null
+          research_likely_pain_points: Json | null
+          research_observed_facts: Json | null
+          research_opening_question: string | null
+          research_recommended_solution: string | null
+          research_score_reason: string | null
+          research_sources: Json | null
+          research_status: string | null
+          source: string | null
+          status: string | null
+          tags: string[] | null
+          updated_at: string | null
+          user_id: string | null
+          website: string | null
+          won_locations_count: number | null
+        }
+        Insert: {
+          actual_mrr?: number | null
+          ai_call_duration_secs?: number | null
+          ai_call_sid?: string | null
+          ai_call_status?: string | null
+          ai_call_summary?: string | null
+          ai_cold_call_enabled?: boolean | null
+          ai_conversation_id?: string | null
+          ai_last_call_at?: string | null
+          assigned_to?: string | null
+          city?: string | null
+          company?: string | null
+          contact_outcome?: string | null
+          contact_person?: string | null
+          contact_type?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          do_not_call?: boolean | null
+          email?: string | null
+          employees?: string | null
+          followup_count?: number | null
+          followup_locked_at?: string | null
+          id?: string | null
+          import_method?: string | null
+          industry?: string | null
+          interested_in?: string | null
+          last_contact_at?: string | null
+          last_followup_at?: string | null
+          lead_score?: number | null
+          location?: string | null
+          locations_count?: number | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          next_step?: string | null
+          notes?: string | null
+          opportunity_value?: number | null
+          phone?: string | null
+          phone2?: string | null
+          pipeline_stage?: string | null
+          potential?: string | null
+          research_automation_opportunities?: Json | null
+          research_business_summary?: string | null
+          research_call_angle?: string | null
+          research_likely_pain_points?: Json | null
+          research_observed_facts?: Json | null
+          research_opening_question?: string | null
+          research_recommended_solution?: string | null
+          research_score_reason?: string | null
+          research_sources?: Json | null
+          research_status?: string | null
+          source?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+          website?: string | null
+          won_locations_count?: number | null
+        }
+        Update: {
+          actual_mrr?: number | null
+          ai_call_duration_secs?: number | null
+          ai_call_sid?: string | null
+          ai_call_status?: string | null
+          ai_call_summary?: string | null
+          ai_cold_call_enabled?: boolean | null
+          ai_conversation_id?: string | null
+          ai_last_call_at?: string | null
+          assigned_to?: string | null
+          city?: string | null
+          company?: string | null
+          contact_outcome?: string | null
+          contact_person?: string | null
+          contact_type?: string | null
+          country?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          do_not_call?: boolean | null
+          email?: string | null
+          employees?: string | null
+          followup_count?: number | null
+          followup_locked_at?: string | null
+          id?: string | null
+          import_method?: string | null
+          industry?: string | null
+          interested_in?: string | null
+          last_contact_at?: string | null
+          last_followup_at?: string | null
+          lead_score?: number | null
+          location?: string | null
+          locations_count?: number | null
+          lost_reason?: string | null
+          next_action_at?: string | null
+          next_step?: string | null
+          notes?: string | null
+          opportunity_value?: number | null
+          phone?: string | null
+          phone2?: string | null
+          pipeline_stage?: string | null
+          potential?: string | null
+          research_automation_opportunities?: Json | null
+          research_business_summary?: string | null
+          research_call_angle?: string | null
+          research_likely_pain_points?: Json | null
+          research_observed_facts?: Json | null
+          research_opening_question?: string | null
+          research_recommended_solution?: string | null
+          research_score_reason?: string | null
+          research_sources?: Json | null
+          research_status?: string | null
+          source?: string | null
+          status?: string | null
+          tags?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+          website?: string | null
+          won_locations_count?: number | null
+        }
+        Relationships: []
+      }
       sales_controller_digest: {
         Row: {
           ceka_datum: number | null
@@ -1985,6 +2289,32 @@ export type Database = {
       complete_sales_followup: { Args: { p_lead_id: string }; Returns: Json }
       debug_automind_payload: { Args: { "": Json }; Returns: Json }
       delete_lead_complete: { Args: { p_lead_id: string }; Returns: undefined }
+      ingest_automind_gmail_metadata:
+        | {
+            Args: {
+              p_direction: string
+              p_mailbox: string
+              p_message_id: string
+              p_received_at: string
+              p_recipients: string[]
+              p_sender: string
+              p_thread_id: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_direction: string
+              p_mailbox: string
+              p_message_id: string
+              p_received_at: string
+              p_recipients: string[]
+              p_sender: string
+              p_subject: string
+              p_thread_id: string
+            }
+            Returns: string
+          }
       is_current_super_admin: { Args: never; Returns: boolean }
       jarvis_approve_once: { Args: { p_approval_id: string }; Returns: Json }
       jarvis_begin_telegram_link: { Args: never; Returns: Json }
@@ -2068,6 +2398,14 @@ export type Database = {
       release_sales_followup_lock: {
         Args: { p_lead_id: string }
         Returns: boolean
+      }
+      resolve_automind_reply_lead: {
+        Args: { p_email: string }
+        Returns: {
+          lead_id: string
+          match_count: number
+          resolution: string
+        }[]
       }
       sales_project_for_lead: {
         Args: { p_interested_in: string }
